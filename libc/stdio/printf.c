@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
+
+char buf[12];
+char * to_string(int i);
+
 static bool print(const char* data, size_t length) {
 	const unsigned char* bytes = (const unsigned char*) data;
 	for (size_t i = 0; i < length; i++)
@@ -61,7 +65,27 @@ int printf(const char* restrict format, ...) {
 			if (!print(str, len))
 				return -1;
 			written += len;
-		} else {
+		} else if(*format == 'd' ){
+            format++;
+
+            int n = va_arg(parameters, int);
+            if(n < 0){
+                n = -n;
+                if(n<10){
+                    putchar('-');
+                    putchar((char)n+48);
+                }else printf("%s", to_string(n));
+                
+            } else{
+                if(n<10) putchar((char)n+48);
+                else {
+                    to_string(n);
+                    printf("%s", buf);
+                }
+            }    
+
+        }
+        else {
 			format = format_begun_at;
 			size_t len = strlen(format);
 			if (maxrem < len) {
@@ -78,3 +102,19 @@ int printf(const char* restrict format, ...) {
 	va_end(parameters);
 	return written;
 }
+
+char * to_string(int i){
+    buf[11] = EOF;
+    int c = 11;
+    while(i>0){
+        buf[c] = (char) (i%10)+48;
+        i/=10;
+        --c;
+    }
+    return &buf[0];
+}
+
+
+
+
+
