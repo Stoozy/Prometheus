@@ -1,6 +1,4 @@
-#!/bin/sh
-set -e
-. ./iso.sh
+#!/bin/bash
 
-#qemu-system-$(./target-triplet-to-arch.sh $HOST) -cdrom myos.iso
-qemu-system-x86_64 -cdrom zos.iso
+qemu-system-x86_64 -no-reboot -monitor stdio -d int -no-shutdown -cdrom zos.iso
+

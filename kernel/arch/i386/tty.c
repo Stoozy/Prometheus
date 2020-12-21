@@ -44,9 +44,11 @@ void terminal_putchar(char c) {
     {
         terminal_column = 0;
         ++terminal_row;
+        return;
     }
 
 	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
+
 	if (++terminal_column == VGA_WIDTH) 
     {
 		terminal_column = 0;
