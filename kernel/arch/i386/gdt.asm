@@ -1,6 +1,10 @@
+bits 32
 global gdt_flush
 
 gdt_flush:
+    mov     eax, [esp+4]
+    lgdt    [eax]
+
     mov     ax, 0x10
     mov     es, ax
     mov     ss, ax

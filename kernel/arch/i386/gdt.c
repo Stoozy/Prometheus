@@ -1,7 +1,6 @@
 #include <kernel/gdt.h>
 #include <stdio.h>
 
-extern void gdt_flush();
 
 typedef struct gdtdesc gdt_desc;
 typedef struct gdtr gdt_ptr;
@@ -12,13 +11,24 @@ void init_gdt_desc(int w, uint32_t base, uint32_t lim, uint8_t access, uint8_t g
 gdt_desc gdt[3];
 gdt_ptr gp;
 TSS t;
+
+extern uint32_t gdt_flush(gdt_ptr *);
+//static uint64_t GDT_DEFAULT[3] = {0x0000000000000000,  // null segment
+//                                  0x00DF9A000000FFFF,  // code segment
+//                                  0x00DF92000000FFFF}; // data segment
+//
 void init_gdt(){
-	gp.limit = (sizeof(gdt_desc)*3);
-	gp.base = (uint32_t)&gdt[0];
+	//gp.limit = ((sizeof(gdt_desc)*3)-1);
+	//gp.base = (uint32_t)&gdt[0];
+    gp.limit =  ((sizeof(gdt_desc)*3)-1);
+    gp.base = &gdt[0];
 
 	init_gdt_desc(0, 0, 0, 0, 0); // null Segment
 	init_gdt_desc(1, 0,  0xFFFFFFFF, 0x9A, 0xCF); // kernel code segment 
     init_gdt_desc(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // kernel data segment
+
+
+    gdt_flush(&gp);
 
     //init_gdt_desc(3, 0, 0xFFFFFFFF, 0xFA, 0xCF); // user code segment
 	//init_gdt_desc(4, 0, 0xFFFFFFFF, 0xFE, 0xCF); // user data segment
@@ -27,12 +37,11 @@ void init_gdt(){
 
 
     //// reload registers
-    asm volatile("mov %0, %%eax\n\t"
-                 "lgdt (%%eax) \n"
-                : : "g"((uint32_t) &gp): );
+    //asm volatile("mov %0, %%eax\n\t"
+     //            "lgdt (%%eax) \n"
+     //           : : "g"((uint32_t) &gp): );
 
     ///* Flush out the old GDT and install the new changes! */
-    gdt_flush();
 	//asm ("lgdt %0 " :  : "m"(gp) : );
     //asm volatile ("mov   %ax, 0x10 ");
     //asm volatile ("mov   %ds, %ax ");
@@ -43,10 +52,10 @@ void init_gdt(){
 	//asm volatile ("mov   %ss, %ax ");
 	//asm volatile ("ret");
 
-    init_gdt_desc(5, &t, sizeof(t),  0 , 0x89); // tss
+    //init_gdt_desc(5, &t, sizeof(t),  0 , 0x89); // tss
 
-    asm volatile ("mov %ax, 0x28");
-    asm volatile ("ltr %ax");
+    //asm volatile ("mov %ax, 0x28");
+    //asm volatile ("ltr %ax");
 
     printf("\n[kernel] GDT Loaded \n\n");
 }
