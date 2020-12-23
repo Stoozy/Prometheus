@@ -18,8 +18,6 @@ extern uint32_t gdt_flush(gdt_ptr *);
 //                                  0x00DF92000000FFFF}; // data segment
 //
 void init_gdt(){
-	//gp.limit = ((sizeof(gdt_desc)*3)-1);
-	//gp.base = (uint32_t)&gdt[0];
     gp.limit =  ((sizeof(gdt_desc)*5)-1);
     gp.base = &gdt[0];
 
@@ -34,29 +32,6 @@ void init_gdt(){
     gdt_flush(&gp);
 
     
-    // 
-
-
-    //// reload registers
-    //asm volatile("mov %0, %%eax\n\t"
-     //            "lgdt (%%eax) \n"
-     //           : : "g"((uint32_t) &gp): );
-
-    ///* Flush out the old GDT and install the new changes! */
-	//asm ("lgdt %0 " :  : "m"(gp) : );
-    //asm volatile ("mov   %ax, 0x10 ");
-    //asm volatile ("mov   %ds, %ax ");
-	//asm volatile ("mov   %ds, %ax ");
-	//asm volatile ("mov   %es, %ax ");
-	//asm volatile ("mov   %fs, %ax ");
-	//asm volatile ("mov   %gs, %ax ");
-	//asm volatile ("mov   %ss, %ax ");
-	//asm volatile ("ret");
-
-    //init_gdt_desc(5, &t, sizeof(t),  0 , 0x89); // tss
-
-    //asm volatile ("mov %ax, 0x28");
-    //asm volatile ("ltr %ax");
 
     printf("\n[kernel] GDT Loaded \n\n");
 }
