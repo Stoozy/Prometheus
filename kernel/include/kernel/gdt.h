@@ -53,8 +53,8 @@ struct tss{
 } __attribute__ ((packed));
 
 struct gdtr{
-    uint16_t limit;
     uint32_t base;
+    uint16_t limit;
 } __attribute__ ((packed));
 
 

@@ -14,15 +14,15 @@ void kernel_main(void) {
 	terminal_initialize();
 
     init_gdt();
-    init_idt();
-    init_pic(0x20, 0x28);
+    //init_idt();
+    //init_pic(0x20, 0x28);
 
-    asm volatile("sti");
+    //asm volatile("sti");
 
-    bool interrupt_status  = are_ints_enabled();
+    //bool interrupt_status  = are_ints_enabled();
    
-    if(interrupt_status) printf("[kernel] Interrupt requests are currently enabled\n");
-    else printf("[kernel] Interrupt requests are currently disabled\n");
+    //if(interrupt_status) printf("[kernel] Interrupt requests are currently enabled\n");
+    //else printf("[kernel] Interrupt requests are currently disabled\n");
 
     printf("Welcome to zOS!\n");
 

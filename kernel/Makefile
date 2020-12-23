@@ -47,6 +47,7 @@ $(KERNEL_OBJS) \
 $(LIBS) \
 $(ARCHDIR)/crtend.o \
 $(ARCHDIR)/crtn.o \
+$(ARCHDIR)/gdt-as.o \
 
 .PHONY: all clean install install-headers install-kernel
 .SUFFIXES: .o .c .S
