@@ -15,9 +15,7 @@ void kernel_main(void) {
 
     init_gdt();
     init_idt();
-    //init_pic(0x20, 0x28);
 
-    asm volatile("sti");
 
     bool interrupt_status  = are_ints_enabled();
    
