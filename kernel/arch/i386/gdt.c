@@ -20,19 +20,20 @@ extern uint32_t gdt_flush(gdt_ptr *);
 void init_gdt(){
 	//gp.limit = ((sizeof(gdt_desc)*3)-1);
 	//gp.base = (uint32_t)&gdt[0];
-    gp.limit =  ((sizeof(gdt_desc)*3)-1);
+    gp.limit =  ((sizeof(gdt_desc)*5)-1);
     gp.base = &gdt[0];
 
 	init_gdt_desc(0, 0, 0, 0, 0); // null Segment
 	init_gdt_desc(1, 0,  0xFFFFFFFF, 0x9A, 0xCF); // kernel code segment 
     init_gdt_desc(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // kernel data segment
 
+    init_gdt_desc(3, 0, 0xFFFFFFFF, 0xFA, 0xCF); // user code segment
+	init_gdt_desc(4, 0, 0xFFFFFFFF, 0xFE, 0xCF); // user data segment
+
 
     gdt_flush(&gp);
 
-    //init_gdt_desc(3, 0, 0xFFFFFFFF, 0xFA, 0xCF); // user code segment
-	//init_gdt_desc(4, 0, 0xFFFFFFFF, 0xFE, 0xCF); // user data segment
-
+    
     // 
 
 
