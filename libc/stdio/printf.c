@@ -3,10 +3,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <kernel/typedefs.h>
 
 
 char buf[12];
-char * to_string(int i);
+char * convert(uint32_t i, uint32_t base);
 
 static bool print(const char* data, size_t length) {
 	const unsigned char* bytes = (const unsigned char*) data;
@@ -65,25 +66,42 @@ int printf(const char* restrict format, ...) {
 			if (!print(str, len))
 				return -1;
 			written += len;
-		} else if(*format == 'd' ){
+		} else if  (*format == 'd'){
             format++;
+            int i = va_arg(parameters, int);
 
-            int n = va_arg(parameters, int);
-            if(n < 0){
-                n = -n;
-                if(n<10){
-                    putchar('-');
-                    putchar((char)n+48);
-                }else printf("%s", to_string(n));
-                
-            } else{
-                if(n<10) putchar((char)n+48);
-                else {
-                    to_string(n);
-                    printf("%s", buf);
+            char buf[12]= {0};
+            if(i>0) {
+
+                int counter = 0;
+                while(i!=0){
+                    buf[counter] = (i%10)+48;
+                    i/=10;
+                    counter++;
                 }
-            }    
+                    buf[counter] = '\0';
 
+                for(int j=counter-1; j>=0; j--){
+                    putchar(buf[j]);
+                }
+            }else if(i<0){
+                putchar('-');
+                i= i * -1;
+
+                int counter = 0;
+                while(i!=0){
+                    buf[counter] = (i%10)+48;
+                    i/=10;
+                    counter++;
+                }
+                buf[counter] = '\0';
+
+                for(int j=counter-1; j>=0; j--){
+                    putchar(buf[j]);
+                }
+            }
+
+            
         }
         else {
 			format = format_begun_at;
@@ -103,18 +121,24 @@ int printf(const char* restrict format, ...) {
 	return written;
 }
 
-char * to_string(int i){
-    buf[11] = EOF;
-    int c = 11;
-    while(i>0){
-        buf[c] = (char) (i%10)+48;
-        i/=10;
-        --c;
-    }
-    return &buf[0];
-}
-
-
+//char *convert(uint32_t num, uint32_t base) 
+//{ 
+//	static char Representation[]= "0123456789ABCDEF";
+//	static char buffer[50]; 
+//	char *ptr; 
+//	
+//	//ptr = &buffer[49]; 
+//	//*ptr = '\0'; 
+//    buffer[49] = '\0';
+//	
+//	do 
+//	{ 
+//		*--ptr = Representation[num%base]; 
+//		num /= base; 
+//	}while(num != 0); 
+//	
+//	return ptr; 
+//}
 
 
 

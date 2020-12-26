@@ -49,7 +49,7 @@ $(HOSTEDOBJS) \
 LIBK_OBJS=$(FREEOBJS:.o=.libk.o)
 
 #BINARIES=libc.a libk.a # Not ready for libc yet.
-BINARIES=libk.a
+BINARIES= libk.a
 
 .PHONY: all clean install install-headers install-libs
 .SUFFIXES: .o .libk.o .c .S

@@ -1,5 +1,6 @@
 #include <kernel/typedefs.h>
 #include <stdio.h>
+#include <kernel/kbd.h>
 
 static inline void outb(uint16_t port, uint8_t val)
 {
@@ -216,11 +217,8 @@ void irq0_handler(void) {
 }
  
 void irq1_handler(void) {
-      uint8_t c = inb(0x60);
-      if(c == 0x1c){
-          printf("A");
-      }
-      printf("%c", c);
+      uint8_t scan_code = inb(0x60);        
+      handle_scan(scan_code);
 	  outb(0x20, 0x20); //EOI
 }
  
