@@ -102,6 +102,26 @@ int printf(const char* restrict format, ...) {
             }
 
             
+        }else if(*format == 'x'){
+            format++;
+
+            uint32_t hex = va_arg(parameters, uint32_t);
+
+            char ref[]= "0123456789ABCDEF";
+            char hex_buf[20];
+
+            int counter=0;
+            while(hex != 0){
+                hex_buf[counter] = ref[hex%16];
+                hex /= 16;
+                counter++;
+            }
+            hex_buf[counter] = '\0';
+            printf("0x");
+            for(int j=counter-1; j>=0; j--){
+                    putchar(hex_buf[j]);
+            }
+
         }
         else {
 			format = format_begun_at;

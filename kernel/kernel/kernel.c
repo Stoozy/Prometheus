@@ -23,17 +23,17 @@ void kernel_main(void) {
     if(interrupt_status) printf("[KERNEL] Interrupt requests are currently enabled\n");
     else printf("[KERNEL] Interrupt requests are currently disabled\n");
 
-    //printf("Welcome to zOS!\n");
-    //printf("%d", -23294); 
-    //printf("\n");
-    //printf("%d", 34934); 
-    //printf("\n");
     terminal_setcolor(0xE); // yellow
     printf("%s"," _ _ _     _                      _              _____ _____ \n");
     printf("%s","| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
     printf("%s","| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
     printf("%s","|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
+
+    printf("Positive int test: %d\n", 34234);
+    printf("Negative int test: %d\n", -94823);
+
+    printf("Hexadecimal test: %x\n", 0x05AB6);
 
     for(;;){
         asm ("hlt");
