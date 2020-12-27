@@ -1,10 +1,9 @@
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
+//#include <stdint.h>
 #include <string.h>
 
 #include <kernel/tty.h>
-
 #include "vga.h"
 
 static const size_t VGA_WIDTH = 80;
@@ -43,8 +42,28 @@ void terminal_putchar(char c) {
 	unsigned char uc = c;
     if(c == '\n') 
     {
+        if(terminal_row+1 != VGA_HEIGHT){
+            ++terminal_row;
+        } else{
+
+            // move each row -1
+            for(size_t r = 0; r<VGA_HEIGHT; r++){
+                for(size_t c = 0; c<VGA_WIDTH; c++){
+                    size_t current_index = r*VGA_WIDTH+c;  // current line index
+                    size_t dest_index = (r+1)*VGA_WIDTH+c; 	// next line index 
+                    terminal_buffer[current_index] = terminal_buffer[dest_index];
+               }
+            }
+            // clear last row
+            for(size_t c = 0; c<VGA_WIDTH; c++){
+                size_t index = VGA_HEIGHT*VGA_WIDTH+c;
+                terminal_buffer[index] = vga_entry(' ', terminal_color);
+            }
+
+
+        };
+
         terminal_column = 0;
-        ++terminal_row;
         return;
     }
 
@@ -61,8 +80,6 @@ void terminal_putchar(char c) {
 	if (++terminal_column == VGA_WIDTH) 
     {
 		terminal_column = 0;
-		if (++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
 	}
 }
 
@@ -74,3 +91,4 @@ void terminal_write(const char* data, size_t size) {
 void terminal_writestring(const char* data) {
 	terminal_write(data, strlen(data));
 }
+

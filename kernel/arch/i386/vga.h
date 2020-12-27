@@ -1,8 +1,8 @@
 #ifndef ARCH_I386_VGA_H
 #define ARCH_I386_VGA_H
 
-#include <stdint.h>
-
+//#include <stdint.h>
+#include <kernel/typedefs.h>
 enum vga_color {
 	VGA_COLOR_BLACK = 0,
 	VGA_COLOR_BLUE = 1,
