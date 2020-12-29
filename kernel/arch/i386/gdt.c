@@ -8,7 +8,7 @@ typedef struct tss TSS;
 
 void init_gdt_desc(int w, uint32_t base, uint32_t lim, uint8_t access, uint8_t gran);
 
-gdt_desc gdt[3];
+gdt_desc gdt[5];
 gdt_ptr gp;
 TSS t;
 
@@ -18,14 +18,24 @@ extern uint32_t gdt_flush(gdt_ptr *);
 //                                  0x00DF92000000FFFF}; // data segment
 //
 void init_gdt(){
+    printf("Initializing GDT.");
+
     gp.limit =  ((sizeof(gdt_desc)*5)-1);
     gp.base = &gdt[0];
 
+    printf("Setting null segment.\n");
 	init_gdt_desc(0, 0, 0, 0, 0); // null Segment
+
+    printf("Setting kernel code segment.\n");
 	init_gdt_desc(1, 0,  0xFFFFFFFF, 0x9A, 0xCF); // kernel code segment 
+
+    printf("Setting kernel data segment.\n");
     init_gdt_desc(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // kernel data segment
 
+    printf("Setting user code segment.\n");
     init_gdt_desc(3, 0, 0xFFFFFFFF, 0xFA, 0xCF); // user code segment
+
+    printf("Setting user data segment.\n");
 	init_gdt_desc(4, 0, 0xFFFFFFFF, 0xFE, 0xCF); // user data segment
 
 
@@ -33,7 +43,7 @@ void init_gdt(){
 
     
 
-    printf("\n[kernel] GDT Loaded \n\n");
+    printf("GDT Initialization finished.\n");
 }
 
 void init_gdt_desc(int w, uint32_t base, uint32_t lim,
