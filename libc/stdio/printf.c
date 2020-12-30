@@ -3,10 +3,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <kernel/typedefs.h>
+#include <kernel/util.h>
 
 
-char buf[12];
+static char buf[20];
 char * convert(uint32_t i, uint32_t base);
 
 static bool print(const char* data, size_t length) {
@@ -66,61 +68,19 @@ int printf(const char* restrict format, ...) {
 			if (!print(str, len))
 				return -1;
 			written += len;
-		} else if  (*format == 'd'){
+		} else if  (*format == 'd' || *(format+1) == 'd' || *(format+2) == 'd'){
+			// increment
             format++;
+
             int i = va_arg(parameters, int);
 
-            char buf[12]= {0};
-            if(i>0) {
-
-                int counter = 0;
-                while(i!=0){
-                    buf[counter] = (i%10)+48;
-                    i/=10;
-                    counter++;
-                }
-                    buf[counter] = '\0';
-
-                for(int j=counter-1; j>=0; j--){
-                    putchar(buf[j]);
-                }
-            }else if(i<0){
-                putchar('-');
-                i= i * -1;
-
-                int counter = 0;
-                while(i!=0){
-                    buf[counter] = (i%10)+48;
-                    i/=10;
-                    counter++;
-                }
-                buf[counter] = '\0';
-
-                for(int j=counter-1; j>=0; j--){
-                    putchar(buf[j]);
-                }
-            }
-
+			printf("%s", itoa(i, &buf[0], 10));
             
         }else if(*format == 'x'){
             format++;
-
             uint32_t hex = va_arg(parameters, uint32_t);
 
-            char ref[]= "0123456789ABCDEF";
-            char hex_buf[20];
-
-            int counter=0;
-            while(hex != 0){
-                hex_buf[counter] = ref[hex%16];
-                hex /= 16;
-                counter++;
-            }
-            hex_buf[counter] = '\0';
-            printf("0x");
-            for(int j=counter-1; j>=0; j--){
-                    putchar(hex_buf[j]);
-            }
+			printf("0x%s", itoa(hex, &buf[0], 16));
 
         }
         else {

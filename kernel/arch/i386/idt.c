@@ -2,7 +2,7 @@
 #include <kernel/typedefs.h>
 #include <stdio.h>
 #include <kernel/kbd.h>
-
+#include <kernel/io.h>
 
 static uint64_t ticks = 0;
 
@@ -13,7 +13,7 @@ void Sleep(uint32_t ms){
 	};
 }
 
-static inline void outb(uint16_t port, uint8_t val)
+void outb(uint16_t port, uint8_t val)
 {
     asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
     /* There's an outb %al, $imm8  encoding, for compile-time constant port numbers that fit in 8b.  (N constraint).
@@ -22,7 +22,7 @@ static inline void outb(uint16_t port, uint8_t val)
      * %1 expands to %dx because  port  is a uint16_t.  %w1 could be used if we had the port number a wider C type */
 }
 
-static inline uint8_t inb(uint16_t port)
+uint8_t inb(uint16_t port)
 {
     uint8_t ret;
     asm volatile ( "inb %1, %0"
@@ -31,7 +31,7 @@ static inline uint8_t inb(uint16_t port)
     return ret;
 }
 
-static inline void io_wait(void)
+void io_wait(void)
 {
     /* TODO: This is probably fragile. */
     asm volatile ( "jmp 1f\n\t"
