@@ -44,7 +44,7 @@ void kernel_main(void) {
     //}
 
     for(;;){
-		read_rtc();
+		//read_rtc();
 		asm("hlt");
     }
 }
