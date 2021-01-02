@@ -115,22 +115,24 @@ int printf(const char* restrict format, ...) {
 			// increment
             format++;
             if(wide){
-                long int i = va_arg(parameters, long int);
+                int64_t i = va_arg(parameters, int64_t);
                 if(i==0) printf("0");
 			    else{
                     if(padding){
                         int p;
                         char * pad_str;
+                        // padding with 0s and printing
                         for(p = 0; p<padding; p++)
                             pad_str[p] = pad_with;
                         pad_str[p] = '\0';
-                        char * str = itoa(i, &buf[p], 10);
+
+                        char * str = lltoa(i, &buf[p], 10);
 			            printf("%s", strcat(pad_str, str));
 
-                    }else printf("%s", itoa(i, &buf[0], 10));
+                    }else printf("%s", lltoa(i, &buf[0], 10));
                 }
             }else{
-                int i = va_arg(parameters, int);
+                int32_t i = va_arg(parameters, int32_t);
                 if(i==0) printf("0");
                 else{
                     if(padding){
@@ -150,11 +152,11 @@ int printf(const char* restrict format, ...) {
         }else if(*format=='u'){
             format++;
             if(wide){
-                unsigned long long i = va_arg(parameters, unsigned long long);
-                printf("%s", itoa(i, &buf[0], 10));
+                uint64_t i = va_arg(parameters, uint64_t);
+                printf("%s", lltoa(i, &buf[0], 10));
             }else{
                 unsigned int i = va_arg(parameters, unsigned int);
-                printf("%s", itoa(i, &buf[0], 10));
+                printf("%s", lltoa(i, &buf[0], 10));
             }
     
         }else if(*format == 'x'){
