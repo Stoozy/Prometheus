@@ -73,13 +73,31 @@ void terminal_putchar(char c) {
         return;
     }
 
-    if(c ==  15){
-    }
 	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
 
 	if (++terminal_column == VGA_WIDTH) 
     {
 		terminal_column = 0;
+        // since it's last row, scroll up
+        if(terminal_row+1 == VGA_HEIGHT){
+
+            for(size_t r = 0; r<VGA_HEIGHT; r++){
+                for(size_t c = 0; c<VGA_WIDTH; c++){
+                    size_t current_index = r*VGA_WIDTH+c;  // current line index
+                    size_t dest_index = (r+1)*VGA_WIDTH+c; 	// next line index 
+                    terminal_buffer[current_index] = terminal_buffer[dest_index];
+               }
+            }
+
+            for(size_t c = 0; c<VGA_WIDTH; c++){
+                size_t index = VGA_HEIGHT*VGA_WIDTH+c;
+                terminal_buffer[index] = vga_entry(' ', terminal_color);
+            }
+
+        }else{
+            terminal_row++;
+        }
+        return;
 	}
 }
 

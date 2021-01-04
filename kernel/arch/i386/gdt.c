@@ -41,8 +41,6 @@ void init_gdt(){
 
     gdt_flush(&gp);
 
-    
-
     printf("GDT Initialization finished.\n");
 }
 

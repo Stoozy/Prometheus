@@ -4,39 +4,20 @@
 #include <kernel/kbd.h>
 #include <kernel/io.h>
 
-static uint64_t ticks = 0;
+static uint64_t _ticks = 0;
+static uint64_t _ATA_INTS = 0;
+
 
 void Sleep(uint32_t ms){
-	uint64_t eticks = ticks + ms/54;
-	while(ticks < eticks){
+	uint64_t eticks = _ticks + ms/54;
+	while(_ticks < eticks){
 		__asm__("nop"); // empty while loop doesn't work for some reason
 	};
 }
 
-void outb(uint16_t port, uint8_t val)
-{
-    asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
-    /* There's an outb %al, $imm8  encoding, for compile-time constant port numbers that fit in 8b.  (N constraint).
-     * Wider immediate constants would be truncated at assemble-time (e.g. "i" constraint).
-     * The  outb  %al, %dx  encoding is the only option for all other cases.
-     * %1 expands to %dx because  port  is a uint16_t.  %w1 could be used if we had the port number a wider C type */
-}
-
-uint8_t inb(uint16_t port)
-{
-    uint8_t ret;
-    asm volatile ( "inb %1, %0"
-                   : "=a"(ret)
-                   : "Nd"(port) );
-    return ret;
-}
-
-void io_wait(void)
-{
-    /* TODO: This is probably fragile. */
-    asm volatile ( "jmp 1f\n\t"
-                   "1:jmp 2f\n\t"
-                   "2:" );
+void ATA_WAIT_INT(){
+    int next = _ATA_INTS+1;
+    while(_ATA_INTS != next);
 }
 
 struct IDT_entry{
@@ -245,7 +226,7 @@ void init_idt(void) {
 
 
 void irq0_handler(void) {
-	ticks++;	// inc ticks
+	_ticks++;	// inc ticks
 	outb(0x20, 0x20); //EOI
 }
  
@@ -310,8 +291,13 @@ void irq13_handler(void) {
 }
  
 void irq14_handler(void) {
-          outb(0xA0, 0x20);
-          outb(0x20, 0x20); //EOI
+    _ATA_INTS++;  
+    uint8_t status = inb(0x1F7);
+
+    printf("Recieved IRQ from Primary ATA drive\n");
+    printf("Status is: %d\n", status);
+    outb(0xA0, 0x20);
+    outb(0x20, 0x20); //EOI
 }
  
 void irq15_handler(void) {
