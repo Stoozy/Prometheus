@@ -1,4 +1,5 @@
 #!/bin/bash
 
-sudo cp kernel/*.h /usr/local/include/kernel/
-sudo cp */*.h /usr/local/include/kernel/
+sudo cp --verbose kernel/*.h /usr/local/include/kernel/
+sudo cp --verbose bmfs/*h /usr/local/include/bmfs/
+

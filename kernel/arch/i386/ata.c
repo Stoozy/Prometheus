@@ -19,13 +19,17 @@
 
 
 void ATA_WAIT_BSY(){
-    while(inb(0x1F7)&STATUS_BSY);
+    while(inb(STATUS_CMD_REG) & STATUS_BSY){
+        if(inb(STATUS_CMD_REG) & (1<<5)){
+            printf("Drive fault error.\n");
+        }
+        asm("nop");
+    }
 }
 void ATA_WAIT_RDY(){
     while(!(inb(0x1F7)&STATUS_RDY));
 }
-
-/* 
+/*
  * Check if drive is valid
  *
  */
@@ -38,6 +42,7 @@ bool ATA_IDENTIFY(uint8_t drive){
     outb(STATUS_CMD_REG, IDENTIFY_CMD);
 
     uint8_t status = inb(0x1F7);
+    //printf("Status for Disk%d\n", status);
     return !(status == 0); 
 }
 
@@ -47,11 +52,11 @@ bool ATA_IDENTIFY(uint8_t drive){
  *
  */
 void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector_count){ 
-
     if(drive == 0xA0){
         drive = 0xE0;
     }else drive = 0xF0; // assume it's a slave drive
-    outb(DRIVE_SELECT_PORT, 0xE0 | ((LBA >> 24) & 0x0F));
+
+    outb(DRIVE_SELECT_PORT, drive | 1 << 4 |((LBA >> 24) & 0x0F));
     outb(SECTOR_COUNT_PORT, sector_count);
     outb(LBA_LO_PORT, LBA);
     outb(LBA_MID_PORT, LBA >> 8);
@@ -60,6 +65,7 @@ void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector
     
     ATA_WAIT_BSY();
     ATA_WAIT_RDY();
+    printf("drive status: %d\n", inb(STATUS_CMD_REG));
     for(int i=0; i<sector_count;i++){
         for(int j=0; j<256; j++)
             target[j]=inw(0x1F0);
@@ -70,7 +76,6 @@ void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector
 }
 
 /*
- *
  * Write to disk drive
  *
  * data is the data to be written

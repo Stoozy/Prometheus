@@ -294,7 +294,7 @@ void irq14_handler(void) {
     _ATA_INTS++;  
     uint8_t status = inb(0x1F7);
 
-    printf("Recieved IRQ from Primary ATA drive\n");
+    printf("\nRecieved IRQ from Primary ATA drive\n");
     printf("Status is: %d\n", status);
     outb(0xA0, 0x20);
     outb(0x20, 0x20); //EOI
