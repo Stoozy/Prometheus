@@ -50,6 +50,8 @@ $(ARCHDIR)/crtn.o \
 $(ARCHDIR)/gdt-as.o \
 $(ARCHDIR)/irq.o \
 $(ARCHDIR)/e820.o \
+$(ARCHDIR)/paging.o \
+
 
 .PHONY: all clean install install-headers install-kernel
 .SUFFIXES: .o .c .S
