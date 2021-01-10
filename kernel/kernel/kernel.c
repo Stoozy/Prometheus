@@ -10,6 +10,7 @@
 #include <kernel/util.h>
 #include <kernel/ata.h>
 #include <kernel/paging.h>
+#include <kernel/pmm.h>
 
 #include "multiboot.h"
 
@@ -77,35 +78,14 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
 	printf("magic is: %x\n", magic);
 
+    
     bool interrupt_status  = are_ints_enabled();
-		
-
-    //uint16_t target[2560];
-    //uint8_t drive = 0xA0; // master
-    //bool is_valid_disk = ATA_IDENTIFY(drive);
-    //      
-
-    //outb(0x3F6, 4);
-    //asm("nop");
-    //outb(0x3F6, 0);
-
-
-    //if(is_valid_disk){
-    //    //for(int k=0; k<INT_MAX; k++){
-    //      read_sectors(target, drive, 2, 10);
-    //      for(int i=0; i<2560; i++) {
-    //            printf("%c %c ", target[i], target[i] >> 8);
-    //            Sleep(54);
-    //      }
-    //      printf("\n");
-
-    //    //}
-    //}
-
     if(interrupt_status) printf("Interrupt requests are currently enabled\n");
     else printf("Interrupt requests are currently disabled\n");
 
 	printf("MMAP_ADDR: %x \nMEM_LOW:%d\nMEM_UPPER:%d\n", mbd->mmap_addr, mbd->mem_lower, mbd->mem_upper);
+
+    uint32_t avail_mmap[3][2]= {0}; // first col: addr, second col: size
     
 	int entries = 0;
 	mmap_entry_t* entry = mbd->mmap_addr;
@@ -115,17 +95,34 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 		entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
 			//uint64_t total_addr = entry->base_addr_low | entry->base_addr_high << 32;
 			//uint64_t total_len = entry->length_low| entry->length_high << 32;
-        printf("Entry #%d:\n", entries)	;
-        printf("    Size: %d\n", entry->size); 
-        printf("    Address: %llxB\n", entry->addr);
-        printf("    Length: %lluMiB\n", (entry->len/(1024*1024)));
-        printf("    Type: %d\n", entry->type);
         if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
+            printf("Entry #%d:\n", entries)	;
+            printf("    Size: %d\n", entry->size); 
+            printf("    Address: %x\n", entry->addr);
+            printf("    Length: %lluMiB\n", (entry->len/(1024*1024)));
+            printf("    Type: %d\n", entry->type);
             total_mem_size_kib += (entry->len)/1024;
+            // fill available entry
+            avail_mmap[entries][1] = entry->addr;
+            avail_mmap[entries][2] = entry->len;
+            
         }
 		entries++;
 	}
-    printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024)));
+
+    printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024))); // converto MiB
+
+    uint32_t * pmm_bitmap=0;
+    pmm_init(total_mem_size_kib, pmm_bitmap);
+    printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, total_mem_size_kib/4096);
+
+	uint32_t i;
+
+    i=0;
+    while(avail_mmap[i][1] != 0){
+        pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
+        printf("Initalized physical memory region starting at %x of size: %d",avail_mmap[i][0], avail_mmap[i][1]);
+    }
     
 
     uint32_t page_dir[1024] __attribute__((aligned(4096)));
@@ -134,7 +131,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
 	// holds the physical address where we want to start mapping these pages to.
 	// in this case, we want to map these pages to the very beginning of memory.
-	uint32_t i;
 	 
 	//we will fill all 1024 entries in the table, mapping 4 megabytes
 	for(i = 0; i < 1024; i++){
