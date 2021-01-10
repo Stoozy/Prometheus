@@ -1,5 +1,0 @@
-#!/bin/bash
-
-sudo cp --verbose kernel/*.h /usr/local/include/kernel/
-sudo cp --verbose bmfs/*h /usr/local/include/bmfs/
-

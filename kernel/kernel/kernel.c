@@ -109,74 +109,57 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     
 	int entries = 0;
 	mmap_entry_t* entry = mbd->mmap_addr;
+    uint64_t total_mem_size_kib =0;
     uint32_t mem_end_page=0;	
 	while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
 		entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
-		if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
 			//uint64_t total_addr = entry->base_addr_low | entry->base_addr_high << 32;
 			//uint64_t total_len = entry->length_low| entry->length_high << 32;
-			printf("Entry #%d:\n", entries)	;
-			printf("    Size: %d\n", entry->size); 
-			printf("    Address: %llxB\n", entry->addr);
-			printf("    Length: %lluMiB\n", (entry->len/(1024*1024)));
-		}
+        printf("Entry #%d:\n", entries)	;
+        printf("    Size: %d\n", entry->size); 
+        printf("    Address: %llxB\n", entry->addr);
+        printf("    Length: %lluMiB\n", (entry->len/(1024*1024)));
+        printf("    Type: %d\n", entry->type);
+        if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
+            total_mem_size_kib += (entry->len)/1024;
+        }
 		entries++;
 	}
+    printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024)));
+    
 
-	uint64_t page_dir_ptr_tab[4] __attribute__((aligned(32)));
+    uint32_t page_dir[1024] __attribute__((aligned(4096)));
+    uint32_t page_tab[1024] __attribute__((aligned(4096)));
+    uint32_t second_page_tab[1024] __attribute__((aligned(4096)));
 
-	// pointers to tables
-	uint64_t page_dir[512] __attribute__((aligned(4096)));
-	// table
-	uint64_t page_tab[512] __attribute__((aligned(4096)));
+	// holds the physical address where we want to start mapping these pages to.
+	// in this case, we want to map these pages to the very beginning of memory.
+	uint32_t i;
+	 
+	//we will fill all 1024 entries in the table, mapping 4 megabytes
+	for(i = 0; i < 1024; i++){
+		// As the address is page aligned, it will always leave 12 bits zeroed.
+		// Those bits are used by the attributes ;)
+		page_tab[i] = (i * 0x1000) | 3; // attributes: supervisor level, read/write, present.
+	}
 
-	// set the page directory into the PDPT and mark it present
-	page_dir_ptr_tab[0] = (uint64_t)&page_dir | 1;
-	//set the page table into the PD and mark it present/writable
-	page_dir[0] = (uint64_t)&page_tab | 3;
-	
-    uint32_t i, address = 0;
-    for(i=0; i<512; i++){
-		// map address and mark it present/writable
-		page_tab[i] = address | 3; 
-		address += 4096; 
+    // mapping another 4 MiB
+    for(i=0; i<1024; i++){
+        second_page_tab[i] = (i*0x1000) | 3;
     }
-	/* 
-	*	set bit5 in CR4 to enable PAE
-	* 	load PDPT into CR3
-	*/ 	
-	asm volatile ("movl %%cr4, %%eax; bts $5, %%eax; movl %%eax, %%cr4" ::: "eax"); 		 
-	asm volatile ("movl %0, %%cr3" :: "r" (&page_dir_ptr_tab)); 
 
-	// activate paging
-	asm volatile ("movl %%cr0, %%eax; orl $0x80000000, %%eax; movl %%eax, %%cr0;" ::: "eax");
+    // attributes: supervisor level, read/write, present
+    page_dir[0] = ((unsigned int)page_tab) | 3;
+    page_dir[1] = ((unsigned int)second_page_tab) | 3;
 
-	// get the page directory (you should 'and' the flags away)
-	uint64_t * pd = (uint64_t*)page_dir_ptr_tab[3]; 
-	pd[511] = (uint64_t)pd; // map pd to itself
-	pd[510] = page_dir_ptr_tab[2]; // map pd3 to it
-	pd[509] = page_dir_ptr_tab[1]; // map pd2 to it
-	pd[508] = page_dir_ptr_tab[0]; // map pd1 to it
-	pd[507] = (uint64_t)&page_dir_ptr_tab; //	map the PDPT to the directory
+	load_page_directory((uint32_t *)&page_dir);
+	init_paging();
 
-	// contains physical addresses
-	//uint32_t j; 
-	////we will fill all 1024 entries in the table, mapping 4 megabytes
-	//for(j = 0; j < 512; j++){
-	//	// As the address js page aligned, jt wjll always leave 12 bjts zeroed.
-	//	// Those bjts are used by the attrjbutes ;)
-	//	// attrjbutes: supervjsor level, read/wrjte, present.
-	//	first_page_table[j] = (j * 4096) | 3;
-	//}
+	printf("Paging has been setup. \n");
 
-	//page_directory[0] = ((uint32_t) first_page_table) | 3;
-	//load_page_directory(page_directory);
-	//init_paging();
-	printf("Paging is enabled\n");
 
-	//idpaging(&first_page_table, 0x0, 2048); // 8MiB
-	//printf("Identitiy mapped the first 8 MiB\n");
-
+	idpaging(&page_tab, 0x0, 1048576); // 1MiB
+    printf("Identity mapped first MiB\n");
 	read_rtc();
     terminal_setcolor(0xE); // yellow
     printf("%s"," _ _ _     _                      _              _____ _____ \n");
@@ -186,9 +169,8 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     terminal_setcolor(0xF); // white
 
 
-
 	
-    for(;;){
+    //for(;;){
 		asm("hlt");
-    }
+    //}
 }
