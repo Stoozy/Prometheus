@@ -163,7 +163,7 @@ int printf(const char* restrict format, ...) {
             format++;
             uint64_t hex = va_arg(parameters, uint64_t);
 
-			printf("0x%s", itoa(hex, &buf[0], 16));
+			printf("%s", itoa(hex, &buf[0], 16));
 
         }
         else {

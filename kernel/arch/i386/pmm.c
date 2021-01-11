@@ -7,23 +7,25 @@
 
 #include <kernel/pmm.h>
 #include <kernel/typedefs.h>
-
+#include <kernel/util.h>
 
 static	uint32_t	_mmngr_mem_size=0; //! size of physical memory
 static	uint32_t	_mmngr_used_blocks=0; //! number of blocks currently in use
 static	uint32_t	_mmngr_max_blocks=0; //! maximum number of available memory blocks
 static	uint32_t*	_mmngr_mmap= 0; //! memory map bit array. Each bit represents a memory block
 
-inline void mmap_unset (int bit) { 
-  _mmngr_mmap[bit / 32] &= ~ (1 << (bit % 32));
+void mmap_unset (int bit) { 
+  _clear_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
+  //_mmngr_mmap[bit / 32] &= ~ (1 << (bit % 32));
 }// unset block by unsetting corresponding bit
 
-inline void mmap_set (int bit) { 
-  _mmngr_mmap[bit / 32] |= (1 << (bit % 32));
+void mmap_set (int bit) { 
+  _set_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
+  //_mmngr_mmap[bit / 32] |= (1 << (bit % 32));
 }// set block by setting corresponding bit
 
 
-inline bool mmap_is_set (int bit) { 
+bool mmap_is_set (int bit) { 
  return _mmngr_mmap[bit / 32] &  (1 << (bit % 32));
 } // checks if bit in bitmap is set
 
@@ -33,7 +35,8 @@ static inline uint32_t _pmm_get_block_count(){
 }
 
 uint32_t pmm_get_block_count(){
-	return _pmm_get_block_count();
+    return _mmngr_max_blocks;
+	//return _pmm_get_block_count();
 }
 
 
@@ -47,8 +50,8 @@ static inline uint32_t _pmm_get_free_block_count(){
 void pmm_init(size_t mem_size, phys_addr bitmap){
 	_mmngr_mem_size = mem_size;
 	_mmngr_mmap	=	(uint32_t*) bitmap;
+	_mmngr_max_blocks =  (mem_size*1024/BLOCK_SIZE); 
 	_mmngr_used_blocks = _pmm_get_block_count(); 
-	_mmngr_max_blocks =  _pmm_get_block_count(); 
 
 	//! By default, all of memory is in use
 	memset (_mmngr_mmap, 0xf, _pmm_get_block_count() / BLOCKS_PER_BYTE);

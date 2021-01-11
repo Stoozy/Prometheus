@@ -99,3 +99,16 @@ char* itoa(int32_t value, char* buffer, int base)
     return reverse(buffer, 0, i - 1);
 }
  
+void _set_bit(uint32_t *word, uint32_t bit ){
+    *word |= (1 << bit);
+    return;
+}
+void _clear_bit(uint32_t *word, uint32_t bit){
+    *word &= ~(1 << bit);
+    return;
+}
+
+
+
+
+
