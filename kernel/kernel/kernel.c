@@ -9,13 +9,17 @@
 #include <kernel/rtc.h>
 #include <kernel/util.h>
 #include <kernel/ata.h>
-#include <kernel/paging.h>
 #include <kernel/pmm.h>
+#include <kernel/paging.h>
+
+//#include <kernel/vmm.h>
 
 #include "multiboot.h"
 
 #define INT_MAX 2147483647
 
+#define PAGE_PRESENT    0
+#define PAGE_RW         1
 
 
 void Sleep(uint32_t ms);
@@ -69,9 +73,11 @@ void idpaging(uint32_t *first_pte, uint32_t from, int size) {
 
 void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 	terminal_initialize();
-
+    printf("Initialized terminal\n");
     init_gdt();
+
     init_idt();
+
 
 
 	printf("Kernel main loaded at: 0x%x\n", kernel_main);
@@ -124,37 +130,12 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         i++;
     }
     
+   	vmm_init();
 
-    uint32_t page_dir[1024] __attribute__((aligned(4096)));
-    uint32_t page_tab[1024] __attribute__((aligned(4096)));
-    uint32_t second_page_tab[1024] __attribute__((aligned(4096)));
-
-	// holds the physical address where we want to start mapping these pages to.
-	// in this case, we want to map these pages to the very beginning of memory.
-	 
-	//we will fill all 1024 entries in the table, mapping 4 megabytes
-	for(i = 0; i < 1024; i++){
-		// As the address is page aligned, it will always leave 12 bits zeroed.
-		// Those bits are used by the attributes ;)
-		page_tab[i] = (i * 0x1000) | 3; // attributes: supervisor level, read/write, present.
-	}
-
-    // mapping another 4 MiB
-    for(i=0; i<1024; i++){
-        second_page_tab[i] = (i*0x1000) | 3;
-    }
-
-    // attributes: supervisor level, read/write, present
-    page_dir[0] = ((unsigned int)page_tab) | 3;
-    //page_dir[1] = ((unsigned int)second_page_tab) | 3;
-
-	load_page_directory((uint32_t *)&page_dir);
-	init_paging();
-
-	printf("Paging has been setup. \n");
+	//load_page_directory((uint32_t*)&directory);
+	//init_paging();
 
 
-	//idpaging(&page_tab, 0x0, 1048576); // 1MiB
     printf("Identity mapped first MiB\n");
 	read_rtc();
     terminal_setcolor(0xE); // yellow

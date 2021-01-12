@@ -19,5 +19,4 @@ init_paging:
     mov     esp, ebp
     pop     ebp
     ret
-    
-
+   
