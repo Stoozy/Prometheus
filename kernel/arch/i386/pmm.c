@@ -5,10 +5,13 @@
 #include <string.h>
 
 #include <kernel/pmm.h>
+#include <kernel/paging.h>
 #include <kernel/typedefs.h>
 #include <kernel/util.h>
 
+extern void load_page_directory(page_dir_t*dir);
 extern void init_paging();
+
 
 static	uint32_t	_mmngr_mem_size=0; //! size of physical memory
 static	uint32_t	_mmngr_used_blocks=0; //! number of blocks currently in use
@@ -21,8 +24,8 @@ void mmap_unset (int bit) {
 }// unset block by unsetting corresponding bit
 
 void mmap_set (int bit) { 
-  _set_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
-  //_mmngr_mmap[bit / 32] |= (1 << (bit % 32));
+  //_set_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
+  _mmngr_mmap[bit / 32] |= (1 << (bit % 32));
 }// set block by setting corresponding bit
 
 
@@ -137,6 +140,7 @@ void pmm_free_block(void * ptr){
 
 
 void pmm_load_PDBR(phys_addr addr){
+    //load_page_directory(addr);
 	asm("mov (%0), %%eax\n\t"
 		"mov %%eax, %%cr3\n\t" : :"r" (addr) :);
 }

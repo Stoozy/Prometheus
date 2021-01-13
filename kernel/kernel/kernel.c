@@ -129,14 +129,41 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         printf("Initalized physical memory region starting at 0x%x of size: %lldMiB\n",avail_mmap[i][0], (avail_mmap[i][1]/(1024*1024)));
         i++;
     }
+   
+    uint32_t directories[1024] __attribute__((aligned(4096))); 
+    uint32_t first_tab[1024] __attribute__((aligned(4096)));
+
+    // page map the first 4MiB
+    for(i=0; i<1024; i++){
+        first_tab[i] = (i*4096) | 3;
+    }
+
+    // fill the rest of the memory (4MiB-4GiB)
+    directories[0]= ((uint32_t) first_tab)|3;
+    for(i=1; i<1024; i++){ // iterates directories
+        uint32_t offset=i*4096;
+        uint32_t table[1024] __attribute__((aligned(4096)));
+        for(int j=0; j<1024; j++){
+            table[j] = (offset + (j*4096))|3;
+        }
+        directories[i]= ((uint32_t)table)|3;
+    }
     
-   	vmm_init();
+     
+    //first_dir[0] = ((uint32_t)first_tab) | 3;
+    //first_dir[1] = ((uint32_t)second_tab) | 3;
+   	//vmm_init();
+	load_page_directory((uint32_t *) &directories);
+	init_paging();
+    printf("Paging is now enabled\n");
+       
+    idpaging(&first_tab, 0, 1024*4096); // 4MiB
+    printf("Identity mapped first 4 MiB\n");
 
-	//load_page_directory((uint32_t*)&directory);
-	//init_paging();
+    printf("Next free block of memory is at: 0x%x\n", pmm_alloc_block());
+    printf("Next free block of memory is at: 0x%x\n", pmm_alloc_block());
+    printf("Next free block of memory is at: 0x%x\n", pmm_alloc_block());
 
-
-    printf("Identity mapped first MiB\n");
 	read_rtc();
     terminal_setcolor(0xE); // yellow
     printf("%s"," _ _ _     _                      _              _____ _____ \n");
@@ -147,7 +174,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
 
 	
-    for(;;){
+    //for(;;){
 		asm("hlt");
-    }
+    //}
 }

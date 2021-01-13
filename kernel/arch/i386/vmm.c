@@ -45,7 +45,6 @@
 page_dir_t * _cur_dir;  // current page dir
 phys_addr	 _cur_pdbr; // current page dir base reg
 
-extern void load_page_directory(page_dir_t*dir);
 
 bool vmm_alloc_page(page_t * e){
 	//! allocate a free physical frame
@@ -75,8 +74,7 @@ bool vmm_switch_pdirectory (page_dir_t* dir) {
 		return false;
  
 	_cur_dir = dir;
-	//pmm_load_PDBR (_cur_pdbr);
-	load_page_directory(dir);
+	pmm_load_PDBR (_cur_pdbr);
 	return true;
 }
 
@@ -119,13 +117,8 @@ void vmm_map_page (void* phys, void* virt){
 }
 
 void vmm_ptable_clear(page_table_t * pt){
-	uint32_t i, j;
-	for(i=0; i<1024;i++){
-		for(j=0; j<32; j++){
-			_clear_bit(&pt->m_entries[0], i);
-		}
-	}
-	return;
+    memset(pt, 0, sizeof(page_table_t));
+    return;
 }
 
 void vmm_init(){
@@ -150,7 +143,9 @@ void vmm_init(){
  		//! create a new page
 
 		page_t page={0};
-		pte_add_attrib (&page, I86_PTE_PRESENT);
+        _set_bit(&page,0);
+        _set_bit(&page,1);
+		//pte_add_attrib (&page, I86_PTE_PRESENT);
  		pte_set_frame (&page, frame);
 
 		//! ...and add it to the page table
@@ -179,7 +174,7 @@ void vmm_init(){
 	_cur_pdbr = (phys_addr) &dir->m_entries;
  
 	//! switch to our page directory
-	vmm_switch_pdirectory (dir);
+	vmm_switch_pdirectory (&dir->m_entries);
 	//! enable paging
 	pmm_paging_enable (true);
 
