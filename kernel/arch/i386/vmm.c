@@ -40,7 +40,6 @@
 #define I86_PDE_LV4_GLOBAL			0x200		//0000000000000000000001000000000
 #define I86_PDE_FRAME				0x7FFFF000 	//1111111111111111111000000000000
 
-
  
 page_dir_t * _cur_dir;  // current page dir
 phys_addr	 _cur_pdbr; // current page dir base reg

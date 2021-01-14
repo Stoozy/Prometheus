@@ -96,11 +96,11 @@ int pmm_get_first_free(){
 		if (_mmngr_mmap[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {		//! test each bit in the dword
  
-				if(!(mmap_is_set(j)))
-					return i*32+j;
-				//int bit = 1 << j;
-				//if (! (_mmngr_memory_map[i] & bit) )
+				//if(!(mmap_is_set(j)))
 					//return i*32+j;
+				int bit = 1 << j;
+				if (! (_mmngr_mmap[i] & bit) )
+					return i*32+j;
 			}
 	// no free blocks available 
 	return -1;

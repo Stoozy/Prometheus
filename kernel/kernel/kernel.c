@@ -28,6 +28,8 @@ uint32_t placement_address = 0;
 
 extern void load_page_directory(uint32_t *);
 extern void init_paging();
+extern uint32_t ekernel;
+extern uint32_t sbss;
 
 typedef struct multiboot_mmap_entry mmap_entry_t;
 
@@ -62,7 +64,6 @@ int tar_lookup(unsigned char *archive, char *filename, char **out) {
     }
     return 0;
 }
-
 
 void idpaging(uint32_t *first_pte, uint32_t from, int size) {
 	from = from & 0xfffff000; // discard bits we don't want
@@ -118,8 +119,14 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024))); // converto MiB
 
-    uint32_t * pmm_bitmap=0;
-    pmm_init(total_mem_size_kib, pmm_bitmap);
+    //printf("End of kernel is at: 0x%x\n",ekernel );
+    
+    //uint32_t pmm_bmap[10];
+    //uint32_t *ptr = &pmm_bmap;
+
+    uint32_t *ptr;
+    pmm_init(total_mem_size_kib, ptr);
+
     printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
 
 
@@ -147,6 +154,9 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
             table[j] = (offset + (j*4096))|3;
         }
         directories[i]= ((uint32_t)table)|3;
+        phys_addr b   = pmm_alloc_block();
+        //if(b)
+            //printf("Found free page at:0x%x\n", pmm_alloc_block());
     }
     
      
@@ -156,13 +166,11 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 	load_page_directory((uint32_t *) &directories);
 	init_paging();
     printf("Paging is now enabled\n");
-       
+     
+  
     idpaging(&first_tab, 0, 1024*4096); // 4MiB
     printf("Identity mapped first 4 MiB\n");
 
-    printf("Next free block of memory is at: 0x%x\n", pmm_alloc_block());
-    printf("Next free block of memory is at: 0x%x\n", pmm_alloc_block());
-    printf("Next free block of memory is at: 0x%x\n", pmm_alloc_block());
 
 	read_rtc();
     terminal_setcolor(0xE); // yellow
@@ -174,7 +182,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
 
 	
-    //for(;;){
+    for(;;){
 		asm("hlt");
-    //}
+    }
 }
