@@ -16,7 +16,7 @@ extern void init_paging();
 static	uint32_t	_mmngr_mem_size=0; //! size of physical memory
 static	uint32_t	_mmngr_used_blocks=0; //! number of blocks currently in use
 static	uint32_t	_mmngr_max_blocks=0; //! maximum number of available memory blocks
-static	uint32_t*	_mmngr_mmap= 0; //! memory map bit array. Each bit represents a memory block
+static  uint32_t    _mmngr_mmap[32768]={0};
 
 void mmap_unset (int bit) { 
   _clear_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
@@ -24,8 +24,8 @@ void mmap_unset (int bit) {
 }// unset block by unsetting corresponding bit
 
 void mmap_set (int bit) { 
-  //_set_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
-  _mmngr_mmap[bit / 32] |= (1 << (bit % 32));
+  _set_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
+  //_mmngr_mmap[bit / 32] |= (1 << (bit % 32));
 }// set block by setting corresponding bit
 
 
@@ -39,43 +39,50 @@ static inline uint32_t _pmm_get_block_count(){
 }
 
 uint32_t pmm_get_block_count(){
-    return _mmngr_max_blocks;
-	//return _pmm_get_block_count();
+	return _pmm_get_block_count();
 }
 
 
 static inline uint32_t _pmm_get_free_block_count(){
 	return _mmngr_max_blocks - _mmngr_used_blocks;
 }
+
+
+uint32_t pmm_get_free_block_count(){
+    return _pmm_get_free_block_count();
+}
+
 /*
  *  bitmap is the phys_addr where pmm keeps it's bitmap struct
  *  mem_size is in KiB
  */
-void pmm_init(size_t mem_size, phys_addr bitmap){
+void pmm_init(size_t mem_size){
 	_mmngr_mem_size = mem_size;
-	_mmngr_mmap	=	(uint32_t*) bitmap;
+	//_mmngr_mmap	=	(uint32_t*) bitmap;
 	_mmngr_max_blocks =  (mem_size*1024/BLOCK_SIZE); 
 	_mmngr_used_blocks = _pmm_get_block_count(); 
 
 	//! By default, all of memory is in use
-	memset (_mmngr_mmap, 0xf, _pmm_get_block_count() / BLOCKS_PER_BYTE);
+	memset (_mmngr_mmap, 0xff, _pmm_get_block_count() / BLOCKS_PER_BYTE);
 }
 
 
 /*
  *  initalize physical memory region
  */ 
-void pmm_init_region(phys_addr base, size_t size){
-	uint8_t bit = base/BLOCK_SIZE;
-	uint8_t blocks = size/BLOCK_SIZE;
+void pmm_init_region(phys_addr base, uint64_t size){
+	uint64_t bit = base/BLOCK_SIZE;
+	uint64_t blocks = size/BLOCK_SIZE;
 
 	for (; blocks>0; blocks--) {
-		// free the memory
-		mmap_unset (bit++); 
+		// free the memory for use
+		mmap_unset(bit++); 
 		_mmngr_used_blocks--;
 	}
- 
+
+
 	mmap_set (0);	//first block is always set. This insures allocs cant be 0
+    printf("Initalized physical memory region:\nAddr: 0x%x\nSize: %llu B\n", base, size);
 }
 
 
@@ -92,16 +99,18 @@ void pmm_destroy_region(phys_addr base, size_t size){
 
 int pmm_get_first_free(){
 	//! find the first free bit
-	for (uint32_t i=0; i< _pmm_get_block_count() / 32; i++)
-		if (_mmngr_mmap[i] != 0xffffffff)
-			for (int j=0; j<32; j++) {		//! test each bit in the dword
+	for (uint64_t i=0; i< (_pmm_get_block_count() / 32); i++){ // iterates over bitmaps
+        if (_mmngr_mmap[i] != 0xffffffff){
+            for (int j=0; j<32; j++) {		//! test each bit in the dword
  
-				//if(!(mmap_is_set(j)))
-					//return i*32+j;
-				int bit = 1 << j;
-				if (! (_mmngr_mmap[i] & bit) )
+				if(!(mmap_is_set(i*32+j)))
 					return i*32+j;
+				//int bit = 1 << j;
+				//if (! (_mmngr_mmap[i] & bit) )
+				//	return i*32+j;
 			}
+        }
+    }
 	// no free blocks available 
 	return -1;
 }
@@ -142,7 +151,7 @@ void pmm_free_block(void * ptr){
 void pmm_load_PDBR(phys_addr addr){
     //load_page_directory(addr);
 	asm("mov (%0), %%eax\n\t"
-		"mov %%eax, %%cr3\n\t" : :"r" (addr) :);
+		"mov %%eax, %%cr3\n\t" : :"r" (addr):);
 }
 
 int pmm_get_first_free_s(uint32_t blocks){

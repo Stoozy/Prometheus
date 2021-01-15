@@ -1,3 +1,13 @@
+/*Copyright 2021 Stoozy 
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -79,8 +89,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     init_idt();
 
-
-
 	printf("Kernel main loaded at: 0x%x\n", kernel_main);
 
 	printf("magic is: %x\n", magic);
@@ -93,15 +101,14 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 	printf("MMAP_ADDR: 0x%x \nMEM_LOW:%d\nMEM_UPPER:%d\n", mbd->mmap_addr, mbd->mem_lower, mbd->mem_upper);
 
     uint32_t avail_mmap[3][2]= {0}; // first col: addr, second col: size
-    
+    uint64_t ll = 32768 *1024;
+
 	int entries = 0, avail_entries=0;
 	mmap_entry_t* entry = mbd->mmap_addr;
     uint64_t total_mem_size_kib =0;
     uint32_t mem_end_page=0;	
 	while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
 		entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
-			//uint64_t total_addr = entry->base_addr_low | entry->base_addr_high << 32;
-			//uint64_t total_len = entry->length_low| entry->length_high << 32;
         if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
             printf("Entry #%d:\n", entries)	;
             printf("    Size: %d\n", entry->size); 
@@ -121,22 +128,18 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     //printf("End of kernel is at: 0x%x\n",ekernel );
     
-    //uint32_t pmm_bmap[10];
-    //uint32_t *ptr = &pmm_bmap;
-
-    uint32_t *ptr;
-    pmm_init(total_mem_size_kib, ptr);
+    pmm_init(total_mem_size_kib);
 
     printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
 
 
 	uint32_t i=0;
     while(avail_mmap[i][1] != 0){
+        //printf("Addr: 0x%x Size: %ld KiB\n", avail_mmap[i][0], avail_mmap[i][1]);
         pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
-        printf("Initalized physical memory region starting at 0x%x of size: %lldMiB\n",avail_mmap[i][0], (avail_mmap[i][1]/(1024*1024)));
         i++;
     }
-   
+    printf("%d free physical blocks", pmm_get_free_block_count()) ;
     uint32_t directories[1024] __attribute__((aligned(4096))); 
     uint32_t first_tab[1024] __attribute__((aligned(4096)));
 
@@ -145,19 +148,27 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         first_tab[i] = (i*4096) | 3;
     }
 
+    uint32_t total_physical_pages=0;
     // fill the rest of the memory (4MiB-4GiB)
     directories[0]= ((uint32_t) first_tab)|3;
     for(i=1; i<1024; i++){ // iterates directories
         uint32_t offset=i*4096;
         uint32_t table[1024] __attribute__((aligned(4096)));
         for(int j=0; j<1024; j++){
+            phys_addr b   = pmm_alloc_block();
+            if(b!=0){
+                printf("Found free page at:0x%x\n", b);
+                total_physical_pages++;
+            }else {
+                printf("Ran out of memory!\n"); 
+                asm("hlt");
+            }
+
             table[j] = (offset + (j*4096))|3;
         }
         directories[i]= ((uint32_t)table)|3;
-        phys_addr b   = pmm_alloc_block();
-        //if(b)
-            //printf("Found free page at:0x%x\n", pmm_alloc_block());
     }
+    printf("Total number of physical pages: %d\n", total_physical_pages);
     
      
     //first_dir[0] = ((uint32_t)first_tab) | 3;

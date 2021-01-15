@@ -153,10 +153,10 @@ int printf(const char* restrict format, ...) {
             format++;
             if(wide){
                 uint64_t i = va_arg(parameters, uint64_t);
-                printf("%s", lltoa(i, &buf[0], 10));
+                printf("%s", ulltoa(i, &buf[0], 10));
             }else{
                 unsigned int i = va_arg(parameters, unsigned int);
-                printf("%s", lltoa(i, &buf[0], 10));
+                printf("%s", ulltoa(i, &buf[0], 10));
             }
     
         }else if(*format == 'x'){

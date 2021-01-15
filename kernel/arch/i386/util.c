@@ -12,7 +12,6 @@ int64_t ll_abs(int64_t val){
     else return val;
 }
 
-
 void swap(char *x, char *y) {
     char t = *x; *x = *y; *y = t;
 }
@@ -25,6 +24,33 @@ char* reverse(char *buffer, int i, int j)
  
     return buffer;
 }
+char* ulltoa(uint64_t val, char* buffer, int base){
+    // invalid input
+    if (base < 2 || base > 32)
+        return buffer;
+ 
+    uint64_t n = val;
+    uint64_t i = 0;
+
+    while (n){
+        int8_t r = n % base; 
+        if (r >= 10) 
+            buffer[i++] = 65 + (r - 10);
+        else
+            buffer[i++] = 48 + r; 
+        n = n / base;
+    }
+ 
+    // if number is 0
+    if (i == 0)
+        buffer[i++] = '0';
+ 
+    buffer[i] = '\0'; // null terminate string
+ 
+    // reverse the string and return it
+    return reverse(buffer, 0, i - 1);
+
+}
 
 char* lltoa(int64_t value, char* buffer, int base)
 {
@@ -32,10 +58,9 @@ char* lltoa(int64_t value, char* buffer, int base)
     if (base < 2 || base > 32)
         return buffer;
  
-    // consider absolute value of number
     int64_t n = ll_abs(value);
- 
-    long i = 0;
+     
+    unsigned long i = 0;
     while (n)
     {
         int8_t r = n % base; 
@@ -109,6 +134,8 @@ void _clear_bit(uint32_t *word, uint32_t bit){
 }
 
 
-
+bool _check_bit(uint32_t * word, uint32_t bit){
+    return *word & (1 << bit);
+}
 
 
