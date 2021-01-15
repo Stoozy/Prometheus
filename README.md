@@ -9,11 +9,11 @@ This is a hobby OS made by yours truly, stoozy.
 ### TODO
     -   [x]  Initialize GDT
     -   [x]  Initialize IDT
-    -   []  Timer
-    -   []  Keyboard Driver
-    -   []  Mouse Driver
+    -   [ ]  Timer
+    -   [ ]  Keyboard Driver
+    -   [ ]  Mouse Driver
     -   [x]  PMM
-    -   []  VMM
+    -   [ ]  VMM
  
 ### LICENSE
 
