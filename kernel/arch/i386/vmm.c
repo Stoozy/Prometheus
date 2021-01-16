@@ -46,57 +46,57 @@ phys_addr	 _cur_pdbr; // current page dir base reg
 
 
 bool vmm_alloc_page(page_t * e){
-	//! allocate a free physical frame
-	void* p = pmm_alloc_block();
-	if (!p) return false;
+    //! allocate a free physical frame
+    void* p = pmm_alloc_block();
+    if (!p) return false;
  
-	//! map it to the page
-	pte_set_frame (e, (phys_addr)p);
-	pte_add_attrib (e, I86_PTE_PRESENT);
+    //! map it to the page
+    pte_set_frame (e, (phys_addr)p);
+    pte_add_attrib (e, I86_PTE_PRESENT);
  
-	return true;		
+    return true;
 }
 
 void vmm_free_page (page_t * e){
-	void * p = (void *) pte_get_phys_addr(e);
-	if(p) pmm_free_block(p);
-	pte_del_attrib(e, I86_PTE_PRESENT);
+    void * p = (void *) pte_get_phys_addr(e);
+    if(p) pmm_free_block(p);
+    pte_del_attrib(e, I86_PTE_PRESENT);
 }
 
 page_t* vmm_ptable_lookup_entry (page_table_t* p, virt_addr addr){
-	if(p)	 return &p->m_entries[ PAGE_TABLE_INDEX (addr) ];
-	return 0;
+    if(p) return &p->m_entries[ PAGE_TABLE_INDEX (addr) ];
+    return 0;
 }
 
 bool vmm_switch_pdirectory (page_dir_t* dir) {
-	if (!dir)
-		return false;
- 
-	_cur_dir = dir;
-	pmm_load_PDBR (_cur_pdbr);
-	return true;
+    if (!dir)
+        return false;
+
+    _cur_dir = dir;
+    pmm_load_PDBR (_cur_pdbr);
+    return true;
 }
 
 page_dir_t* vmm_get_directory(){
-	return _cur_dir;
+    return _cur_dir;
 }
 
 void vmm_flush_tlb_entry (virt_addr addr){
-	asm("cli\n\t"
-		"invlpg (%0)\n\t"
-		"sti\n\t": :"r" (addr) : "memory");
+    asm("cli\n\t"
+        "invlpg (%0)\n\t"
+        "sti\n\t": :"r" (addr) : "memory");
 }
 
 void vmm_map_page (void* phys, void* virt){
-   //! get page directory
-   page_dir_t* pageDirectory = vmm_get_directory ();
+    //! get page directory
+    page_dir_t* pageDirectory = vmm_get_directory ();
 
-   //! get page table
-   pde_t* e = &pageDirectory->m_entries [PAGE_DIRECTORY_INDEX ((uint32_t) virt) ];
+    //! get page table
+    pde_t* e = &pageDirectory->m_entries [PAGE_DIRECTORY_INDEX ((uint32_t) virt) ];
 
-   //if ( (*e & I86_PTE_PRESENT) != I86_PTE_PRESENT) {
-	if(e->present){
-	  //! page table not present, allocate it
+    //if ( (*e & I86_PTE_PRESENT) != I86_PTE_PRESENT) {
+    if(e->present){
+      //! page table not present, allocate it
       page_table_t* table = (page_table_t*) pmm_alloc_block ();
       if (!table)
          return;
@@ -112,7 +112,7 @@ void vmm_map_page (void* phys, void* virt){
       pde_add_attrib (entry, I86_PDE_PRESENT);
       pde_add_attrib (entry, I86_PDE_WRITABLE);
       pde_set_frame (entry, (phys_addr)table);
-	}
+    }
 }
 
 void vmm_ptable_clear(page_table_t * pt){
@@ -122,59 +122,59 @@ void vmm_ptable_clear(page_table_t * pt){
 
 void vmm_init(){
 
-	//! allocate default page table
-	page_table_t* table = (page_table_t*) pmm_alloc_block ();
-	if (!table)
-		return;
- 
-	//! allocates 3gb page table
-	page_table_t * table2 = (page_table_t*) pmm_alloc_block ();
-	if (!table2)
-		return;
+    //! allocate default page table
+    page_table_t* table = (page_table_t*) pmm_alloc_block ();
+    if (!table)
+        return;
 
-	//! clear page table
-	vmm_ptable_clear(table);
+    //! allocates 3gb page table
+    page_table_t * table2 = (page_table_t*) pmm_alloc_block ();
+    if (!table2)
+        return;
+
+    //! clear page table
+    vmm_ptable_clear(table);
 
 
-	//! _st 4mb are idenitity mapped
-	for (int i=0, frame=0x0, virt=0x00000000; i<1024; i++, frame+=4096, virt+=4096) {
+    //! _st 4mb are idenitity mapped
+    for (int i=0, frame=0x0, virt=0x00000000; i<1024; i++, frame+=4096, virt+=4096) {
 
- 		//! create a new page
+        //! create a new page
 
-		page_t page={0};
+        page_t page={0};
         _set_bit(&page,0);
         _set_bit(&page,1);
-		//pte_add_attrib (&page, I86_PTE_PRESENT);
- 		pte_set_frame (&page, frame);
+        //pte_add_attrib (&page, I86_PTE_PRESENT);
+        pte_set_frame (&page, frame);
 
-		//! ...and add it to the page table
-		table2->m_entries [PAGE_TABLE_INDEX (virt) ] = page;
-	}
+        //! ...and add it to the page table
+        table2->m_entries [PAGE_TABLE_INDEX (virt) ] = page;
+    }
 
-	//! create default directory table
-	page_dir_t*	dir = (page_dir_t*) pmm_alloc_blocks (3);
-	if (!dir)
-		return;
- 
-	//! clear directory table and set it as current
-	memset (dir, 0, sizeof (page_dir_t));
+    //! create default directory table
+    page_dir_t*	dir = (page_dir_t*) pmm_alloc_blocks (3);
+    if (!dir)
+        return;
 
-	pde_t* entry = &dir->m_entries [PAGE_DIRECTORY_INDEX (0xc0000000) ];
-	pde_add_attrib (entry, I86_PDE_PRESENT);
-	pde_add_attrib (entry, I86_PDE_WRITABLE);
-	pde_set_frame (entry, (phys_addr)table);
+    //! clear directory table and set it as current
+    memset (dir, 0, sizeof (page_dir_t));
 
-	pde_t* entry2 = &dir->m_entries [PAGE_DIRECTORY_INDEX (0x00000000) ];
-	pde_add_attrib (entry2, I86_PDE_PRESENT);
-	pde_add_attrib (entry2, I86_PDE_WRITABLE);
-	pde_set_frame (entry2, (phys_addr)table2);
+    pde_t* entry = &dir->m_entries [PAGE_DIRECTORY_INDEX (0xc0000000) ];
+    pde_add_attrib (entry, I86_PDE_PRESENT);
+    pde_add_attrib (entry, I86_PDE_WRITABLE);
+    pde_set_frame (entry, (phys_addr)table);
 
-	//! store current PDBR
-	_cur_pdbr = (phys_addr) &dir->m_entries;
- 
-	//! switch to our page directory
-	vmm_switch_pdirectory (&dir->m_entries);
-	//! enable paging
-	pmm_paging_enable (true);
+    pde_t* entry2 = &dir->m_entries [PAGE_DIRECTORY_INDEX (0x00000000) ];
+    pde_add_attrib (entry2, I86_PDE_PRESENT);
+    pde_add_attrib (entry2, I86_PDE_WRITABLE);
+    pde_set_frame (entry2, (phys_addr)table2);
+
+    //! store current PDBR
+    _cur_pdbr = (phys_addr) &dir->m_entries;
+
+    //! switch to our page directory
+    vmm_switch_pdirectory (&dir->m_entries);
+    //! enable paging
+    pmm_paging_enable (true);
 
 }

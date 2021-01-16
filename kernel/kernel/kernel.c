@@ -76,39 +76,38 @@ int tar_lookup(unsigned char *archive, char *filename, char **out) {
 }
 
 void idpaging(uint32_t *first_pte, uint32_t from, int size) {
-	from = from & 0xfffff000; // discard bits we don't want
-	for(; size>0; from += 4096, size -= 4096, first_pte++){
-	   *first_pte = from | 1;     // mark page present.
-	}
+    from = from & 0xfffff000; // discard bits we don't want
+    for(; size>0; from += 4096, size -= 4096, first_pte++){
+       *first_pte = from | 1;     // mark page present.
+    }
 }
 
 void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
-	terminal_initialize();
+    terminal_initialize();
     printf("Initialized terminal\n");
     init_gdt();
 
     init_idt();
 
-	printf("Kernel main loaded at: 0x%x\n", kernel_main);
+    printf("Kernel main loaded at: 0x%x\n", kernel_main);
 
-	printf("magic is: %x\n", magic);
+    printf("magic is: %x\n", magic);
 
-    
     bool interrupt_status  = are_ints_enabled();
     if(interrupt_status) printf("Interrupt requests are currently enabled\n");
     else printf("Interrupt requests are currently disabled\n");
 
-	printf("MMAP_ADDR: 0x%x \nMEM_LOW:%d\nMEM_UPPER:%d\n", mbd->mmap_addr, mbd->mem_lower, mbd->mem_upper);
+    printf("MMAP_ADDR: 0x%x \nMEM_LOW:%d\nMEM_UPPER:%d\n", mbd->mmap_addr, mbd->mem_lower, mbd->mem_upper);
 
     uint32_t avail_mmap[3][2]= {0}; // first col: addr, second col: size
     uint64_t ll = 32768 *1024;
 
-	int entries = 0, avail_entries=0;
-	mmap_entry_t* entry = mbd->mmap_addr;
+    int entries = 0, avail_entries=0;
+    mmap_entry_t* entry = mbd->mmap_addr;
     uint64_t total_mem_size_kib =0;
-    uint32_t mem_end_page=0;	
-	while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
-		entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
+    uint32_t mem_end_page=0;
+    while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
+        entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
         if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
             printf("Entry #%d:\n", entries)	;
             printf("    Size: %d\n", entry->size); 
@@ -121,8 +120,8 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
             avail_mmap[avail_entries][1] = entry->len;
             avail_entries++;
         }
-		entries++;
-	}
+        entries++;
+    }
 
     printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024))); // converto MiB
 
@@ -133,7 +132,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
 
 
-	uint32_t i=0;
+    uint32_t i=0;
     while(avail_mmap[i][1] != 0){
         //printf("Addr: 0x%x Size: %ld KiB\n", avail_mmap[i][0], avail_mmap[i][1]);
         pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
@@ -159,16 +158,14 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         directories[i]= ((uint32_t)table)|3;
     }
     
-	load_page_directory((uint32_t *) &directories);
-	init_paging();
+    load_page_directory((uint32_t *) &directories);
+    init_paging();
     printf("Paging is now enabled\n");
-     
-  
     idpaging(&first_tab, 0, 1024*4096); // 4MiB
     printf("Identity mapped first 4 MiB\n");
 
 
-	read_rtc();
+    read_rtc();
     terminal_setcolor(0xE); // yellow
     printf("%s"," _ _ _     _                      _              _____ _____ \n");
     printf("%s","| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
@@ -176,8 +173,8 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("%s","|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
 
-	
-    for(;;){
-		asm("hlt");
-    }
+
+    //for(;;){
+        asm("hlt");
+    //}
 }
