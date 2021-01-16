@@ -9,7 +9,7 @@ static uint64_t _ATA_INTS = 0;
 
 
 void Sleep(uint32_t ms){
-	uint64_t eticks = _ticks + ms/54;
+	uint64_t eticks = _ticks + ms;
 	while(_ticks < eticks){
 		__asm__("nop"); // empty while loop doesn't work for some reason
 	};
@@ -84,8 +84,17 @@ void init_idt(void) {
 
     printf("Installing irq0 handler\n");
 
-    //outb(0x43, 0x4);    // PIT mode 0 (interrupt on terminal count)/ channel 0
 	
+    outb(0x43, 0x0);    // PIT mode 0 (interrupt on terminal count)/ channel 0
+
+	uint32_t divisor = 1193;
+    outb(0x43, 0x36);
+    uint8_t l = (uint8_t)(divisor & 0xFF);
+    uint8_t h = (uint8_t)((divisor >> 8) & 0xFF);
+
+    outb(0x40, l);
+    outb(0x40, h); 
+
 	irq0_address = (unsigned long)irq0; 
 	IDT[32].offset_lowerbits = irq0_address & 0xffff;
 	IDT[32].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
@@ -231,9 +240,9 @@ void irq0_handler(void) {
 }
  
 void irq1_handler(void) {
-      uint8_t scan_code = inb(0x60);        
-      handle_scan(scan_code);
-	  outb(0x20, 0x20); //EOI
+    uint8_t scan_code = inb(0x60);        
+    handle_scan(scan_code);
+    outb(0x20, 0x20); //EOI
 }
  
 void irq2_handler(void) {

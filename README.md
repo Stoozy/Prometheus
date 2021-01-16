@@ -8,7 +8,8 @@ This is a hobby OS made by yours truly, stoozy.
 ### TODO
 - [x] Initialize GDT
 - [x] Initialize IDT 
-- [ ] Timer
+- [x] Timer
+- [x] RTC 
 - [ ] Keyboard Driver
 - [ ] Mouse Driver
 - [x] PMM

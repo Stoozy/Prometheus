@@ -17,6 +17,7 @@ static	uint32_t	_mmngr_mem_size=0; //! size of physical memory
 static	uint32_t	_mmngr_used_blocks=0; //! number of blocks currently in use
 static	uint32_t	_mmngr_max_blocks=0; //! maximum number of available memory blocks
 static  uint32_t    _mmngr_mmap[32768]={0};
+static  uint64_t    _last_checked_idx = 0;
 
 void mmap_unset (int bit) { 
   _clear_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
@@ -99,18 +100,21 @@ void pmm_destroy_region(phys_addr base, size_t size){
 
 int pmm_get_first_free(){
 	//! find the first free bit
-	for (uint64_t i=0; i< (_pmm_get_block_count() / 32); i++){ // iterates over bitmaps
-        if (_mmngr_mmap[i] != 0xffffffff){
+	//for (uint64_t i=0; i< (_pmm_get_block_count() / 32); i++){ // iterates over bitmaps
+    while(_last_checked_idx != _pmm_get_block_count()/32){
+        if (_mmngr_mmap[_last_checked_idx] != 0xffffffff){
             for (int j=0; j<32; j++) {		//! test each bit in the dword
  
-				if(!(mmap_is_set(i*32+j)))
-					return i*32+j;
+				if(!(mmap_is_set(_last_checked_idx*32+j)))
+					return _last_checked_idx*32+j;
 				//int bit = 1 << j;
 				//if (! (_mmngr_mmap[i] & bit) )
 				//	return i*32+j;
 			}
         }
+        _last_checked_idx++;
     }
+    _last_checked_idx = 0;
 	// no free blocks available 
 	return -1;
 }

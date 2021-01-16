@@ -139,7 +139,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
         i++;
     }
-    printf("%d free physical blocks", pmm_get_free_block_count()) ;
+    printf("%d free physical blocks\n", pmm_get_free_block_count()) ;
     uint32_t directories[1024] __attribute__((aligned(4096))); 
     uint32_t first_tab[1024] __attribute__((aligned(4096)));
 
@@ -148,32 +148,17 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         first_tab[i] = (i*4096) | 3;
     }
 
-    uint32_t total_physical_pages=0;
     // fill the rest of the memory (4MiB-4GiB)
     directories[0]= ((uint32_t) first_tab)|3;
-    for(i=1; i<1024; i++){ // iterates directories
+    for(i=1; i<1023; i++){ // iterates directories
         uint32_t offset=i*4096;
         uint32_t table[1024] __attribute__((aligned(4096)));
         for(int j=0; j<1024; j++){
-            phys_addr b   = pmm_alloc_block();
-            if(b!=0){
-                printf("Found free page at:0x%x\n", b);
-                total_physical_pages++;
-            }else {
-                printf("Ran out of memory!\n"); 
-                asm("hlt");
-            }
-
             table[j] = (offset + (j*4096))|3;
         }
         directories[i]= ((uint32_t)table)|3;
     }
-    printf("Total number of physical pages: %d\n", total_physical_pages);
     
-     
-    //first_dir[0] = ((uint32_t)first_tab) | 3;
-    //first_dir[1] = ((uint32_t)second_tab) | 3;
-   	//vmm_init();
 	load_page_directory((uint32_t *) &directories);
 	init_paging();
     printf("Paging is now enabled\n");
@@ -190,7 +175,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("%s","| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
     printf("%s","|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
-
 
 	
     for(;;){
