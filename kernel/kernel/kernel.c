@@ -169,28 +169,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     }
     printf("%d free physical blocks\n", pmm_get_free_block_count());
 
-
-    uint64_t page_dir_ptr_tab[4] __attribute__((aligned(0x20))); //must be aligned to (at least)0x20, ...
-    uint64_t page_dir[512] __attribute__((aligned(0x1000)));  // must be aligned to page boundary
-    uint64_t page_tab[512] __attribute__((aligned(0x1000)));
-
-    unsigned int address=0;
-    // mapping first 2 MiB
-    for(i = 0; i < 512; i++){
-        page_tab[i] = address | 3; // map address and mark it present/writable
-        address = address + 0x1000;
-    }
-
-    page_dir_ptr_tab[0] = (uint64_t)&page_dir | 1; // set the page directory into the PDPT and mark it present
-    page_dir[0] = (uint64_t)&page_tab | 3; //set the page table into the PD and mark it present/writable
-
-
-
-    asm volatile ("movl %%cr4, %%eax; bts $5, %%eax; movl %%eax, %%cr4" ::: "eax"); // set bit5 in CR4 to enable PAE         
-    asm volatile ("movl %0, %%cr3" :: "r" (&page_dir_ptr_tab)); // load PDPT into CR3
-
-    asm volatile ("movl %%cr0, %%eax; orl $0x80000000, %%eax; movl %%eax, %%cr0;" ::: "eax");
-
     //uint32_t directories[1024] __attribute__((aligned(4096))); 
     //uint32_t first_tab[1024] __attribute__((aligned(4096)));
 
@@ -214,17 +192,16 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
 
     
-    for(;;) asm("hlt");
     //load_page_directory((uint32_t *) &directories);
     //init_paging();
 
-    printf("Paging is now enabled\n");
+    //printf("Paging is now enabled\n");
     //idpaging(&first_tab, 0, 1024*4096); // 4MiB
     //printf("Identity mapped first 4 MiB\n");
 
 
-    uint16_t target[256];
-    uint8_t     split[256][2];
+    //uint16_t target[256];
+    //uint8_t     split[256][2];
 
     //if(ATA_IDENTIFY(0xA0)){ // primary drive is ready
     //    uint64_t lba=500;
@@ -252,7 +229,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     
 
-    //for(;;) asm("hlt");
-    asm("hlt");
-
+    for(;;) asm("hlt");
 }
+
