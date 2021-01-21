@@ -246,11 +246,11 @@ void irq1_handler(void) {
 }
  
 void irq2_handler(void) {
-          outb(0x20, 0x20); //EOI
+    outb(0x20, 0x20); //EOI
 }
  
 void irq3_handler(void) {
-          outb(0x20, 0x20); //EOI
+    outb(0x20, 0x20); //EOI
 }
  
 void irq4_handler(void) {

@@ -153,9 +153,9 @@ void pmm_free_block(void * ptr){
 
 
 void pmm_load_PDBR(phys_addr addr){
-    //load_page_directory(addr);
-	asm("mov (%0), %%eax\n\t"
-		"mov %%eax, %%cr3\n\t" : :"r" (addr):);
+    load_page_directory(addr);
+	//asm("mov (%0), %%eax\n\t"
+		//"mov %%eax, %%cr3\n\t" : :"r" (addr):);
 }
 
 int pmm_get_first_free_s(uint32_t blocks){

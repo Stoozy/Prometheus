@@ -4,6 +4,7 @@
 
 #include <string.h>
 
+
 //! i86 architecture defines 1024 entries per table--do not change
 #define PAGE_SIZE   4096
 #define PAGES_PER_TABLE 1024
@@ -45,7 +46,20 @@ page_dir_t * _cur_dir;  // current page dir
 phys_addr	 _cur_pdbr; // current page dir base reg
 
 
-bool vmm_alloc_page(page_t * e){
+bool pte_set_frame(pte_t * e, phys_addr addr){
+    *e = (*e & ~I86_PTE_FRAME) | addr;
+}
+
+void pte_add_attrib(pte_t * e, uint32_t attr){
+    *e |= attr;
+}
+
+void pte_del_attrib(pte_t * e, uint32_t attr){
+    *e &= ~attr;
+}
+
+
+bool vmm_alloc_page(pte_t * e){
     //! allocate a free physical frame
     void* p = pmm_alloc_block();
     if (!p) return false;
@@ -57,14 +71,15 @@ bool vmm_alloc_page(page_t * e){
     return true;
 }
 
-void vmm_free_page (page_t * e){
-    void * p = (void *) pte_get_phys_addr(e);
+void vmm_free_page (pte_t * e){
+    void * p = (void *) PAGE_GET_PHYSICAL_ADDRESS(e);
     if(p) pmm_free_block(p);
     pte_del_attrib(e, I86_PTE_PRESENT);
 }
 
-page_t* vmm_ptable_lookup_entry (page_table_t* p, virt_addr addr){
-    if(p) return &p->m_entries[ PAGE_TABLE_INDEX (addr) ];
+pte_t* vmm_ptable_lookup_entry (page_table_t* p, virt_addr addr){
+    if(p) return &(*p[PAGE_TABLE_INDEX(addr)]);
+    //if(p) return &p->m_entries[ PAGE_TABLE_INDEX (addr) ];
     return 0;
 }
 
@@ -73,7 +88,7 @@ bool vmm_switch_pdirectory (page_dir_t* dir) {
         return false;
 
     _cur_dir = dir;
-    pmm_load_PDBR (_cur_pdbr);
+    pmm_load_PDBR (_cur_pdbr); // calls to load page dir assembly
     return true;
 }
 

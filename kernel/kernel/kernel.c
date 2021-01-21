@@ -82,6 +82,35 @@ void idpaging(uint32_t *first_pte, uint32_t from, int size) {
     }
 }
 
+void kernel_panic(const char * reason){
+    asm("cli");
+    terminal_initialize();
+    terminal_setcolor(0x1F);
+    terminal_panic();
+
+
+    printf("\n\n\n\n");
+
+    printf("                            ");
+
+    terminal_setcolor(0x71);
+    printf(" zos bruh moment \n");
+    printf("\n\n\n\n");
+
+    terminal_setcolor(0x1F);
+    printf("            ");
+    printf("zos crashed again. I am the blue screen of death. No one \n");
+
+    printf("            ");
+    printf("hears your screams.\n\n");
+
+    printf("            ");
+    printf("What happened: ");
+    printf(reason);
+
+    for(;;);
+}
+
 void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     terminal_initialize();
     printf("Initialized terminal\n");
@@ -129,7 +158,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     
     pmm_init(total_mem_size_kib);
 
-    printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
+    printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib,pmm_get_block_count());
 
 
     uint32_t i=0;
@@ -138,43 +167,92 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
         i++;
     }
-    printf("%d free physical blocks\n", pmm_get_free_block_count()) ;
-    uint32_t directories[1024] __attribute__((aligned(4096))); 
-    uint32_t first_tab[1024] __attribute__((aligned(4096)));
+    printf("%d free physical blocks\n", pmm_get_free_block_count());
 
-    // page map the first 4MiB
-    for(i=0; i<1024; i++){
-        first_tab[i] = (i*4096) | 3;
+
+    uint64_t page_dir_ptr_tab[4] __attribute__((aligned(0x20))); //must be aligned to (at least)0x20, ...
+    uint64_t page_dir[512] __attribute__((aligned(0x1000)));  // must be aligned to page boundary
+    uint64_t page_tab[512] __attribute__((aligned(0x1000)));
+
+    unsigned int address=0;
+    // mapping first 2 MiB
+    for(i = 0; i < 512; i++){
+        page_tab[i] = address | 3; // map address and mark it present/writable
+        address = address + 0x1000;
     }
 
-    // fill the rest of the memory (4MiB-4GiB)
-    directories[0]= ((uint32_t) first_tab)|3;
-    for(i=1; i<1023; i++){ // iterates directories
-        uint32_t offset=i*4096;
-        uint32_t table[1024] __attribute__((aligned(4096)));
-        for(int j=0; j<1024; j++){
-            table[j] = (offset + (j*4096))|3;
-        }
-        directories[i]= ((uint32_t)table)|3;
-    }
+    page_dir_ptr_tab[0] = (uint64_t)&page_dir | 1; // set the page directory into the PDPT and mark it present
+    page_dir[0] = (uint64_t)&page_tab | 3; //set the page table into the PD and mark it present/writable
+
+
+
+    asm volatile ("movl %%cr4, %%eax; bts $5, %%eax; movl %%eax, %%cr4" ::: "eax"); // set bit5 in CR4 to enable PAE         
+    asm volatile ("movl %0, %%cr3" :: "r" (&page_dir_ptr_tab)); // load PDPT into CR3
+
+    asm volatile ("movl %%cr0, %%eax; orl $0x80000000, %%eax; movl %%eax, %%cr0;" ::: "eax");
+
+    //uint32_t directories[1024] __attribute__((aligned(4096))); 
+    //uint32_t first_tab[1024] __attribute__((aligned(4096)));
+
+    //// page map the first 4MiB
+    //for(i=0; i<1024; i++){
+    //    first_tab[i] = (i*4096) | 3;
+    //}
+
+    //// fill the rest of the memory (4MiB-4GiB)
+    //directories[0]= ((uint32_t) first_tab)|3;
+    //for(i=1; i<1023; i++){ // iterates directories
+    //    uint32_t offset=i*4096;
+    //    uint32_t table[1024] __attribute__((aligned(4096)));
+    //    for(int j=0; j<1024; j++){
+    //        table[j] = (offset + (j*4096))|3;
+    //        phys_addr p = pmm_alloc_block();
+    //        if(p) printf("Next free block at 0x%x\n", p);
+    //    }
+    //    directories[i]= ((uint32_t)table)|3;
+    //}
+
+
     
-    load_page_directory((uint32_t *) &directories);
-    init_paging();
+    for(;;) asm("hlt");
+    //load_page_directory((uint32_t *) &directories);
+    //init_paging();
+
     printf("Paging is now enabled\n");
-    idpaging(&first_tab, 0, 1024*4096); // 4MiB
-    printf("Identity mapped first 4 MiB\n");
+    //idpaging(&first_tab, 0, 1024*4096); // 4MiB
+    //printf("Identity mapped first 4 MiB\n");
 
 
+    uint16_t target[256];
+    uint8_t     split[256][2];
+
+    //if(ATA_IDENTIFY(0xA0)){ // primary drive is ready
+    //    uint64_t lba=500;
+    //    //while(1){
+    //        read_sectors(&target, 0xA0, lba, 1);
+    //        for(int i=0; i<256; i++){
+    //            split[i][0]= target[i];
+    //            split[i][1]= target[i] << 8;
+    //            printf("%c %c ", split[i][0] , split[i][1]);
+    //        }
+    //        lba++;
+    //    //}
+    //    
+    //}
+    //kernel_panic("Test Panic\n");
+
+    printf("\n");
     read_rtc();
     terminal_setcolor(0xE); // yellow
-    printf("%s"," _ _ _     _                      _              _____ _____ \n");
-    printf("%s","| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
-    printf("%s","| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
-    printf("%s","|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
+    printf(" _ _ _     _                      _              _____ _____ \n");
+    printf("| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
+    printf("| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
+    printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
 
+    
 
-    //for(;;){
-        asm("hlt");
-    //}
+    //for(;;) asm("hlt");
+    asm("hlt");
+
 }

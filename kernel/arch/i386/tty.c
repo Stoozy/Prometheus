@@ -100,7 +100,14 @@ void terminal_putchar(char c) {
         return;
 	}
 }
-
+void terminal_panic(){
+    for(size_t r=0; r<VGA_HEIGHT; r++){
+        for(size_t c=0; c<VGA_WIDTH; c++){
+            size_t cur_idx = r*VGA_WIDTH +c;
+            terminal_buffer[cur_idx] =  vga_entry(' ', terminal_color);
+        }
+    }
+}
 void terminal_write(const char* data, size_t size) {
 	for (size_t i = 0; i < size; i++)
 		terminal_putchar(data[i]);
