@@ -20,18 +20,18 @@ static  uint32_t    _mmngr_mmap[32768]={0};
 static  uint64_t    _last_checked_idx = 0;
 
 void mmap_unset (int bit) { 
-    _clear_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
-    //_mmngr_mmap[bit / 32] &= ~ (1 << (bit % 32));
+  _clear_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
+  //_mmngr_mmap[bit / 32] &= ~ (1 << (bit % 32));
 }// unset block by unsetting corresponding bit
 
 void mmap_set (int bit) { 
-    //_set_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
-    _mmngr_mmap[bit / 32] |= (1 << (bit % 32));
+  //_set_bit(&_mmngr_mmap[bit/32], (uint32_t)bit);
+  _mmngr_mmap[bit / 32] |= (1 << (bit % 32));
 }// set block by setting corresponding bit
 
 
 bool mmap_is_set (int bit) { 
-    return _mmngr_mmap[bit / 32] &  (1 << (bit % 32));
+ return _mmngr_mmap[bit / 32] &  (1 << (bit % 32));
 } // checks if bit in bitmap is set
 
 
@@ -59,10 +59,12 @@ uint32_t pmm_get_free_block_count(){
  */
 void pmm_init(size_t mem_size){
     _mmngr_mem_size = mem_size;
-    _mmngr_max_blocks =  (mem_size*1024/BLOCK_SIZE); 
+    //_mmngr_mmap	=	(uint32_t*) bitmap;
     _mmngr_used_blocks = _pmm_get_block_count(); 
+    _mmngr_max_blocks =  (mem_size*1024/BLOCK_SIZE); 
 
-    //! By default, all of memory is used
+    //! By default, all of memory is free 
+
     memset (_mmngr_mmap, 0xff, _pmm_get_block_count() / BLOCKS_PER_BYTE);
 }
 
@@ -99,14 +101,13 @@ void pmm_destroy_region(phys_addr base, size_t size){
 
 int pmm_get_first_free(){
     //! find the first free bit
-    //// iterates over bitmaps
-
-    //for (uint64_t i=0; i< (_pmm_get_block_count() / 32); i++){         
-    while(_last_checked_idx != 32768){
+    //for (uint64_t i=0; i< (_pmm_get_block_count() / 32); i++){ // iterates over bitmaps
+    while(_last_checked_idx != _pmm_get_block_count()/32){
         if (_mmngr_mmap[_last_checked_idx] != 0xffffffff){
             for (int j=0; j<32; j++) {		//! test each bit in the dword
+
                 if(!(mmap_is_set(_last_checked_idx))){
-                    _last_checked_idx++;
+                    printf("Found free block\n");
                     return _last_checked_idx*32+j;
                 }
                 //int bit = 1 << j;
@@ -116,9 +117,7 @@ int pmm_get_first_free(){
         }
         _last_checked_idx++;
     }
-
     _last_checked_idx = 0;
-
 	// no free blocks available 
 	return -1;
 }

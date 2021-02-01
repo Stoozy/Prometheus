@@ -108,6 +108,7 @@ void kernel_panic(const char * reason){
     printf("What happened: ");
     printf(reason);
 
+    // hang
     for(;;);
 }
 
@@ -138,7 +139,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
         entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
         if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
-            printf("Entry #%d:\n", entries)	;
             printf("    Size: %d\n", entry->size); 
             printf("    Address: 0x%x\n", entry->addr);
             printf("    Length: %lluMiB\n", (entry->len/(1024*1024)));
@@ -167,67 +167,48 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
         i++;
     }
+    
     printf("%d free physical blocks\n", pmm_get_free_block_count());
 
-    //uint32_t directories[1024] __attribute__((aligned(4096))); 
-    //uint32_t first_tab[1024] __attribute__((aligned(4096)));
+    uint32_t directories[1024] __attribute__((aligned(4096))); 
+    uint32_t first_tab[1024] __attribute__((aligned(4096)));
 
-    //// page map the first 4MiB
-    //for(i=0; i<1024; i++){
-    //    first_tab[i] = (i*4096) | 3;
-    //}
+    // page map the first 4MiB
+    for(i=0; i<1024; i++){
+        first_tab[i] = (i*4096) | 3;
+    }
 
-    //// fill the rest of the memory (4MiB-4GiB)
-    //directories[0]= ((uint32_t) first_tab)|3;
-    //for(i=1; i<1023; i++){ // iterates directories
-    //    uint32_t offset=i*4096;
-    //    uint32_t table[1024] __attribute__((aligned(4096)));
-    //    for(int j=0; j<1024; j++){
-    //        table[j] = (offset + (j*4096))|3;
-    //        phys_addr p = pmm_alloc_block();
-    //        if(p) printf("Next free block at 0x%x\n", p);
-    //    }
-    //    directories[i]= ((uint32_t)table)|3;
-    //}
+      // fill the rest of the memory (4MiB-4GiB)
+    directories[0]= ((uint32_t) first_tab)|3;
+    for(i=1; i<1022; i++){ // iterates directories
+        uint32_t offset=i*4096;
+        uint32_t table[1024] __attribute__((aligned(4096)));
+        for(int j=0; j<1024; j++){
+            table[j] = (offset + ( j*4096)) | 3;
+            phys_addr p = pmm_alloc_block();
+            if(!p) printf("Failed at Directory #%d Page #%d\n", i, j);
+        }
+        directories[i]= ((uint32_t)table)|3;
+    }
 
 
     
-    //load_page_directory((uint32_t *) &directories);
-    //init_paging();
+    load_page_directory((uint32_t *) &directories);
+    init_paging();
 
-    //printf("Paging is now enabled\n");
-    //idpaging(&first_tab, 0, 1024*4096); // 4MiB
-    //printf("Identity mapped first 4 MiB\n");
-
-
-    //uint16_t target[256];
-    //uint8_t     split[256][2];
-
-    //if(ATA_IDENTIFY(0xA0)){ // primary drive is ready
-    //    uint64_t lba=500;
-    //    //while(1){
-    //        read_sectors(&target, 0xA0, lba, 1);
-    //        for(int i=0; i<256; i++){
-    //            split[i][0]= target[i];
-    //            split[i][1]= target[i] << 8;
-    //            printf("%c %c ", split[i][0] , split[i][1]);
-    //        }
-    //        lba++;
-    //    //}
-    //    
-    //}
-    //kernel_panic("Test Panic\n");
+    idpaging(&first_tab, 0, 1024*4096); // 4MiB
+    printf("Identity mapped first 4 MiB\n");
+    printf("Paging is now enabled\n");
 
     printf("\n");
     read_rtc();
+
     terminal_setcolor(0xE); // yellow
     printf(" _ _ _     _                      _              _____ _____ \n");
     printf("| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
     printf("| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
     printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
-
-    
 
     for(;;) asm("hlt");
 }
