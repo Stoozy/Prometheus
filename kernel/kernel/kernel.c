@@ -49,39 +49,6 @@ static inline bool are_ints_enabled(){
     return flags & (1 << 9);
 }
 
-int oct2bin(unsigned char *str, int size) {
-    int n = 0;
-    unsigned char *c = str;
-    while (size-- > 0) {
-        n *= 8;
-        n += *c - '0';
-        c++;
-    }
-    return n;
-}
-
-/* returns file size and pointer to file data in out */
-int tar_lookup(unsigned char *archive, char *filename, char **out) {
-    unsigned char *ptr = archive;
- 
-    while (!memcmp(ptr + 257, "ustar", 5)) {
-        int filesize = oct2bin(ptr + 0x7c, 11);
-        if (!memcmp(ptr, filename, strlen(filename) + 1)) {
-            *out = ptr + 512;
-            return filesize;
-        }
-        ptr += (((filesize + 511) / 512) + 1) * 512;
-    }
-    return 0;
-}
-
-void idpaging(uint32_t *first_pte, uint32_t from, int size) {
-    from = from & 0xfffff000; // discard bits we don't want
-    for(; size>0; from += 4096, size -= 4096, first_pte++){
-       *first_pte = from | 1;     // mark page present.
-    }
-}
-
 void kernel_panic(const char * reason){
     asm("cli");
     terminal_initialize();
@@ -155,7 +122,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024))); // converto MiB
 
     //printf("End of kernel is at: 0x%x\n",ekernel );
-    
     pmm_init(total_mem_size_kib);
 
     printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib,pmm_get_block_count());
@@ -163,42 +129,25 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     uint32_t i=0;
     while(avail_mmap[i][1] != 0){
-        //printf("Addr: 0x%x Size: %ld KiB\n", avail_mmap[i][0], avail_mmap[i][1]);
+        printf("Addr: 0x%x Size: %lu KiB\n", avail_mmap[i][0], avail_mmap[i][1]);
         pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
         i++;
     }
     
     printf("%d free physical blocks\n", pmm_get_free_block_count());
 
-    uint32_t directories[1024] __attribute__((aligned(4096))); 
-    uint32_t first_tab[1024] __attribute__((aligned(4096)));
-
-    // page map the first 4MiB
-    for(i=0; i<1024; i++){
-        first_tab[i] = (i*4096) | 3;
+    uint32_t addr = pmm_alloc_block();
+    if(!addr)  printf("allocation failed\n");
+    else{
+        char * ptr = (char *)addr;
+        ptr[0] = 'H';
+        ptr[1] = 'e';
+        ptr[2] = 'l';
+        ptr[3] = 'l';
+        ptr[4] = 'o';
+        ptr[5] = '\0';
+        printf(ptr);
     }
-
-      // fill the rest of the memory (4MiB-4GiB)
-    directories[0]= ((uint32_t) first_tab)|3;
-    for(i=1; i<1022; i++){ // iterates directories
-        uint32_t offset=i*4096;
-        uint32_t table[1024] __attribute__((aligned(4096)));
-        for(int j=0; j<1024; j++){
-            table[j] = (offset + ( j*4096)) | 3;
-            phys_addr p = pmm_alloc_block();
-            if(!p) printf("Failed at Directory #%d Page #%d\n", i, j);
-        }
-        directories[i]= ((uint32_t)table)|3;
-    }
-
-
-    
-    load_page_directory((uint32_t *) &directories);
-    init_paging();
-
-    idpaging(&first_tab, 0, 1024*4096); // 4MiB
-    printf("Identity mapped first 4 MiB\n");
-    printf("Paging is now enabled\n");
 
     printf("\n");
     read_rtc();
@@ -210,6 +159,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
 
-    for(;;) asm("hlt");
+    //for(;;) asm("hlt");
+    asm("hlt");
 }
-

@@ -10,6 +10,6 @@ char* itoa(int32_t value, char* buffer, int base);
 char* lltoa(int64_t value, char* buffer, int base);
 char* ulltoa(uint64_t value, char* buffer, int base);
 
-void _set_bit(uint32_t * word, uint32_t bit);
-void _clear_bit(uint32_t * word, uint32_t bit);
-bool _check_bit(uint32_t * word, uint32_t bit);
+void _set_bit(uint8_t * word, uint8_t bit);
+void _clear_bit(uint8_t * word, uint8_t bit);
+bool _check_bit(uint8_t * word, uint8_t bit);
