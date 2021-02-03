@@ -53,6 +53,7 @@ char * datetime_to_str(datetime_t * dt){
     char min[3];
     char sec[3];
 
+    current_time = dt;
     date[2]     = '\0';
     month[2]    = '\0';
     year[2]     = '\0';

@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/util.h>
 #include <kernel/ata.h>
 #include <kernel/pmm.h>
+#include <kernel/vmm.h>
 #include <kernel/paging.h>
 
 //#include <kernel/vmm.h>
@@ -34,12 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 void Sleep(uint32_t ms);
 void ATA_WAIT_INT();
-uint32_t placement_address = 0;
 
-extern void load_page_directory(uint32_t *);
-extern void init_paging();
-extern uint32_t ekernel;
-extern uint32_t sbss;
 
 typedef struct multiboot_mmap_entry mmap_entry_t;
 
@@ -47,6 +43,10 @@ static inline bool are_ints_enabled(){
     uint64_t flags;
     asm volatile("pushf\n\t" "pop %0" : "=g"(flags));
     return flags & (1 << 9);
+}
+
+void hang(){
+    for(;;) asm("hlt");
 }
 
 void kernel_panic(const char * reason){
@@ -124,7 +124,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     //printf("End of kernel is at: 0x%x\n",ekernel );
     pmm_init(total_mem_size_kib);
 
-    printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib,pmm_get_block_count());
+    printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
 
 
     uint32_t i=0;
@@ -136,18 +136,26 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     
     printf("%d free physical blocks\n", pmm_get_free_block_count());
 
+
     uint32_t addr = pmm_alloc_block();
     if(!addr)  printf("allocation failed\n");
     else{
+        printf("Found a block at: 0x%x\n", addr);
         char * ptr = (char *)addr;
         ptr[0] = 'H';
         ptr[1] = 'e';
         ptr[2] = 'l';
         ptr[3] = 'l';
         ptr[4] = 'o';
-        ptr[5] = '\0';
+        ptr[5] = ' ';
+        ptr[6] = 'p';
+        ptr[7] = 'm';
+        ptr[8] = 'm';
+        ptr[9] = '\0';
         printf(ptr);
     }
+
+
 
     printf("\n");
     read_rtc();
@@ -159,6 +167,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
 
-    //for(;;) asm("hlt");
-    asm("hlt");
+    vmm_init();
+
+    for(;;) asm("hlt");
 }

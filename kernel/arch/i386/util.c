@@ -125,17 +125,14 @@ char* itoa(int32_t value, char* buffer, int base)
 }
  
 void _set_bit(uint8_t *word, uint8_t bit ){
-    *word |= (1 << bit);
-    return;
-}
-void _clear_bit(uint8_t *word, uint8_t  bit){
-    *word &= ~(1 << bit);
-    return;
+    return *word |= (1 << bit);
 }
 
+void _clear_bit(uint8_t *word, uint8_t  bit){
+    return *word &= ~(1 << bit);
+}
 
 bool _check_bit(uint8_t * word, uint8_t bit){
     return *word & (1 << bit);
 }
-
 
