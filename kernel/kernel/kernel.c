@@ -169,5 +169,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     vmm_init();
 
-    for(;;) asm("hlt");
+    //for(;;) asm("hlt");
+    asm("hlt");
 }
