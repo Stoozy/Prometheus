@@ -29,7 +29,7 @@ _start:
     pushl %ebx
 
 	# Call the global constructors.
-    # call _init 
+    call _init 
 
 	# Transfer control to the main kernel.
 	call kernel_main

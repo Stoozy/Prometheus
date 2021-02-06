@@ -23,7 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/vmm.h>
 #include <kernel/paging.h>
 
-//#include <kernel/vmm.h>
 
 #include "multiboot.h"
 
@@ -158,6 +157,10 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
 
     printf("\n");
+    vmm_init();
+
+    printf("VMM initialized\n");
+
     read_rtc();
 
     terminal_setcolor(0xE); // yellow
@@ -167,8 +170,8 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
 
-    vmm_init();
 
-    //for(;;) asm("hlt");
+    
     asm("hlt");
 }
+

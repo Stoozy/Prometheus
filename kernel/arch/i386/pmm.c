@@ -42,7 +42,13 @@ void pmm_init(){
 
 
 void pmm_init_region(void * addr, size_t size){
-    uint32_t start_frame = (uint32_t)addr/BLOCK_SIZE;
+    uint32_t start_frame = ((uint32_t)addr)/BLOCK_SIZE;
+    if(start_frame == 0){
+        // start freeing from 4MiB
+        start_frame = (1024*1024*4)/BLOCK_SIZE;
+        printf("Starting at frame #%d instead of 0\n", start_frame);
+    }
+
     uint32_t end_frame = start_frame + size/BLOCK_SIZE;
     
     for(uint32_t i=start_frame; i<end_frame; i++){

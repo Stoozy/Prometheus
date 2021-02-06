@@ -27,6 +27,8 @@ void terminal_initialize(void) {
 			terminal_buffer[index] = vga_entry(' ', terminal_color);
 		}
 	}
+
+    printf("Refreshed frambuffer\n");
 }
 
 void terminal_setcolor(uint8_t color) {
