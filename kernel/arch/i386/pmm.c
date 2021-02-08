@@ -156,9 +156,8 @@ void * pmm_alloc_block(){
 }
 
 
-void  pmm_free_blocks(uint32_t addr, uint32_t blocks){
-
-}
+// TODO
+void  pmm_free_blocks(uint32_t addr, uint32_t blocks);
 
 void pmm_free_block(uint32_t addr){
     int block =  addr/BLOCK_SIZE;

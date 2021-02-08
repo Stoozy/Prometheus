@@ -26,7 +26,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "multiboot.h"
 
-#define INT_MAX 2147483647
 
 #define PAGE_PRESENT    0
 #define PAGE_RW         1
@@ -150,13 +149,14 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         ptr[6] = 'p';
         ptr[7] = 'm';
         ptr[8] = 'm';
-        ptr[9] = '\0';
+        ptr[9] = '\n';
+        ptr[10] = '\0';
         printf(ptr);
     }
 
+    
+    pmm_free_block(addr);
 
-
-    printf("\n");
     vmm_init();
 
     printf("VMM initialized\n");
@@ -171,7 +171,31 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     terminal_setcolor(0xF); // white
 
 
+    vmm_dump_list();
+    char * test = vmm_alloc_page();
+    test[0] = 'H';
+    test[1] = 'e';
+    test[2] = 'l';
+    test[3] = 'l';
+    test[4] = 'o';
+    test[5] = ' ';
+    test[6] = 'v';
+    test[7] = 'm';
+    test[8] = 'm';
+    test[9] = '\n';
+    test[10] = '\0';
+
+    printf(test);
+
     
+    char * test1 = vmm_alloc_page();
+
+    vmm_dump_list();
+
+    vmm_free_page((virt_addr)(test), 0x1000);
+
+    vmm_dump_list();
+
     asm("hlt");
 }
 
