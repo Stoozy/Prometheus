@@ -29,6 +29,7 @@ void pte_add_attrib(pte_t * e, uint32_t );
 void pte_del_attrib(pte_t * e, uint32_t );
 
 void * vmm_alloc_page();
+void * vmm_alloc_pages(int n);
 void vmm_free_page (virt_addr , size_t);
 void vmm_flush_tlb_entry (void * addr);
 void vmm_map_page (void* phys, pte_t * virt);

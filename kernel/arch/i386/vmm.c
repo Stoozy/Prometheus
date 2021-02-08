@@ -49,6 +49,14 @@ void * kmalloc(size_t size){
     return p;
 }
 
+void * vmm_alloc_pages(int n){
+    if(freelist->size >= n*PAGE_SIZE){
+        // put start address at next page
+        freelist->start += n*PAGE_SIZE;
+        freelist->size -= n*PAGE_SIZE;
+    } else kernel_panic("Out of memory!");
+    return (void*)(freelist->start-(n*PAGE_SIZE));
+}
 
 void * vmm_alloc_page() {
     if(freelist->size != 0){

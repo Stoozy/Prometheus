@@ -15,8 +15,8 @@ This is a hobby OS made by yours truly, stoozy.
 - [ ] Keyboard Driver
 - [ ] Mouse Driver
 - [x] PMM
-- [ ] VMM
-- [ ] Heap allocator
+- [x] VMM
+- [x] Heap allocator
 - [ ] ATA PIO/DMA
 - [ ] VFS
 - [ ] Ext2 FS 

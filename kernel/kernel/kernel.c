@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/pmm.h>
 #include <kernel/vmm.h>
 #include <kernel/paging.h>
+#include <kernel/liballoc.h>
 
 
 #include "multiboot.h"
@@ -134,29 +135,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     
     printf("%d free physical blocks\n", pmm_get_free_block_count());
 
-
-    uint32_t addr = pmm_alloc_block();
-    if(!addr)  printf("allocation failed\n");
-    else{
-        printf("Found a block at: 0x%x\n", addr);
-        char * ptr = (char *)addr;
-        ptr[0] = 'H';
-        ptr[1] = 'e';
-        ptr[2] = 'l';
-        ptr[3] = 'l';
-        ptr[4] = 'o';
-        ptr[5] = ' ';
-        ptr[6] = 'p';
-        ptr[7] = 'm';
-        ptr[8] = 'm';
-        ptr[9] = '\n';
-        ptr[10] = '\0';
-        printf(ptr);
-    }
-
-    
-    pmm_free_block(addr);
-
     vmm_init();
 
     printf("VMM initialized\n");
@@ -170,31 +148,13 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
     terminal_setcolor(0xF); // white
 
+    char * malloc_test = malloc(sizeof(char));
+    malloc_test[0] = 'O';
 
-    vmm_dump_list();
-    char * test = vmm_alloc_page();
-    test[0] = 'H';
-    test[1] = 'e';
-    test[2] = 'l';
-    test[3] = 'l';
-    test[4] = 'o';
-    test[5] = ' ';
-    test[6] = 'v';
-    test[7] = 'm';
-    test[8] = 'm';
-    test[9] = '\n';
-    test[10] = '\0';
+    char * realloc_test = realloc((void*)malloc_test, 2*sizeof(char));
+    realloc_test[1] = 'K';
 
-    printf(test);
-
-    
-    char * test1 = vmm_alloc_page();
-
-    vmm_dump_list();
-
-    vmm_free_page((virt_addr)(test), 0x1000);
-
-    vmm_dump_list();
+    printf("%c%c", realloc_test[0], realloc_test[1]);
 
     asm("hlt");
 }
