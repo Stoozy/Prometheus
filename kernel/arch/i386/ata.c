@@ -1,6 +1,7 @@
 #include <kernel/typedefs.h>
 #include <kernel/io.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define DRIVE_SELECT_PORT 	0x1F6
 #define SECTOR_COUNT_PORT 	0x1F2

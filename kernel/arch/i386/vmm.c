@@ -3,6 +3,7 @@
 #include <kernel/util.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #define PAGE_ENTRIES            1024
 #define PAGE_SIZE               4096

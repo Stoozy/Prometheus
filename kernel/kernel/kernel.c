@@ -50,7 +50,6 @@ void hang(){
 }
 
 
-
 void kernel_panic(const char * reason){
     asm("cli");
     terminal_initialize();
@@ -99,12 +98,10 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("MMAP_ADDR: 0x%x \nMEM_LOW:%d\nMEM_UPPER:%d\n", mbd->mmap_addr, mbd->mem_lower, mbd->mem_upper);
 
     uint32_t avail_mmap[3][2]= {0}; // first col: addr, second col: size
-    uint64_t ll = 32768 *1024;
 
     int entries = 0, avail_entries=0;
     mmap_entry_t* entry = mbd->mmap_addr;
     uint64_t total_mem_size_kib =0;
-    uint32_t mem_end_page=0;
     while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
         entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
         if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
@@ -132,7 +129,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     uint32_t i=0;
     while(avail_mmap[i][1] != 0){
         printf("Addr: 0x%x Size: %lu KiB\n", avail_mmap[i][0], avail_mmap[i][1]);
-        pmm_init_region(avail_mmap[i][0], avail_mmap[i][1]);
+        pmm_init_region((void*)avail_mmap[i][0], avail_mmap[i][1]);
         i++;
     }
     
@@ -141,15 +138,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     vmm_init();
 
     printf("VMM initialized\n");
-
-    read_rtc();
-
-    terminal_setcolor(0xE); // yellow
-    printf(" _ _ _     _                      _              _____ _____ \n");
-    printf("| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
-    printf("| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
-    printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
-    terminal_setcolor(0xF); // white
 
     char * malloc_test = malloc(sizeof(char));
     malloc_test[0] = 'O';
@@ -162,6 +150,17 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     free(realloc_test);
 
     pci_init();
+
+
+    read_rtc();
+
+    terminal_setcolor(0xE); // yellow
+    printf(" _ _ _     _                      _              _____ _____ \n");
+    printf("| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
+    printf("| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
+    printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
+    terminal_setcolor(0xF); // white
+
 
     hang();
 }

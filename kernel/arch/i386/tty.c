@@ -1,7 +1,8 @@
 #include <stdbool.h>
 #include <stddef.h>
-//#include <stdint.h>
 #include <string.h>
+#include <stdio.h>
+
 
 #include <kernel/tty.h>
 #include "vga.h"

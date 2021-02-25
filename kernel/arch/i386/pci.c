@@ -1,5 +1,6 @@
 #include <kernel/typedefs.h>
 #include <kernel/pci.h>
+#include <stdio.h>
 
 uint16_t  pci_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
     uint32_t address;
