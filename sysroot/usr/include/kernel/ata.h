@@ -1,5 +1,6 @@
 #include <kernel/typedefs.h>
 #include <kernel/io.h>
+#include <stdbool.h>
 
 #define DRIVE_SELECT_PORT 	0x1F6
 #define SECTOR_COUNT_PORT 	0x1F2
@@ -11,6 +12,7 @@
 
 
 
+void ata_irq();
 void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector);
 void write_sectors(uint16_t * data, uint8_t sector, uint32_t LBA);
 bool ATA_IDENTIFY( uint8_t drive);

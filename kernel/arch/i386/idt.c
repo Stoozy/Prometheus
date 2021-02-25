@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <kernel/kbd.h>
 #include <kernel/io.h>
+#include <kernel/ata.h>
 
 static uint64_t _ticks = 0;
-static uint64_t _ATA_INTS = 0;
 
 
 void Sleep(uint32_t ms){
@@ -13,11 +13,6 @@ void Sleep(uint32_t ms){
 	while(_ticks < eticks){
 		__asm__("nop"); // empty while loop doesn't work for some reason
 	};
-}
-
-void ATA_WAIT_INT(){
-    int next = _ATA_INTS+1;
-    while(_ATA_INTS != next);
 }
 
 struct IDT_entry{
@@ -300,11 +295,7 @@ void irq13_handler(void) {
 }
  
 void irq14_handler(void) {
-    _ATA_INTS++;  
-    uint8_t status = inb(0x1F7);
-
-    printf("\nRecieved IRQ from Primary ATA drive\n");
-    printf("Status is: %d\n", status);
+    ata_irq();    
     outb(0xA0, 0x20);
     outb(0x20, 0x20); //EOI
 }

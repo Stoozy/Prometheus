@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/vmm.h>
 #include <kernel/paging.h>
 #include <kernel/liballoc.h>
+#include <kernel/pci.h>
 
 
 #include "multiboot.h"
@@ -47,6 +48,8 @@ static inline bool are_ints_enabled(){
 void hang(){
     for(;;) asm("hlt");
 }
+
+
 
 void kernel_panic(const char * reason){
     asm("cli");
@@ -154,8 +157,13 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     char * realloc_test = realloc((void*)malloc_test, 2*sizeof(char));
     realloc_test[1] = 'K';
 
-    printf("%c%c", realloc_test[0], realloc_test[1]);
+    printf("%c%c\n", realloc_test[0], realloc_test[1]);
+    
+    free(realloc_test);
 
-    asm("hlt");
+    pci_init();
+
+    hang();
 }
+
 

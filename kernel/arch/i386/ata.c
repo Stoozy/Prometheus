@@ -16,7 +16,18 @@
 #define STATUS_DF 0x20
 #define STATUS_ERR 0x01
 
+bool irq_fired = false;
 
+void ata_irq(){
+    printf("ATA IRQ Fired!\n");
+    irq_fired = true;
+}
+
+void wait_for_irq(){
+    while(!irq_fired);
+    irq_fired = false;
+    return;
+}
 
 void ATA_WAIT_BSY(){
     while(inb(STATUS_CMD_REG) & STATUS_BSY){
@@ -43,7 +54,7 @@ bool ATA_IDENTIFY(uint8_t drive){
 
     uint8_t status = inb(0x1F7);
     //printf("Status for Disk%d\n", status);
-    return !(status == 0); 
+    return !(status == 0);
 }
 
 /*
@@ -52,21 +63,22 @@ bool ATA_IDENTIFY(uint8_t drive){
  *
  */
 void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector_count){ 
-    if(drive == 0xA0){
-        drive = 0xE0;
-    }else drive = 0xF0; // assume it's a slave drive
+    //if(drive == 0xA0){
+        //drive = 0xE0;
+    //}else drive = 0xF0; // assume it's a slave drive
 
+    
     outb(DRIVE_SELECT_PORT, drive | 1 << 4 |((LBA >> 24) & 0x0F));
     outb(SECTOR_COUNT_PORT, sector_count);
-    outb(LBA_LO_PORT, LBA);
-    outb(LBA_MID_PORT, LBA >> 8);
-    outb(LBA_HI_PORT, LBA >> 16);
+    outb(LBA_LO_PORT, (uint8_t)LBA);
+    outb(LBA_MID_PORT, (uint8_t)(LBA >> 8));
+    outb(LBA_HI_PORT, (uint8_t)(LBA >> 16));
     outb(STATUS_CMD_REG, 0x20);     // Read command
     
-    ATA_WAIT_BSY();
-    ATA_WAIT_RDY();
     printf("drive status: %d\n", inb(STATUS_CMD_REG));
     for(int i=0; i<sector_count;i++){
+        // wait for IRQ
+        wait_for_irq();
         for(int j=0; j<256; j++)
             target[j]=inw(0x1F0);
         target+=256;
@@ -87,6 +99,7 @@ void write_sectors(uint16_t * data, uint8_t sector_count, uint32_t LBA){
     outb(LBA_LO_PORT, LBA);
     outb(LBA_MID_PORT, LBA >> 8);
     outb(LBA_HI_PORT, LBA >> 16);
+    outb(DRIVE_SELECT_PORT, 0x40);  // magic
     outb(STATUS_CMD_REG, 0x30);     // Write command
     
     for(int i=0; i<sector_count; i++){
