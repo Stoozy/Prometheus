@@ -22,6 +22,16 @@ uint16_t  pci_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
 
 }
 
+uint16_t pci_get_class_id(uint16_t bus, uint16_t slot, uint16_t func) {
+    uint16_t class = pci_read(bus, slot, func, 0xA);
+    return (class & 0xff00 ) >> 8;
+}
+
+
+uint16_t pci_get_subclass_id(uint16_t bus, uint16_t slot, uint16_t func) {
+    uint16_t class = pci_read(bus, slot, func, 0xA);
+    return (class & 0x00ff);
+}
 
 uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
     uint16_t vendor, device;
@@ -30,13 +40,17 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
     for(uint8_t function = 0; function<8; ++function){
         if ((vendor = pci_read(bus,slot,function, 0)) != 0xFFFF) {
             device = pci_read(bus,slot,function, 2);
-            uint16_t class = pci_read(bus, slot, function, 10); 
+
+            uint16_t class = pci_get_class_id(bus, slot, function); 
+            uint16_t subclass = pci_get_subclass_id(bus, slot, function); 
+            
             printf("Got device:\n");
             printf("    vendor id: 0x%x\n", vendor);
             printf("    device id: 0x%x\n", device);
-            printf("    class: 0x%x\n", (uint8_t) class );
-            printf("    subclass: 0x%x\n", (uint8_t) class << 8);
+            printf("    class: 0x%x\n", class );
+            printf("    subclass: 0x%x\n",  subclass);
             printf("\n");
+
             Sleep(1000);
         }
     } 
