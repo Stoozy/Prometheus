@@ -1,6 +1,8 @@
 #include <kernel/typedefs.h>
 #include <kernel/pci.h>
 #include <stdio.h>
+#include <kernel/io.h>
+#include <stdlib.h>
 
 uint16_t  pci_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
     uint32_t address;
@@ -98,15 +100,50 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
 }
 
 
+device_t * pci_search(uint16_t _class, uint16_t _subclass, uint8_t _prog_if){
+
+    for(uint32_t bus=0; bus<256; ++bus){
+        for(uint8_t slot = 0; slot < 32; ++slot) {
+            for(uint8_t function = 0; function<8; ++function){
+                uint16_t device, vendor;
+                if ((vendor = pci_read(bus,slot,function, 0)) != 0xFFFF) {
+                    device = pci_read(bus,slot,function, 2);
+
+                    uint16_t class = pci_read(bus, slot, function, 0xA) & (0xff00) >> 8; 
+                    uint16_t subclass = pci_read(bus, slot, function, 0xA) & (0x00ff); 
+                    uint16_t prog_if = pci_read(bus, slot, function, 0x8) & (0xff00) >> 8;
+
+                    if(class == _class && subclass == _subclass && _prog_if == prog_if){
+                        device_t * found_device = (device_t*) malloc(sizeof(device_t));
+
+                        found_device->vendor_id = vendor;
+                        found_device->device_id = device;
+                        found_device->bus = bus;
+                        found_device->slot = slot;
+                        found_device->function = function;
+                        found_device->mainclass = class;
+                        found_device->subclass = subclass;
+                        found_device->prog_if = prog_if;
+
+                        return found_device;
+                    }
+                    
+                    Sleep(1000);
+                }
+            }
+        }
+    }
+
+    return 0x0;
+}
+
 
 void pci_init(){
     for(uint32_t bus=0; bus<256; ++bus){
         uint8_t device;
         for(device = 0; device < 32; device++) {
-            uint16_t vendorID = pci_check_vendor(bus, device);
+            pci_check_vendor(bus, device);
         }
     }
 }
-
-
 

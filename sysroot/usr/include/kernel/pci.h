@@ -1,18 +1,40 @@
 #include <kernel/typedefs.h>
 
+
+
+struct PCIInfo{
+	uint16_t deviceID;
+	uint16_t vendorID;
+	
+	uint8_t bus;
+	uint8_t slot;
+	uint8_t func;
+
+	uint8_t classCode;
+	uint8_t subclass;
+	uint8_t progIf;
+};
+
+
 typedef struct device {
-    uint8_t vendor_id;
-    uint8_t device_id;
-    uint8_t status;
-    uint8_t command;
-    uint8_t prog_if_rev_id;
-    uint8_t class_data;
-    uint8_t bist_header;
-    uint8_t cls_lt;
+    uint16_t vendor_id;
+    uint16_t device_id;
+
+    uint8_t bus;
+    uint8_t slot;
+    uint8_t function;
+
+    uint8_t mainclass;
+    uint8_t subclass;
+    uint8_t prog_if;
+
 } device_t; 
+
+device_t * pci_search(uint16_t mainclass, uint16_t subclass, uint8_t prog_if);
 
 uint16_t  pci_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset);
 uint16_t pci_check_vendor(uint8_t bus, uint8_t slot);
 void pci_check_bus(uint8_t bus);
 void pci_init();
+
 

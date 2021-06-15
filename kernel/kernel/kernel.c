@@ -33,7 +33,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define PAGE_RW         1
 
 
-void Sleep(uint32_t ms);
 void ATA_WAIT_INT();
 
 
@@ -83,12 +82,11 @@ void kernel_panic(const char * reason){
 void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     terminal_initialize();
     printf("Initialized terminal\n");
-    init_gdt();
 
+    init_gdt();
     init_idt();
 
     printf("Kernel main loaded at: 0x%x\n", kernel_main);
-
     printf("magic is: %x\n", magic);
 
     bool interrupt_status  = are_ints_enabled();
@@ -121,7 +119,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024))); // converto MiB
 
-    //printf("End of kernel is at: 0x%x\n",ekernel );
     pmm_init(total_mem_size_kib);
 
     printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
@@ -150,7 +147,15 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     
     free(realloc_test);
 
-    pci_init();
+    //pci_init();
+
+    // search
+    //if(pci_search(0x01, 0x05, 0x20) != 0x0 || pci_search(0x01, 0x05, 0x30) != 0x0){
+    //    printf("ATA Controller found!");
+    //}
+    
+    //device_t * device = pci_search(0x01, 0x05, 0x20);
+    //printf("0x%x\n", device);
 
     read_rtc();
 

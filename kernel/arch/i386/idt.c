@@ -1,4 +1,3 @@
-
 #include <kernel/typedefs.h>
 #include <stdio.h>
 #include <kernel/kbd.h>
