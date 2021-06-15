@@ -78,13 +78,16 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
         if ((vendor = pci_read(bus,slot,function, 0)) != 0xFFFF) {
             device = pci_read(bus,slot,function, 2);
 
-            //uint16_t class = pci_read(bus, slot, function, 0xA) & (0xff00); 
-            //uint16_t subclass = pci_read(bus, slot, function, 0xA) & (0x00ff); 
-            //uint32_t bar4 = pci_get_bar(bus, slot, function, 4);
+            uint16_t class = pci_read(bus, slot, function, 0xA) & (0xff00) >> 8; 
+            uint16_t subclass = pci_read(bus, slot, function, 0xA) & (0x00ff); 
+            uint16_t prog_if = pci_read(bus, slot, function, 0x8) & (0xff00) >> 8;
             
             printf("Got device:\n");
+            printf("    class: 0x%x\n", class);
+            printf("    subclass: 0x%x\n", subclass);
             printf("    vendor id: 0x%x\n", vendor);
             printf("    device id: 0x%x\n", device);
+            printf("    prog IF: 0x%x\n", prog_if);
             printf("\n");
 
             Sleep(1000);
