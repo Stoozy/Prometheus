@@ -6,10 +6,10 @@ mkdir -p isodir
 mkdir -p isodir/boot
 mkdir -p isodir/boot/grub
 
-cp sysroot/boot/zos.kernel isodir/boot/zos.kernel
+cp sysroot/boot/dead.kernel isodir/boot/dead.kernel
 cat > isodir/boot/grub/grub.cfg << EOF
-menuentry "zOS" {
-	multiboot /boot/zos.kernel
+menuentry "Dead OS" {
+	multiboot /boot/dead.kernel
 }
 EOF
-grub-mkrescue -o zos.iso isodir
+grub-mkrescue -o dead_os.iso isodir

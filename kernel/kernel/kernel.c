@@ -102,6 +102,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     int entries = 0, avail_entries=0;
     mmap_entry_t* entry = mbd->mmap_addr;
     uint64_t total_mem_size_kib =0;
+
     while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
         entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
         if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
@@ -155,10 +156,8 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     read_rtc();
 
     terminal_setcolor(0xE); // yellow
-    printf(" _ _ _     _                      _              _____ _____ \n");
-    printf("| | | |___| |___ ___ _____ ___   | |_ ___    ___|     |   __|\n");
-    printf("| | | | -_| |  _| . |     | -_|  |  _| . |  |- _|  |  |__   |\n");
-    printf("|_____|___|_|___|___|_|_|_|___|  |_| |___|  |___|_____|_____|\n");
+
+    printf("Dead OS\n");
     terminal_setcolor(0xF); // white
 
 

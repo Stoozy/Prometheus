@@ -1,10 +1,7 @@
-# zOS
+# Dead OS
 
 
-
-![](banner.png)
-
-This is a hobby OS made by yours truly, stoozy.
+My hobby operating system.
 
 ### TODO
 - [x] Initialize GDT
