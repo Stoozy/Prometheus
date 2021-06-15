@@ -152,11 +152,9 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     pci_init();
 
-
     read_rtc();
 
     terminal_setcolor(0xE); // yellow
-
     printf("Dead OS\n");
     terminal_setcolor(0xF); // white
 
