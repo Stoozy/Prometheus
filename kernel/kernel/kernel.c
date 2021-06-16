@@ -139,13 +139,10 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("VMM initialized\n");
 
+
     pci_init();
 
-    //char * malloc_test = malloc(25*sizeof(char));
-    //malloc_test = "malloc is working!\0";
 
-    //printf("%s\n", malloc_test);
-    //free(malloc_test);
 
 
     device_t ide_controller = get_ide_controller();
@@ -156,15 +153,9 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         printf("    Prog if: 0x%x\n", ide_controller.prog_if);
     }
 
-    //datetime_t * time = malloc(sizeof(datetime_t));
-    //time = get_time();
+    datetime_t * time = get_rtc_time();
 
-    //char * time_string = malloc(50*sizeof(char)); 
-    //time_string = datetime_to_str(time);
-    //printf("%s UTC\n", time_string);
-
-    //free(time);
-    //free(time_string);
+    printf("%d-%d-%d %d:%d:%d UTC \n", time->month, time->date, time->year, time->hour, time->min, time->sec);
 
     terminal_setcolor(0xE); // yellow
     printf("Dead OS\n");

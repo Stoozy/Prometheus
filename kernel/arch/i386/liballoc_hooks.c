@@ -5,6 +5,7 @@ int   liballoc_lock(){
     asm("cli");
     return 0;
 }
+
 int   liballoc_unlock(){
     asm("sti");
     return 0;

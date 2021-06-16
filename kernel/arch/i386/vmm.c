@@ -44,9 +44,8 @@ node_t * search(node_t * head, virt_addr search_addr){
 void * kmalloc(size_t size){
     void * p = (void*)placement_addr;
     placement_addr+=size;
-    if(placement_addr > 1024*1024*4){
-        kernel_panic("Page list overflow");
-    }
+    if(placement_addr > 1024*1024*4)
+        kernel_panic("Kernel Page list overflow");
     return p;
 }
 
@@ -175,10 +174,13 @@ void vmm_init(){
 
     // push virtual addr to freelist
     // initially free from 4MiB- 4GiB
-    freelist->start = 1024*1024*4;
+    //freelist->start = 1024*1024*4;
+    
+
+    freelist->start = 1024*1024;
     freelist->size = addr-freelist->start;
 
     printf("Initial free page list: \n");
     vmm_dump_list();
-
+    
 }

@@ -16,9 +16,9 @@ struct datetime_t{
 };
 
 bool updating();
-datetime_t * get_time();
+datetime_t * get_rtc_time();
 uint8_t _read_rtc_reg(uint8_t reg);
 void _set_rtc_reg(uint8_t reg, uint8_t val);
-char * datetime_to_str(datetime_t * d);
+void datetime_to_str(char * str, datetime_t * d);
 void read_rtc();
 

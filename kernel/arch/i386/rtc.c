@@ -6,14 +6,14 @@
 #include <kernel/util.h>
 
 // TODO: Add local TZs
-datetime_t * current_time;
+static datetime_t * current_time;
 
-char ret[50];
-char  month_map[13][4] = {"\0","Jan\0","Feb\0", "Mar\0", "Apr\0", 
+static char ret[50];
+static char  month_map[13][4] = {"\0","Jan\0","Feb\0", "Mar\0", "Apr\0", 
                                 "May\0", "Jun\0", "Jul\0", "Aug\0", 
                                 "Sep\0", "Oct\0", "Nov\0", "Dec\0"
                             };
-char day_map[8][4] = { "\0", "Sun\0", "Mon\0", "Tue\0", "Wed\0", "Thu\0", "Fri\0", "Sat\0"};
+static char day_map[8][4] = { "\0", "Sun\0", "Mon\0", "Tue\0", "Wed\0", "Thu\0", "Fri\0", "Sat\0"};
 
 bool updating(){
     outb(CMOS_ADDR, 0x0A);
@@ -41,8 +41,9 @@ void compare_and_pad(int x, char * hms){
     }
 }
 
-char * datetime_to_str(datetime_t * dt){	
-	ret[49] = '\0';
+
+void datetime_to_str(char * str, datetime_t * dt){	
+	str[25] = '\0';
 	char day[4];
 
 	char date[3];
@@ -60,7 +61,6 @@ char * datetime_to_str(datetime_t * dt){
 	hour[2]     = '\0';
 	min[2]      = '\0';
 	sec[2]      = '\0';
-	char * ret_ptr = &ret[0];
 
     itoa(current_time->month, month, 10);
     itoa(current_time->date, date, 10);
@@ -81,33 +81,31 @@ char * datetime_to_str(datetime_t * dt){
     compare_and_pad(current_time->sec, sec);
 
   
-    strcat(ret_ptr, date);
-    strcat(ret_ptr, ".");
-    strcat(ret_ptr, month);
-    strcat(ret_ptr, ".");
-    strcat(ret_ptr, year);
-    strcat(ret_ptr, " ");
+    strcat(str, date);
+    strcat(str, ".");
+    strcat(str, month);
+    strcat(str, ".");
+    strcat(str, year);
+    strcat(str, " ");
 
-    strcat(ret_ptr, day_map[current_time->day]);
-    strcat(ret_ptr," ");
+    strcat(str, day_map[current_time->day]);
+    strcat(str," ");
 
 
 	char * ptr = &hour[0];
-	strcat(ret_ptr, ptr);
-	strcat(ret_ptr, ":");
+	strcat(str, ptr);
+	strcat(str, ":");
 
 	ptr = &min[0];
-	strcat(ret_ptr, ptr);
-	strcat(ret_ptr, ":");
+	strcat(str, ptr);
+	strcat(str, ":");
 
 	ptr = &sec[0];
-	strcat(ret_ptr, ptr);
+	strcat(str, ptr);
 
 
-	for(int i=0; i<49; i++){
-		ret[i] = 0;
-	}
-	return &ret[0];
+    printf("%s\n", str);
+
 }
 
 void read_rtc(){
@@ -137,11 +135,13 @@ void read_rtc(){
         current_time->year = (current_time->year & 0x0F) + ((current_time->year / 16) * 10);
     }
 
-	datetime_to_str(current_time);
+    //datetime_to_str(&ret[0], current_time);
 }
 
-datetime_t * get_time(){	
+
+datetime_t * get_rtc_time(){	
 	read_rtc();
 	return current_time;
 }
+
 
