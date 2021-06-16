@@ -6,7 +6,7 @@
 #include <kernel/util.h>
 
 // TODO: Add local TZs
-datetime_t *current_time;
+datetime_t * current_time;
 
 char ret[50];
 char  month_map[13][4] = {"\0","Jan\0","Feb\0", "Mar\0", "Apr\0", 
@@ -104,7 +104,6 @@ char * datetime_to_str(datetime_t * dt){
 	strcat(ret_ptr, ptr);
 
 
-	printf("%s UTC \n", ret);
 	for(int i=0; i<49; i++){
 		ret[i] = 0;
 	}
@@ -141,8 +140,8 @@ void read_rtc(){
 	datetime_to_str(current_time);
 }
 
-datetime_t get_time(){	
+datetime_t * get_time(){	
 	read_rtc();
-	return *current_time;
+	return current_time;
 }
 

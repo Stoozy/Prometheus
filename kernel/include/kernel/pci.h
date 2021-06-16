@@ -1,3 +1,4 @@
+
 #include <kernel/typedefs.h>
 
 
@@ -30,8 +31,7 @@ typedef struct device {
 
 } device_t; 
 
-device_t * pci_search(uint16_t mainclass, uint16_t subclass, uint8_t prog_if);
-
+device_t get_ide_controller(void);
 uint16_t  pci_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset);
 uint16_t pci_check_vendor(uint8_t bus, uint8_t slot);
 void pci_check_bus(uint8_t bus);

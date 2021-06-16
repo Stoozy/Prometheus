@@ -19,11 +19,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/rtc.h>
 #include <kernel/util.h>
 #include <kernel/ata.h>
+#include <kernel/pci.h>
+
+
 #include <kernel/pmm.h>
 #include <kernel/vmm.h>
 #include <kernel/paging.h>
 #include <kernel/liballoc.h>
-#include <kernel/pci.h>
 
 
 #include "multiboot.h"
@@ -101,7 +103,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     mmap_entry_t* entry = mbd->mmap_addr;
     uint64_t total_mem_size_kib =0;
 
-    while(entry < (mbd->mmap_addr + mbd->mmap_length)) {
+    while((int)entry < (mbd->mmap_addr + mbd->mmap_length)) {
         entry = (mmap_entry_t*) ((unsigned int) entry + entry->size + sizeof(entry->size));
         if(entry->type == MULTIBOOT_MEMORY_AVAILABLE){
             printf("    Size: %d\n", entry->size); 
@@ -137,27 +139,32 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("VMM initialized\n");
 
-    char * malloc_test = malloc(sizeof(char));
-    malloc_test[0] = 'O';
+    pci_init();
 
-    char * realloc_test = realloc((void*)malloc_test, 2*sizeof(char));
-    realloc_test[1] = 'K';
+    //char * malloc_test = malloc(25*sizeof(char));
+    //malloc_test = "malloc is working!\0";
 
-    printf("%c%c\n", realloc_test[0], realloc_test[1]);
-    
-    free(realloc_test);
+    //printf("%s\n", malloc_test);
+    //free(malloc_test);
 
-    //pci_init();
 
-    // search
-    //if(pci_search(0x01, 0x05, 0x20) != 0x0 || pci_search(0x01, 0x05, 0x30) != 0x0){
-    //    printf("ATA Controller found!");
-    //}
-    
-    //device_t * device = pci_search(0x01, 0x05, 0x20);
-    //printf("0x%x\n", device);
+    device_t ide_controller = get_ide_controller();
+    if(ide_controller.mainclass != 0x0){
+        printf("IDE Controller Found!\n");
+        printf("    Vendor: 0x%x\n", ide_controller.vendor_id);
+        printf("    Device: 0x%x\n", ide_controller.device_id);
+        printf("    Prog if: 0x%x\n", ide_controller.prog_if);
+    }
 
-    read_rtc();
+    //datetime_t * time = malloc(sizeof(datetime_t));
+    //time = get_time();
+
+    //char * time_string = malloc(50*sizeof(char)); 
+    //time_string = datetime_to_str(time);
+    //printf("%s UTC\n", time_string);
+
+    //free(time);
+    //free(time_string);
 
     terminal_setcolor(0xE); // yellow
     printf("Dead OS\n");
@@ -166,5 +173,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     hang();
 }
+
 
 
