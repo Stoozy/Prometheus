@@ -27,6 +27,14 @@ uint32_t inl(uint16_t port){
 }
 
 
+void insl(uint32_t port, void * addr, int count){
+    asm volatile (
+    "cld;"
+    "repne; insl;"
+    : "=D" (addr), "=c" (count)
+    : "d" (port), "0" (addr), "1" (count)
+    : "memory", "cc");
+}
 
 uint16_t inw(uint16_t port){
     uint16_t ret;

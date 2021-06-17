@@ -1,4 +1,5 @@
-#include <typedefs.h>
+#include <kernel/typedefs.h>
+#include <kernel/pci.h> // For ide device_t
 
 typedef struct IDEChannelRegisters {
    unsigned short base;  // I/O Base.
@@ -26,7 +27,7 @@ typedef struct ide_device {
 
 void ide_controller_init();
  
-void ide_device_init(
+void ide_initialize(
         uint32_t BAR0, 
         uint32_t BAR1, 
         uint32_t BAR2, 
@@ -36,6 +37,7 @@ void ide_device_init(
 
 unsigned char ide_read(unsigned char channel, unsigned char reg);
 void ide_write(unsigned char channel, unsigned char reg, unsigned char data);
-void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads) {
+void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buffer, unsigned int quads);
 
-unsigned char ide_polling(unsigned char channel, unsigned int advanced_check) {
+unsigned char ide_polling(unsigned char channel, unsigned int advanced_check);
+void ide_controller_init(device_t controller);

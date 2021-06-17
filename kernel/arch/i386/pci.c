@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <kernel/io.h>
 #include <stdlib.h>
+#include <kernel/idt.h>
 
 static device_t ide_controller;
 

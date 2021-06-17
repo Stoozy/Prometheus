@@ -35,6 +35,7 @@ struct IDT_PTR {
 
 bool are_interrupts_enabled();
 
+void Sleep(uint32_t ms);
 void PIC_remap(uint32_t offset1, uint32_t offset2);
 
 void init_idt_desc(uint32_t offset, uint16_t selector, uint8_t type, struct IDT_D src);

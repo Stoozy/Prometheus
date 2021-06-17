@@ -151,7 +151,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         printf("    Device: 0x%x\n", ide_controller.device_id);
         printf("    Prog if: 0x%x\n", ide_controller.prog_if);
 
-        ide_controller_init(ide_controller);
+        //ide_controller_init(ide_controller);
     }
 
     datetime_t * time = get_rtc_time();
