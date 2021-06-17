@@ -26,6 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/vmm.h>
 #include <kernel/paging.h>
 #include <kernel/liballoc.h>
+#include <kernel/ide.h>
 
 
 #include "multiboot.h"
@@ -143,14 +144,14 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     pci_init();
 
 
-
-
     device_t ide_controller = get_ide_controller();
     if(ide_controller.mainclass != 0x0){
         printf("IDE Controller Found!\n");
         printf("    Vendor: 0x%x\n", ide_controller.vendor_id);
         printf("    Device: 0x%x\n", ide_controller.device_id);
         printf("    Prog if: 0x%x\n", ide_controller.prog_if);
+
+        ide_controller_init(ide_controller);
     }
 
     datetime_t * time = get_rtc_time();

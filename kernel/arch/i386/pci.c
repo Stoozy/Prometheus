@@ -10,7 +10,7 @@ device_t get_ide_controller (){
     return ide_controller;
 }
 
-uint16_t  pci_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
+uint16_t  pci_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
     uint32_t address;
     uint32_t lbus  = (uint32_t) bus;
     uint32_t lslot = (uint32_t) slot;
@@ -43,9 +43,8 @@ uint32_t  pci_read_long(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset)
  
     /* write out the address */
     outl(0xCF8, address);
-    /* read in the data */
-    /* (offset & 2) * 8) = 0 will choose the first word of the 32 bits register */
 
+    /* read in the data */
     return inl(0xCFC);
 }
 
@@ -83,12 +82,12 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
     /* try and read the first configuration register. Since there are no */
     /* vendors that == 0xFFFF, it must be a non-existent device. */
     for(uint8_t function = 0; function<8; ++function){
-        if ((vendor = pci_read(bus,slot,function, 0)) != 0xFFFF) {
-            device = pci_read(bus,slot,function, 2);
+        if ((vendor = pci_read_word(bus,slot,function, 0)) != 0xFFFF) {
+            device = pci_read_word(bus,slot,function, 2);
 
-            uint16_t class = pci_read(bus, slot, function, 0xA) & (0xff00) >> 8; 
-            uint16_t subclass = pci_read(bus, slot, function, 0xA) & (0x00ff); 
-            uint16_t prog_if = pci_read(bus, slot, function, 0x8) & (0xff00) >> 8;
+            uint16_t class = pci_read_word(bus, slot, function, 0xA) & (0xff00) >> 8; 
+            uint16_t subclass = pci_read_word(bus, slot, function, 0xA) & (0x00ff); 
+            uint16_t prog_if = pci_read_word(bus, slot, function, 0x8) & (0xff00) >> 8;
 
             if(class == 0x01 && subclass == 0x01 ) {
                 ide_controller.vendor_id = vendor;
