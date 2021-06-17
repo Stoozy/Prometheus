@@ -41,3 +41,12 @@ void ide_read_buffer(unsigned char channel, unsigned char reg, unsigned int buff
 
 unsigned char ide_polling(unsigned char channel, unsigned int advanced_check);
 void ide_controller_init(device_t controller);
+
+
+void ide_write_sectors(unsigned char drive, unsigned char numsects, unsigned int lba,
+                        unsigned short es, unsigned int edi);
+
+void ide_read_sectors(unsigned char drive, unsigned char numsects, unsigned int lba,
+                        unsigned short es, unsigned int edi);
+
+ide_device_t * ide_get_devices();

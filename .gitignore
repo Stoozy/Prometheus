@@ -1,5 +1,4 @@
 *.iso
 cloc.sh
 .gitignore
-drive.img
-'~'
+*.img

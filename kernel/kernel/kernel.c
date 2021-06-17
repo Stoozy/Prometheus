@@ -151,8 +151,20 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         printf("    Device: 0x%x\n", ide_controller.device_id);
         printf("    Prog if: 0x%x\n", ide_controller.prog_if);
 
-        //ide_controller_init(ide_controller);
+        ide_controller_init(ide_controller);
     }
+
+    ide_device_t *devices = ide_get_devices();
+
+    printf("\n");
+    //for (int i = 0; i < 4; i++)
+    //    if (devices[i].Reserved == 1) {
+    //        printf("Reading first sector of  %s Drive- %s\n",
+    //        (const char *[]){"ATA", "ATAPI"}[devices[i].Type],         /* Type */
+    //        devices[i].Model);
+    //    }
+
+
 
     datetime_t * time = get_rtc_time();
 
