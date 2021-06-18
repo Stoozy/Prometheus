@@ -5,6 +5,8 @@
 .set MAGIC,    0x1BADB002       # 'magic number' lets bootloader find the header
 .set CHECKSUM, -(MAGIC + FLAGS) # checksum of above, to prove we are multiboot
 
+
+
 # Declare a header as in the Multiboot Standard.
 .section .multiboot
 .align 4

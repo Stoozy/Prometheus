@@ -27,6 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/paging.h>
 #include <kernel/liballoc.h>
 #include <kernel/ide.h>
+#include <kernel/bga.h>
 
 
 #include "multiboot.h"
@@ -144,35 +145,58 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     pci_init();
 
 
-    device_t ide_controller = get_ide_controller();
-    if(ide_controller.mainclass != 0x0){
-        printf("IDE Controller Found!\n");
-        printf("    Vendor: 0x%x\n", ide_controller.vendor_id);
-        printf("    Device: 0x%x\n", ide_controller.device_id);
-        printf("    Prog if: 0x%x\n", ide_controller.prog_if);
+    //device_t ide_controller = get_ide_controller();
+    //if(ide_controller.mainclass != 0x0){
+    //    printf("IDE Controller Found!\n");
+    //    printf("    Vendor: 0x%x\n", ide_controller.vendor_id);
+    //    printf("    Device: 0x%x\n", ide_controller.device_id);
+    //    printf("    Prog if: 0x%x\n", ide_controller.prog_if);
 
-        ide_controller_init(ide_controller);
-    }
+    //    ide_controller_init(ide_controller);
+    //}
 
     ide_device_t *devices = ide_get_devices();
 
-    printf("\n");
+    printf("\n\n");
+    
+
+    //uint16_t * bytes = malloc(256*sizeof(uint16_t));
+    //read_sectors()
+
     //for (int i = 0; i < 4; i++)
     //    if (devices[i].Reserved == 1) {
     //        printf("Reading first sector of  %s Drive- %s\n",
     //        (const char *[]){"ATA", "ATAPI"}[devices[i].Type],         /* Type */
     //        devices[i].Model);
+    //        
+    //        char * bytes = malloc(512*sizeof(char));
+    //        ide_read_sectors(i, 1, 1, bytes, 0);
+    //        for(int i=0; i<512; ++i){
+    //            printf("%c ", bytes[i]);
+    //        }
+    //        free(bytes);
     //    }
 
 
+    if(bga_available() == 1){
+        // setup bga here
+        bga_set_video_mode(1280, 720, 4,
+        0, 0);
+
+    }
+
+    printf("\n\n");
 
     datetime_t * time = get_rtc_time();
 
     printf("%d-%d-%d %d:%d:%d UTC \n", time->month, time->date, time->year, time->hour, time->min, time->sec);
 
+
     terminal_setcolor(0xE); // yellow
     printf("Dead OS\n");
     terminal_setcolor(0xF); // white
+
+
 
 
     hang();
