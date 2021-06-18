@@ -133,10 +133,10 @@ void vmm_map_page (void* phys, pte_t * virt){
 
 void vmm_init(){
     // initialize free page list, directories and tables 
-    freelist = kmalloc(sizeof(node_t));
+    freelist = kmalloc(50*sizeof(node_t));
 
-    pde_t * dir = (pde_t*)pmm_alloc_blocks(8);
-    pte_t * first_tab = (pte_t*)pmm_alloc_blocks(8);
+    pde_t * dir = (pde_t*) pmm_alloc_blocks(8);
+    pte_t * first_tab = (pte_t*) pmm_alloc_blocks(8);
 
     if(dir && first_tab){
         printf("Page Directory is located at 0x%x and first table is at 0x%x\n", dir, first_tab);
@@ -153,7 +153,7 @@ void vmm_init(){
 
     dir[0] = ((uint32_t)first_tab) | 3;
 
-    for(i=1; i<1024; i++){
+    for(i=2; i<1024; i++){
         // 8 * 4096 bytes will let us store 1024 32 byte entries
         uint32_t * tab = (uint32_t*)pmm_alloc_blocks(8);
         for(pte_t j=0; j<PAGE_ENTRIES; j++){
@@ -174,10 +174,7 @@ void vmm_init(){
 
     // push virtual addr to freelist
     // initially free from 4MiB- 4GiB
-    //freelist->start = 1024*1024*4;
-    
-
-    freelist->start = 1024*1024;
+    freelist->start = 1024*1024*4;
     freelist->size = addr-freelist->start;
 
     printf("Initial free page list: \n");

@@ -2,7 +2,7 @@
 
 #include <kernel/typedefs.h>
 
-uint8_t is_bga_available();
+uint8_t bga_available();
 
 
 void bga_set_video_mode(

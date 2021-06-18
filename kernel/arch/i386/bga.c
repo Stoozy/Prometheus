@@ -7,6 +7,8 @@
 #define VBE_DISPI_IOPORT_INDEX  0x01CE // write index 
 #define VBE_DISPI_IOPORT_DATA   0x01CF // read data (16 bits)
 
+#define VBE_DISPI_BANK_ADDRESS          0xA0000
+#define VBE_DISPI_BANK_SIZE_KB          64
 
 #define VBE_DISPI_INDEX_ID              0
 #define VBE_DISPI_INDEX_XRES            1

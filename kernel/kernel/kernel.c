@@ -65,12 +65,12 @@ void kernel_panic(const char * reason){
     printf("                            ");
 
     terminal_setcolor(0x71);
-    printf(" zos bruh moment \n");
+    printf(" bruh moment \n");
     printf("\n\n\n\n");
 
     terminal_setcolor(0x1F);
     printf("            ");
-    printf("zos crashed again. I am the blue screen of death. No one \n");
+    printf("dead os crashed again. I am the blue screen of death. No one \n");
 
     printf("            ");
     printf("hears your screams.\n\n");
@@ -137,7 +137,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     
     printf("%d free physical blocks\n", pmm_get_free_block_count());
 
-    vmm_init();
+    //vmm_init();
 
     printf("VMM initialized\n");
 
@@ -170,7 +170,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     //        devices[i].Model);
     //        
     //        char * bytes = malloc(512*sizeof(char));
-    //        ide_read_sectors(i, 1, 1, bytes, 0);
+    //        ide_read_sectors(i, 1, 1, 0x08, 0);
     //        for(int i=0; i<512; ++i){
     //            printf("%c ", bytes[i]);
     //        }
@@ -180,10 +180,34 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     if(bga_available() == 1){
         // setup bga here
-        bga_set_video_mode(1280, 720, 4,
-        0, 0);
+        device_t bga = get_bga(); 
 
+        // read BAR0 of bga to get LFB
+        if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
+            uint32_t bga_lfb_address = pci_read_long(bga.bus, bga.slot, bga.function, 0x10);
+
+            printf("BGA LFB ADDR: 0x%x (before ANDing)\n", bga_lfb_address);
+            bga_lfb_address &= 0xFFFFFFF0;
+
+            printf("BGA LFB ADDR: 0x%x (after ANDing) \n", bga_lfb_address);
+            bga_set_video_mode(1024, 768, 8, 0, 1);
+
+            uint8_t * bga = (uint8_t*) 0xFD000000;
+            for(int i=0; i<1024*768; ++i) bga[i] = 0x9;
+
+            //uint32_t * bga = (uint32_t*) 0xA0000;
+            //bga[0] = 123456;
+
+
+
+            //char * buf = malloc(800 * sizeof(char));
+            //for(int i=0; i<800; ++i) bga[i] = 150;
+            
+
+            //memcpy((void*)0xA0000, (void*)buf, 800*sizeof(char));
+        }
     }
+
 
     printf("\n\n");
 
@@ -195,8 +219,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     terminal_setcolor(0xE); // yellow
     printf("Dead OS\n");
     terminal_setcolor(0xF); // white
-
-
 
 
     hang();

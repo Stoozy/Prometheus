@@ -6,9 +6,14 @@
 #include <kernel/idt.h>
 
 static device_t ide_controller;
+static device_t bga;
 
 device_t get_ide_controller (){
     return ide_controller;
+}
+
+device_t get_bga(){
+    return bga;
 }
 
 uint16_t  pci_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
@@ -32,49 +37,16 @@ uint16_t  pci_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset)
 }
 
 uint32_t  pci_read_long(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
-    uint32_t address;
     uint32_t lbus  = (uint32_t)bus;
     uint32_t lslot = (uint32_t)slot;
     uint32_t lfunc = (uint32_t)func;
-    uint16_t tmp = 0;
  
-    /* create configuration address as per Figure 1 */
-    address = (uint32_t)((lbus << 16) | (lslot << 11) |
-              (lfunc << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
- 
-    /* write out the address */
+    uint32_t address = 0x80000000 | (lbus << 16) | (lslot << 11) | (lfunc << 8) | ((offset)&0xFC);
     outl(0xCF8, address);
 
     /* read in the data */
+
     return inl(0xCFC);
-}
-
-uint32_t pci_get_bar(uint16_t bus, uint16_t slot, uint16_t func, uint8_t bar_num){
-    uint8_t read_addr = 0x0;
-
-    switch(bar_num) {
-        case 0:
-            read_addr = 0x10;
-            break;
-        case 1:
-            read_addr = 0x14;
-            break;
-        case 2:
-            read_addr = 0x18;
-            break;
-        case 3:
-            read_addr = 0x1C;
-            break;
-        case 4:
-            read_addr = 0x20;
-            break;
-        case 5:
-            read_addr = 0x24;
-            break;
-    }
-
-    return pci_read_long(bus, slot, func, read_addr);
-
 }
 
 
@@ -89,6 +61,19 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
             uint16_t class = pci_read_word(bus, slot, function, 0xA) & (0xff00) >> 8; 
             uint16_t subclass = pci_read_word(bus, slot, function, 0xA) & (0x00ff); 
             uint16_t prog_if = pci_read_word(bus, slot, function, 0x8) & (0xff00) >> 8;
+
+            if(vendor == 0x1234 && device == 0x1111){
+                bga.vendor_id = vendor;
+                bga.device_id = device;
+
+                bga.bus = bus;
+                bga.slot = slot;
+                bga.function = function;
+
+                bga.mainclass = class;
+                bga.subclass = subclass;
+                bga.prog_if = prog_if;
+            }
 
             if(class == 0x01 && subclass == 0x01 ) {
                 ide_controller.vendor_id = vendor;
@@ -112,13 +97,11 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
             printf("    prog IF: 0x%x\n", prog_if);
             printf("\n");
 
-            Sleep(1000);
         }
     } 
 
     return (vendor);
 }
-
 
 
 void pci_init(){
