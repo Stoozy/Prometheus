@@ -293,8 +293,24 @@ void irq13_handler(void) {
           outb(0x20, 0x20); //EOI
 }
  
-void irq14_handler(void) {
-    ata_irq();    
+void irq14_handler(uint16_t ec) {
+    if(ec & 1 == 0){
+        printf("Page WAS present ");
+    }
+
+    if(ec & 2 == 0){
+        printf("RW : READ ");
+    }else{
+        printf("RW: WRITE ");
+    }
+
+    if(ec & 4 == 0){
+        printf("RING: 0");
+    }else{
+        printf("RING: 1");
+    }
+
+    //ata_irq();    
     outb(0xA0, 0x20);
     outb(0x20, 0x20); //EOI
 }

@@ -13,7 +13,9 @@ int64_t ll_abs(int64_t val){
 }
 
 void swap(char *x, char *y) {
-    char t = *x; *x = *y; *y = t;
+    char t = *x; 
+    *x = *y; 
+    *y = t;
 }
  
 // function to reverse buffer[i..j]
@@ -95,9 +97,9 @@ char* itoa(int32_t value, char* buffer, int base)
         return buffer;
  
     // consider absolute value of number
-    int32_t n = abs(value);
+    long long n = abs(value);
  
-    int32_t i = 0;
+    long long i = 0;
     while (n)
     {
         int r = n % base; 

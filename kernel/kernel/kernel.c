@@ -124,6 +124,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024))); // converto MiB
 
     pmm_init(total_mem_size_kib);
+    //vmm_init();
 
     printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
 
@@ -137,7 +138,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     
     printf("%d free physical blocks\n", pmm_get_free_block_count());
 
-    //vmm_init();
 
     printf("VMM initialized\n");
 
@@ -145,68 +145,32 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     pci_init();
 
 
-    //device_t ide_controller = get_ide_controller();
-    //if(ide_controller.mainclass != 0x0){
-    //    printf("IDE Controller Found!\n");
-    //    printf("    Vendor: 0x%x\n", ide_controller.vendor_id);
-    //    printf("    Device: 0x%x\n", ide_controller.device_id);
-    //    printf("    Prog if: 0x%x\n", ide_controller.prog_if);
-
-    //    ide_controller_init(ide_controller);
-    //}
-
-    ide_device_t *devices = ide_get_devices();
-
     printf("\n\n");
-    
 
-    //uint16_t * bytes = malloc(256*sizeof(uint16_t));
-    //read_sectors()
-
-    //for (int i = 0; i < 4; i++)
-    //    if (devices[i].Reserved == 1) {
-    //        printf("Reading first sector of  %s Drive- %s\n",
-    //        (const char *[]){"ATA", "ATAPI"}[devices[i].Type],         /* Type */
-    //        devices[i].Model);
-    //        
-    //        char * bytes = malloc(512*sizeof(char));
-    //        ide_read_sectors(i, 1, 1, 0x08, 0);
-    //        for(int i=0; i<512; ++i){
-    //            printf("%c ", bytes[i]);
-    //        }
-    //        free(bytes);
-    //    }
-
-
+    uint8_t * bga_framebuffer = (uint8_t*)0;
+   
     if(bga_available() == 1){
         // setup bga here
         device_t bga = get_bga(); 
 
         // read BAR0 of bga to get LFB
         if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
-            uint32_t bga_lfb_address = pci_read_long(bga.bus, bga.slot, bga.function, 0x10);
+            uint32_t bga_lfb_address = pci_get_bar(bga, 0);
 
-            printf("BGA LFB ADDR: 0x%x (before ANDing)\n", bga_lfb_address);
-            bga_lfb_address &= 0xFFFFFFF0;
-
-            printf("BGA LFB ADDR: 0x%x (after ANDing) \n", bga_lfb_address);
             bga_set_video_mode(1024, 768, 8, 0, 1);
 
-            uint8_t * bga = (uint8_t*) 0xFD000000;
-            for(int i=0; i<1024*768; ++i) bga[i] = 0x9;
-
-            //uint32_t * bga = (uint32_t*) 0xA0000;
-            //bga[0] = 123456;
-
-
-
-            //char * buf = malloc(800 * sizeof(char));
-            //for(int i=0; i<800; ++i) bga[i] = 150;
-            
+            bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
+            for(int i=0; i<1024*768; ++i) {
+                if( i%2 ==0 )
+                    bga_framebuffer[i] = 0x9;
+            }
 
             //memcpy((void*)0xA0000, (void*)buf, 800*sizeof(char));
         }
     }
+
+
+
 
 
     printf("\n\n");

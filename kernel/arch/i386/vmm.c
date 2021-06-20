@@ -143,27 +143,34 @@ void vmm_init(){
     } else kernel_panic("Error occured setting up paging\n");
 
 
-    // id map 4MiB
+    // id map whole address space 
     uint32_t i=0, addr = 0; 
+
     for(; i<1024; i++){
-        // map addres and mark present rw
-        first_tab[i]  = addr | 3;
-        addr += PAGE_SIZE; 
+        for(int j=0; j<1024; ++j){
+            // map addres and mark present rw
+            first_tab[i]  = addr | 3;
+            addr += PAGE_SIZE; 
+
+        }
     }
 
     dir[0] = ((uint32_t)first_tab) | 3;
 
-    for(i=2; i<1024; i++){
+    for(; i<1024; i++){
         // 8 * 4096 bytes will let us store 1024 32 byte entries
         uint32_t * tab = (uint32_t*)pmm_alloc_blocks(8);
         for(pte_t j=0; j<PAGE_ENTRIES; j++){
-            phys_addr physaddr = (phys_addr)pmm_alloc_block();
-            if(physaddr){
-                // map page and mark present
-                tab[j]  = physaddr | 3;
-                addr += PAGE_SIZE;
-                vmm_flush_tlb_entry (addr);
-            }
+            //phys_addr physaddr = (phys_addr)pmm_alloc_block();
+            //if(physaddr){
+            //    // map page and mark present
+            //    tab[j]  = physaddr | 3;
+            //    addr += PAGE_SIZE;
+            //    vmm_flush_tlb_entry (addr);
+            //}
+            tab[j]  = addr | 3;
+            addr += PAGE_SIZE;
+            vmm_flush_tlb_entry(addr);
         }
         dir[i] = ((uint32_t)tab) | 3;
     }

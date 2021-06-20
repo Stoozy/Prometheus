@@ -4,7 +4,7 @@ set -e
 
 cd kernel/arch/i386/ && sh make-nasm.sh
 
-cd ~/Downloads/dead_os/
+cd ~/Downloads/Dead-OS/
 for PROJECT in $PROJECTS; do
   (cd $PROJECT && DESTDIR="$SYSROOT" $MAKE install -j4)
 done

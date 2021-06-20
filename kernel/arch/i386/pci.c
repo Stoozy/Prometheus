@@ -36,6 +36,7 @@ uint16_t  pci_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset)
 
 }
 
+
 uint32_t  pci_read_long(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset){
     uint32_t lbus  = (uint32_t)bus;
     uint32_t lslot = (uint32_t)slot;
@@ -49,6 +50,22 @@ uint32_t  pci_read_long(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset)
     return inl(0xCFC);
 }
 
+
+uint32_t pci_get_bar(device_t dev, uint8_t index ){
+    uint8_t offset = 0x10 + index * 4;
+
+    uint32_t base = pci_read_long(dev.bus, dev.slot, dev.function, offset);
+
+    if((base & 1) == 1) {
+        // IO space bar
+        base = (base) & 0xFFFFFFFC;
+    }else{
+        // Memory space bar
+        base &=  ((uint32_t)0xFFFFFFF0);
+    }
+
+    return base;
+}
 
 uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
     uint16_t vendor, device;

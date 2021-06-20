@@ -2,3 +2,5 @@
 cloc.sh
 .gitignore
 *.img
+*.swp
+*.swo
