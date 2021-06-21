@@ -147,7 +147,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("\n\n");
 
-    uint8_t * bga_framebuffer = (uint8_t*)0;
+    uint8_t * bga_framebuffer;
    
     if(bga_available() == 1){
         // setup bga here
@@ -157,20 +157,19 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
             uint32_t bga_lfb_address = pci_get_bar(bga, 0);
 
-            bga_set_video_mode(1024, 768, 8, 0, 1);
+            printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
 
-            bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
-            for(int i=0; i<1024*768; ++i) {
-                if( i%2 ==0 )
-                    bga_framebuffer[i] = 0x9;
-            }
+            //bga_set_video_mode(1024, 768, 8, 0, 1);
+
+            //bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
+            //for(int i=0; i<1024*768; ++i) {
+            //    if( i%2 ==0 )
+            //        bga_framebuffer[i] = 0x9;
+            //}
 
             //memcpy((void*)0xA0000, (void*)buf, 800*sizeof(char));
         }
     }
-
-
-
 
 
     printf("\n\n");
