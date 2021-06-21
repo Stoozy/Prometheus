@@ -149,6 +149,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     uint8_t * bga_framebuffer;
    
+
     if(bga_available() == 1){
         // setup bga here
         device_t bga = get_bga(); 

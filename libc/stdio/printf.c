@@ -160,9 +160,9 @@ int printf(const char* restrict format, ...) {
     
         }else if(*format == 'x'){
             format++;
-            long long hex = va_arg(parameters, uint64_t);
+            uint64_t hex = va_arg(parameters, uint64_t);
 
-            printf("%s", itoa(hex, &buf[0], 16));
+            printf("%s", ulltoa(hex, &buf[0], 16));
 
         }
         else {
