@@ -147,8 +147,23 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("\n\n");
 
+
+    device_t ide_ata_dev = get_ide_controller();
+
+    if(ide_ata_dev.prog_if & 0x80){
+        printf("IDE controller supports DMA\n");
+        ide_controller_init(ide_ata_dev);
+    }else{
+        printf("IDE controller doesn't support DMA\n");
+        ide_controller_init(ide_ata_dev);
+        uint8_t * buf = malloc(512*sizeof(char));
+        ide_read_sectors(0, 1, 1, 1, 0x8);
+
+    }
+
+    printf("\n\n");
+
     uint8_t * bga_framebuffer;
-   
 
     if(bga_available() == 1){
         // setup bga here
@@ -160,15 +175,17 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
             printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
 
-            bga_set_video_mode(1024, 768, 8, 0, 1);
+            //bga_set_video_mode(1024, 768, 8, 0, 1);
 
-            bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
-            for(int i=0; i<1024*768; ++i) {
-                if( i%2 ==0 )
-                    bga_framebuffer[i] = 0x9;
-            }
-
-            //memcpy((void*)0xA0000, (void*)buf, 800*sizeof(char));
+            //bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
+            //for(int i=0; i<1024; ++i) {
+            //    for(int j=0; j<768; ++j){
+            //        if( i%20 == 0 || j%20 ==0 )
+            //            bga_framebuffer[i+j*1024] = 0x0;
+            //        else
+            //            bga_framebuffer[i+j*1024] = 0xF;
+            //    }
+            //}
         }
     }
 
