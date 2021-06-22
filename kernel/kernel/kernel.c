@@ -124,7 +124,6 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("Total available memory: %d MiB\n", (total_mem_size_kib/(1024))); // converto MiB
 
     pmm_init(total_mem_size_kib);
-    //vmm_init();
 
     printf("Initialized Physical Memory Manager with %ldKiB (%d blocks)\n", total_mem_size_kib, pmm_get_block_count());
 
@@ -144,6 +143,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     pci_init();
 
+    vmm_init();
 
     printf("\n\n");
 
@@ -160,13 +160,13 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
             printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
 
-            //bga_set_video_mode(1024, 768, 8, 0, 1);
+            bga_set_video_mode(1024, 768, 8, 0, 1);
 
-            //bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
-            //for(int i=0; i<1024*768; ++i) {
-            //    if( i%2 ==0 )
-            //        bga_framebuffer[i] = 0x9;
-            //}
+            bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
+            for(int i=0; i<1024*768; ++i) {
+                if( i%2 ==0 )
+                    bga_framebuffer[i] = 0x9;
+            }
 
             //memcpy((void*)0xA0000, (void*)buf, 800*sizeof(char));
         }

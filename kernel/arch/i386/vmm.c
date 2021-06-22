@@ -146,16 +146,16 @@ void vmm_init(){
     // id map whole address space 
     uint32_t i=0, addr = 0; 
 
-    for(; i<1024; i++){
-        for(int j=0; j<1024; ++j){
-            // map addres and mark present rw
-            first_tab[i]  = addr | 3;
-            addr += PAGE_SIZE; 
+    //for(; i<1024; i++){
+    //    for(int j=0; j<1024; ++j){
+    //        // map addres and mark present rw
+    //        first_tab[i]  = addr | 3;
+    //        addr += PAGE_SIZE; 
 
-        }
-    }
+    //    }
+    //}
 
-    dir[0] = ((uint32_t)first_tab) | 3;
+    //dir[0] = ((uint32_t)first_tab) | 3;
 
     for(; i<1024; i++){
         // 8 * 4096 bytes will let us store 1024 32 byte entries
