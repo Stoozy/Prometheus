@@ -41,6 +41,7 @@ void ATA_WAIT_BSY(){
 void ATA_WAIT_RDY(){
     while(!(inb(0x1F7)&STATUS_RDY));
 }
+
 /*
  * Check if drive is valid
  *

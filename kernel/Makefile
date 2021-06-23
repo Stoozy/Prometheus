@@ -7,6 +7,9 @@ CPPFLAGS?=
 LDFLAGS?=
 LIBS?=
 
+ARCHDIR=arch/$(HOSTARCH)
+DRIVERSDIR=drivers/$(HOSTARCH)
+
 DESTDIR?=
 PREFIX?=/usr/local
 EXEC_PREFIX?=$(PREFIX)
@@ -16,19 +19,20 @@ INCLUDEDIR?=$(PREFIX)/include
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
 CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -Iinclude
 LDFLAGS:=$(LDFLAGS)
-LIBS:=$(LIBS) -nostdlib -L../libc/   -lk  -lgcc 
-
-ARCHDIR=arch/$(HOSTARCH)
+LIBS:=$(LIBS) -nostdlib -L../libc/  -lk  -lgcc 
 
 include $(ARCHDIR)/make.config
+include $(DRIVERSDIR)/make.config
 
 CFLAGS:=$(CFLAGS) $(KERNEL_ARCH_CFLAGS)
 CPPFLAGS:=$(CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS)
 LDFLAGS:=$(LDFLAGS) $(KERNEL_ARCH_LDFLAGS)
 LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
+
 KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
+$(DRIVER_OBJS)\
 kernel/kernel.o \
 
 
