@@ -295,23 +295,25 @@ void irq13_handler(void) {
  
 void irq14_handler(uint16_t ec) {
 
-    if(ec & 1 == 0){
-        printf("Page WAS present ");
-    }
+    ata_irq();    
+    //if(ec & 1 == 0){
+    //    printf("Page WAS present \n");
+    //}else{
+    //    printf("Page was not present \n");
+    //}
 
-    if(ec & 2 == 0){
-        printf("RW : READ ");
-    }else{
-        printf("RW: WRITE ");
-    }
+    //if(ec & 2 == 0){
+    //    printf("RW : READ \n");
+    //}else{
+    //    printf("RW: WRITE \n");
+    //}
 
-    if(ec & 4 == 0){
-        printf("RING: 0");
-    }else{
-        printf("RING: 1");
-    }
+    //if(ec & 4 == 0){
+    //    printf("RING: 0\n");
+    //}else{
+    //    printf("RING: 1\n");
+    //}
 
-    //ata_irq();    
     outb(0xA0, 0x20);
     outb(0x20, 0x20); //EOI
 }

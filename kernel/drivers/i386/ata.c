@@ -55,7 +55,7 @@ bool ATA_IDENTIFY(uint8_t drive){
     outb(STATUS_CMD_REG, IDENTIFY_CMD);
 
     uint8_t status = inb(0x1F7);
-    //printf("Status for Disk%d\n", status);
+    printf("Status for Disk%d\n", status);
     return !(status == 0);
 }
 
