@@ -156,25 +156,29 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     //}else{
     //    printf("IDE controller doesn't support DMA\n");
     //    ide_controller_init(ide_ata_dev);
-    //    ide_read_sectors(1, 1, 1, 1, 0x8);
-
+    //    ide_read_sectors(0, 1, 0, 0, 0);
     //}
-    uint16_t * buf = malloc(512*sizeof(char));
-    ATA_IDENTIFY(0);
 
-    for(int i=0; i<256; ++i){
-        buf[i] = 10;
+    uint16_t * buf = malloc(256*sizeof(char));
+
+
+    if(ATA_IDENTIFY(0xA0)){
+        // dummy read
+        read_sectors(buf, 0xA0, 0, 1); 
+
+        printf("Superblock: \n");
+        read_sectors(buf, 0xA0, 2, 1); 
+
+        uint32_t inodes = buf[3] | (uint32_t)buf[2] << 8 | (uint32_t)buf[1] << 16 | (uint32_t)buf[0] << 24; 
+
+        printf("Number of inodes : %d \n", inodes);
+        for(int j=0; j<256; ++j){
+            printf("%c %c ", (char)(buf[j] >> 8), (char)(buf[j]));
+        }
+        
     }
-    write_sectors(buf, 0, 1);
-
-    read_sectors(buf, 0, 1, 1);
-    for(int i=0; i<256; ++i){
-        printf("%c %c", (char)((buf[i]&0xFF00)>>8), (char)buf[i]&0xFF);
-    } 
 
     printf("\n\n");
-
-
 
     //uint8_t * bga_framebuffer;
 
