@@ -32,6 +32,7 @@ void wait_for_irq(){
     return;
 }
 
+
 void ATA_WAIT_BSY(){
     while(inb(STATUS_CMD_REG) & STATUS_BSY){
         if(inb(STATUS_CMD_REG) & (1<<5)){
@@ -40,6 +41,7 @@ void ATA_WAIT_BSY(){
         asm("nop");
     }
 }
+
 void ATA_WAIT_RDY(){
     while(!(inb(0x1F7)&STATUS_RDY));
 }
@@ -100,14 +102,15 @@ void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector
     outb(LBA_HI_PORT, (uint8_t)(LBA >> 16));
     outb(STATUS_CMD_REG, 0x20);     // Read command
     
-    ATA_WAIT_RDY();
     ATA_WAIT_BSY();
+    wait_for_irq();
 
     for(int i=0; i<sector_count;i++){
         for(int j=0; j<256; j++)
             target[j] = inw(0x1F0);
         target+=256;
     }
+
 
     return;
 }

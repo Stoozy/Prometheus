@@ -143,9 +143,9 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("VMM initialized\n");
 
 
+    vmm_init();
     pci_init();
 
-    vmm_init();
 
     printf("\n\n");
 
@@ -167,6 +167,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
         printf("\n\n");
         init_fs(superblock);
+        fs_dump_info(0);
 
         free(buf);
     }
