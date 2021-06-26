@@ -18,7 +18,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/io.h>
 #include <kernel/rtc.h>
 #include <kernel/util.h>
-#include <kernel/ata.h>
 #include <kernel/pci.h>
 
 
@@ -27,8 +26,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <kernel/paging.h>
 #include <kernel/liballoc.h>
 #include <kernel/ide.h>
-#include <kernel/bga.h>
 
+#include <drivers/bga.h>
+#include <drivers/ata.h>
+
+#include <fs/ext2.h>
 
 #include "multiboot.h"
 
@@ -148,34 +150,25 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
     printf("\n\n");
 
 
-    //device_t ide_ata_dev = get_ide_controller();
-
-    //if(ide_ata_dev.prog_if & 0x80){
-    //    printf("IDE controller supports DMA\n");
-    //    ide_controller_init(ide_ata_dev);
-    //}else{
-    //    printf("IDE controller doesn't support DMA\n");
-    //    ide_controller_init(ide_ata_dev);
-    //    ide_read_sectors(0, 1, 0, 0, 0);
-    //}
-
-    uint16_t * buf = malloc(256*sizeof(char));
-
 
     if(ATA_IDENTIFY(0xA0)){
+
+        uint16_t * buf = malloc(1024*sizeof(char));
+
         // dummy read
         read_sectors(buf, 0xA0, 0, 1); 
 
-        printf("Superblock: \n");
-        read_sectors(buf, 0xA0, 2, 1); 
 
-        uint32_t inodes = buf[3] | (uint32_t)buf[2] << 8 | (uint32_t)buf[1] << 16 | (uint32_t)buf[0] << 24; 
+        // assuming 512 bytes per sector
+        // superblcok should take about 2, 1024 bytes
 
-        printf("Number of inodes : %d \n", inodes);
-        for(int j=0; j<256; ++j){
-            printf("%c %c ", (char)(buf[j] >> 8), (char)(buf[j]));
-        }
-        
+        read_sectors(buf, 0xA0, 2, 2); 
+        uint32_t * superblock = (uint32_t *) buf;
+
+        printf("\n\n");
+        init_fs(superblock);
+
+        free(buf);
     }
 
     printf("\n\n");

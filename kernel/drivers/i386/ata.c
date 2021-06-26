@@ -20,7 +20,6 @@
 bool irq_fired = false;
 
 void ata_irq(){
-    printf("ATA IRQ Fired!\n");
     irq_fired = true;
 }
 
@@ -93,7 +92,7 @@ void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector
     } // assume it's a slave drive
 
     
-    outb(DRIVE_SELECT_PORT, drive | 0x40 | slavebit << 4 | ((LBA >> 24) & 0x0F));
+    outb(DRIVE_SELECT_PORT, drive  | slavebit << 4 | ((LBA >> 24) & 0x0F));
     outb(0x1F1, 0);
     outb(SECTOR_COUNT_PORT, sector_count);
     outb(LBA_LO_PORT, (uint8_t)LBA);
@@ -105,7 +104,6 @@ void read_sectors(uint16_t * target, uint8_t drive, uint32_t LBA, uint8_t sector
     ATA_WAIT_BSY();
 
     for(int i=0; i<sector_count;i++){
-        wait_for_irq();
         for(int j=0; j<256; j++)
             target[j] = inw(0x1F0);
         target+=256;

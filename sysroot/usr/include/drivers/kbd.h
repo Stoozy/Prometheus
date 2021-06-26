@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "typedefs.h"
+#include <kernel/typedefs.h>
 
 void handle_scan(char in);
 

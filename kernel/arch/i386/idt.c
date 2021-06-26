@@ -1,8 +1,8 @@
 #include <kernel/typedefs.h>
 #include <stdio.h>
-#include <kernel/kbd.h>
+#include <drivers/kbd.h>
 #include <kernel/io.h>
-#include <kernel/ata.h>
+#include <drivers/ata.h>
 
 static uint64_t _ticks = 0;
 

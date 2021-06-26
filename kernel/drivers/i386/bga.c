@@ -1,5 +1,5 @@
 #include <kernel/typedefs.h>
-#include <kernel/bga.h>
+#include <drivers/bga.h>
 #include <kernel/io.h>
 #include <stdio.h>
 

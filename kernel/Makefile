@@ -9,6 +9,7 @@ LIBS?=
 
 ARCHDIR=arch/$(HOSTARCH)
 DRIVERSDIR=drivers/$(HOSTARCH)
+FSDIR=fs/$(HOSTARCH)
 
 DESTDIR?=
 PREFIX?=/usr/local
@@ -23,6 +24,7 @@ LIBS:=$(LIBS) -nostdlib -L../libc/  -lk  -lgcc
 
 include $(ARCHDIR)/make.config
 include $(DRIVERSDIR)/make.config
+include $(FSDIR)/make.config
 
 CFLAGS:=$(CFLAGS) $(KERNEL_ARCH_CFLAGS)
 CPPFLAGS:=$(CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS)
@@ -33,6 +35,7 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
 $(DRIVER_OBJS)\
+$(FS_OBJS)\
 kernel/kernel.o \
 
 

@@ -1,4 +1,4 @@
-#include <kernel/kbd.h>
+#include <drivers/kbd.h>
 #include <stdio.h>
 #include <kernel/tty.h>
 
