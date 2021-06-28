@@ -8,11 +8,78 @@
 
 #define FS_ERR_STATE        1
 #define FS_CLEAN_STATE      2
+#define SECTOR_SIZE       512
+#define BGDT_SIZE          32
+#define BGDT_PER_SECTOR    16
+#define ROOT_INODE          2
 
 
 static uint8_t bgdt_block = 1;
 
 static ext2fs_superblock_t superblock[4];
+
+uint32_t get_block_size(ext2fs_superblock_t * superblock){
+    return 1024 << superblock->block_size;
+} 
+
+uint32_t get_frag_size(ext2fs_superblock_t * superblock){
+    return 1024 << superblock->frag_size;
+}
+
+void get_bgdt_from_group(
+        ext2fs_block_group_desc_t * bgdt, 
+        uint32_t bg_block,  
+        uint32_t bg_no,
+        uint32_t sectors_per_block
+        )
+{
+
+    uint32_t bgdt_sector, bgdt_index;
+    bgdt_sector = bg_block * sectors_per_block + bg_no / BGDT_PER_SECTOR ; 
+    bgdt_index = bg_no % BGDT_PER_SECTOR;
+    
+    /*
+     * No need to read the whole 
+     * block (4096 bytes). Rather,
+     * just read the correct sector
+     * offset.
+     *
+     */
+    uint16_t * buffer = malloc(SECTOR_SIZE);
+
+    read_sectors(buffer, 0xA0, bgdt_sector, 1);
+    read_sectors(buffer, 0xA0, bgdt_sector, 1);
+   
+    memcpy(bgdt, ((uint8_t*)buffer)+bgdt_index*BGDT_SIZE, BGDT_SIZE);
+
+    free(buffer);
+}
+
+
+void get_inode_from_bgdt(
+        ext2fs_inode_t * inode,
+        ext2fs_block_group_desc_t * bgdt, 
+        uint32_t sectors_per_block,
+        uint32_t index)
+{
+    // inodes start at 1
+    --index;
+
+    uint32_t inode_table = bgdt->inode_table_addr;
+
+    uint32_t inode_sector = inode_table * sectors_per_block;
+    inode_sector += (index * sizeof(ext2fs_inode_t))/SECTOR_SIZE;
+
+    uint16_t * buffer = malloc(SECTOR_SIZE);
+
+    read_sectors(buffer, 0xA0, inode_sector, 1);
+    read_sectors(buffer, 0xA0, inode_sector, 1);
+
+    memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(ext2fs_inode_t)), sizeof(ext2fs_inode_t));
+
+    free(buffer);
+
+}
 
 static uint32_t number_of_block_groups(uint32_t total_blocks, uint32_t blocks_per_group){
     if(total_blocks % blocks_per_group != 0 )
@@ -20,8 +87,8 @@ static uint32_t number_of_block_groups(uint32_t total_blocks, uint32_t blocks_pe
     return total_blocks/blocks_per_group;
 }
 
-void init_fs(uint32_t * sb_buf){
-    uint32_t current_drive = 0;
+void init_fs(uint32_t * sb_buf, uint8_t drive){
+    uint32_t current_drive, sectors_per_block, inode_size = 128;
 
     // only set empty superblocks
     for(int i=0; i<4;++i)
@@ -31,6 +98,7 @@ void init_fs(uint32_t * sb_buf){
             break;
         }
 
+    sectors_per_block = get_block_size(&superblock[drive]) / SECTOR_SIZE;
 
     // verify ext2 fs
     if(superblock[current_drive].signature != 0xef53) {
@@ -45,81 +113,55 @@ void init_fs(uint32_t * sb_buf){
         printf("Filesystem is clean (no errors)\n");
     }
 
-        //uint32_t block_groups = number_of_block_groups(blocks, blocks_per_group);
-    //printf("%d block groups\n", block_groups);
+
+    /* block group descriptor table is 
+     * at block 1 by default.
+     * It starts at block 2 only for 1024
+     * bytes block size 
+     */
+
+    uint32_t bgdt_block = 1;
+
+    if(get_block_size(&superblock[current_drive]) == 1024) bgdt_block = 2;
 
 
-    ///*
-    // *  special case where the 
-    // *  block descriptor table
-    // *  starts at block 2
-    // */
-    //if(block_size == 1024){
-    //    bgdt_block = 2;
-    //}
+    if(superblock[current_drive].v_major >= 1) {
+        // overwrite inode size
+        // inode size defined in extended fields
+        inode_size = superblock[current_drive].inode_size;
+    }
 
-
-    //uint16_t * read_buf = malloc(512*sizeof(char));
-
-    //// dummy read
-    //read_sectors(read_buf, 0xA0, bgdt_block * block_size/512, 1);
-    //read_sectors(read_buf, 0xA0, bgdt_block * block_size/512, 1);
-
-    //// each bgdt is offset by 32 bytes
-    //
-    //uint32_t * bgdt = (uint32_t *) read_buf;
-
-    // 512 bytes per sector, 32 bytes per bgd
-    // 512/32 = 16 bgds
-    //for(int i=0; i<(512/32);++i){
-    //    printf("Block Group #", i);
-    //    uint32_t block_usage = bgdt[i*32+0];
-    //    uint32_t inode_usage = bgdt[i*32+1];
-    //    uint32_t inode_table_addr = bgdt[i*32+2];
-
-
-    //    //printf("Block usage bitmap at block #%d\n", block_usage);
-    //    //printf("Inode usage bitmap at block #%d\n", inode_usage);
-    //    //printf("Inode Table address: 0x%x\n", inode_table_addr);
-
-    //    printf("\n");
-    //    Sleep(1000);
-    //}
-
-    // root dir inode is always 2
-    // inode -1 / inodes_per_group 
+    uint32_t n_block_groups = superblock[current_drive].n_blocks/superblock[current_drive].blocks_per_group;
     
-    //uint32_t version = superblock[15] & 0x00ff  | superblock[19];
+    // get bgdt 
+    
+    uint32_t inode_block_group = (ROOT_INODE-1) / superblock[current_drive].inodes_per_group;
 
-    //uint32_t inode_size = 128;
-    //if(version >= 1 ){
-    //    inode_size = superblock[22] & 0xff00;
-    //}
+    ext2fs_block_group_desc_t * bgdt = malloc(sizeof(ext2fs_block_group_desc_t));
+    get_bgdt_from_group(bgdt, bgdt_block, inode_block_group, sectors_per_block);
 
-    //printf("Inode size: %d\n", inode_size);
+    printf("Block usage bitmap at block #%d\n", bgdt->block_usage_bitmap_addr);
+    printf("Inode usage bitmap at block #%d\n", bgdt->inode_usage_bitmap_addr);
 
-    //uint32_t root_inode_block_group = (1) / inodes_per_group;
-    //uint32_t root_inode_index = (1) % inodes_per_group;
+    printf("Number of dirs in current group: %d\n", bgdt->n_dirs);
+    printf("Inode table at block #%d\n", bgdt->inode_table_addr);
 
- 
-    //uint32_t root_inode_table_addr = bgdt[root_inode_block_group*5+2];
-    //printf("Root inode table addr 0x%x\n", root_inode_table_addr);
+    ext2fs_inode_t * inode = malloc(sizeof(ext2fs_inode_t));
+    get_inode_from_bgdt(inode, bgdt, sectors_per_block, ROOT_INODE);
 
-    //uint32_t containing_block = (root_inode_index * inode_size)/ block_size;
+    printf("Mode 0x%x\n", inode->mode & 0xF000);
+    printf("Size 0x%x\n", inode->size);
 
 
-    //printf("version %d\n", version);
-    //read_sectors(read_buf, 0xA0, root_inode_table_addr * (block_size/512), 1);
-    //read_sectors(read_buf, 0xA0, root_inode_table_addr * (block_size/512), 1);
+    uint16_t * buffer = malloc(SECTOR_SIZE);
 
-    //uint16_t type = (read_buf[root_inode_index * (inode_size/1) + 0] & 0xF);
-    //printf("Type is 0x%x\n", type);
-    //
-    //printf("Size of superblock: %d\n", sizeof(ext2fs_superblock_t));
-    //printf("Size of bgd: %d\n", sizeof(ext2fs_block_group_desc_t));
-    //printf("Size of inode: %d\n", sizeof(ext2fs_inode_t));
+    read_sectors(buffer, 0xA0, inode->direct_block_ptrs[0] * sectors_per_block, 1);
 
-    //free(read_buf);
+    ext2fs_dirent_t  * dirent = malloc(sizeof(ext2fs_dirent_t));
+    memcpy(dirent, buffer, sizeof(ext2fs_dirent_t));
+
+    printf("Folder name %s\n", dirent->name_chars);
+    
 }
 
 
@@ -130,11 +172,15 @@ void fs_dump_info(uint8_t drive){
     printf("Number of inodes : %d \n", superblock[drive].n_inodes);
     printf("Number of  blocks: %d \n", superblock[drive].n_blocks);
 
-    printf("Block Size: %d bytes\n", 1024 << superblock[drive].block_size );
-    printf("Fragment Size: %d bytes \n", 1024 << superblock[drive].frag_size);
+    printf("Number of block groups: %d\n", 
+            superblock[drive].n_blocks/superblock[drive].blocks_per_group);
+
     printf("Blocks per group: %d\n", superblock[drive].blocks_per_group);
-    printf("Fragments per group : %d \n", superblock[drive].frags_per_group);
-    printf("Inodes per group: %d \n\n", superblock[drive].inodes_per_group);
+    printf("Inodes per group: %d\n", superblock[drive].inodes_per_group);
+    printf("Frags per group: %d\n", superblock[drive].frags_per_group);
+
+    printf("Block Size: %d bytes\n", get_block_size(&superblock[drive]) );
+    printf("Fragment Size: %d bytes \n", get_frag_size(&superblock[drive]));
 
     printf("Unallocated blocks : %d\n", superblock[drive].n_unalloc_blocks);
     printf("Unallocated inodes : %d\n", superblock[drive].n_unalloc_inodes);

@@ -1,6 +1,8 @@
 #pragma once
 #include <kernel/typedefs.h>
 
+#define EXT2_MAX_FILENAME_LEN       4096
+
 typedef struct EXT2FS_SUPERBLOCK{
 
     uint32_t n_inodes;
@@ -93,9 +95,9 @@ typedef struct EXT2FS_BLOCK_GROUP_DESC {
 
 
 typedef struct EXT2FS_INODE{
-    uint16_t type_and_perms;
+    uint16_t mode;
     uint16_t user_id;
-    uint32_t size_lo;
+    uint32_t size;
 
     uint32_t last_access_time;
     uint32_t creation_time;
@@ -118,7 +120,7 @@ typedef struct EXT2FS_INODE{
 
     uint32_t gen_number; /* used by NFS */
 
-    uint32_t padding[2];
+    uint32_t padding_1;
     uint32_t padding_2;
 
     uint32_t frag_block_address;
@@ -128,8 +130,27 @@ typedef struct EXT2FS_INODE{
 } ext2fs_inode_t;
 
 
-void init_fs(uint32_t * superblock);
+typedef struct EXT2FS_DIR_ENTRY{
+    uint32_t inode; 
+    uint16_t total_size;
+    uint8_t name_len;
+    uint8_t type;
+    uint8_t name_chars[EXT2_MAX_FILENAME_LEN];
+} ext2fs_dirent_t;
+
+void init_fs(uint32_t * superblock, uint8_t drive);
 void fs_dump_info(uint8_t drive);
+
+uint32_t get_block_size(ext2fs_superblock_t * superblock);
+uint32_t get_frag_size(ext2fs_superblock_t * superblock);
+
+void get_bgdt_from_group(
+    ext2fs_block_group_desc_t * bgdt, 
+    uint32_t bg_block, 
+    uint32_t group_no,
+    uint32_t sectors_per_block
+);
+
 
 
 

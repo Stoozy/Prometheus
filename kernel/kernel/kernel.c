@@ -166,8 +166,8 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         uint32_t * superblock = (uint32_t *) buf;
 
         printf("\n\n");
-        init_fs(superblock);
-        fs_dump_info(0);
+        init_fs(superblock, 0);
+        //fs_dump_info(0);
 
         free(buf);
     }
