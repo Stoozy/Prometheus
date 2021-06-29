@@ -174,31 +174,31 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("\n\n");
 
-    //uint8_t * bga_framebuffer;
+    uint8_t * bga_framebuffer;
 
-    //if(bga_available() == 1){
-    //    // setup bga here
-    //    device_t bga = get_bga(); 
+    if(bga_available() == 1){
+        // setup bga here
+        device_t bga = get_bga(); 
 
-    //    // read BAR0 of bga to get LFB
-    //    if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
-    //        uint32_t bga_lfb_address = pci_get_bar(bga, 0);
+        // read BAR0 of bga to get LFB
+        if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
+            uint32_t bga_lfb_address = pci_get_bar(bga, 0);
 
-    //        printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
+            printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
 
-    //        //bga_set_video_mode(1024, 768, 8, 0, 1);
+            bga_set_video_mode(1024, 768, 8, 0, 1);
 
-    //        //bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
-    //        //for(int i=0; i<1024; ++i) {
-    //        //    for(int j=0; j<768; ++j){
-    //        //        if( i%20 == 0 || j%20 ==0 )
-    //        //            bga_framebuffer[i+j*1024] = 0x0;
-    //        //        else
-    //        //            bga_framebuffer[i+j*1024] = 0xF;
-    //        //    }
-    //        //}
-    //    }
-    //}
+            bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
+            for(int i=0; i<1024; ++i) {
+                for(int j=0; j<768; ++j){
+                    if( i%20 == 0 || j%20 ==0 )
+                        bga_framebuffer[i+j*1024] = 0x0;
+                    else
+                        bga_framebuffer[i+j*1024] = 0xF;
+                }
+            }
+        }
+    }
 
 
     printf("\n\n");

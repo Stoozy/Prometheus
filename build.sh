@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 . ./headers.sh
 
 ROOT_DIR=$PWD

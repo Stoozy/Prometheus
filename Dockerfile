@@ -22,6 +22,7 @@ RUN yes | apt-get install     git
 RUN yes | apt-get install     wget
 RUN yes | apt-get install     nasm
 RUN yes | apt-get install     xorriso
+RUN yes | apt-get install     grub2
 
 
 WORKDIR /
@@ -49,8 +50,9 @@ WORKDIR /src/
 RUN mkdir build-gcc && cd build-gcc && linux32 ../gcc-11.1.0/configure  --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --without-headers && linux32 make all-gcc && linux32 make all-target-libgcc && linux32 make install-gcc && linux32 make install-target-libgcc
 
 # Clone actual project
+RUN rm -rf /src/Dead-OS
 RUN git clone https://github.com/Stoozy/Dead-OS.git
 RUN chmod +x /src/Dead-OS/build.sh
 RUN chmod +x /src/Dead-OS/iso.sh
 
-CMD cd /src/Dead-OS/ && ./build.sh && ./iso.sh 
+CMD cd /src/Dead-OS/ && ./build.sh && cd /src/Dead-OS/  && ./iso.sh 
