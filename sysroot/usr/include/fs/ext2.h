@@ -76,7 +76,7 @@ typedef struct EXT2FS_SUPERBLOCK{
 
     uint8_t padding_3[788];
 
-} ext2fs_superblock_t;
+} e2_superblock_t;
 
 
 
@@ -91,7 +91,7 @@ typedef struct EXT2FS_BLOCK_GROUP_DESC {
 
     uint8_t pad[18];
 
-} ext2fs_block_group_desc_t;
+} e2_bgdt_t;
 
 
 typedef struct EXT2FS_INODE{
@@ -127,7 +127,7 @@ typedef struct EXT2FS_INODE{
 
     uint8_t os_value_2[12];
 
-} ext2fs_inode_t;
+} e2_inode_t;
 
 
 typedef struct EXT2FS_DIR_ENTRY{
@@ -136,16 +136,16 @@ typedef struct EXT2FS_DIR_ENTRY{
     uint8_t name_len;
     uint8_t type;
     uint8_t name_chars[EXT2_MAX_FILENAME_LEN];
-} ext2fs_dirent_t;
+} e2_dirent_t;
 
 void init_fs(uint32_t * superblock, uint8_t drive);
 void fs_dump_info(uint8_t drive);
 
-uint32_t get_block_size(ext2fs_superblock_t * superblock);
-uint32_t get_frag_size(ext2fs_superblock_t * superblock);
+uint32_t get_block_size(e2_superblock_t * superblock);
+uint32_t get_frag_size(e2_superblock_t * superblock);
 
 void get_bgdt_from_group(
-    ext2fs_block_group_desc_t * bgdt, 
+    e2_bgdt_t * bgdt, 
     uint32_t bg_block, 
     uint32_t group_no,
     uint32_t sectors_per_block

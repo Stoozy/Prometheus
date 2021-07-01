@@ -14,20 +14,22 @@
 #define ROOT_INODE          2
 
 
+extern void kernel_panic(const char * reason);
+
 static uint8_t bgdt_block = 1;
 
-static ext2fs_superblock_t superblock[4];
+static e2_superblock_t superblock[4];
 
-uint32_t get_block_size(ext2fs_superblock_t * superblock){
+uint32_t get_block_size(e2_superblock_t * superblock){
     return 1024 << superblock->block_size;
 } 
 
-uint32_t get_frag_size(ext2fs_superblock_t * superblock){
+uint32_t get_frag_size(e2_superblock_t * superblock){
     return 1024 << superblock->frag_size;
 }
 
 void get_bgdt_from_group(
-        ext2fs_block_group_desc_t * bgdt, 
+        e2_bgdt_t * bgdt, 
         uint32_t bg_block,  
         uint32_t bg_no,
         uint32_t sectors_per_block
@@ -41,8 +43,7 @@ void get_bgdt_from_group(
     /*
      * No need to read the whole 
      * block (4096 bytes). Rather,
-     * just read the correct sector
-     * offset.
+     * just read the correct sector.
      *
      */
     uint16_t * buffer = malloc(SECTOR_SIZE);
@@ -50,32 +51,32 @@ void get_bgdt_from_group(
     read_sectors(buffer, 0xA0, bgdt_sector, 1);
     read_sectors(buffer, 0xA0, bgdt_sector, 1);
    
-    memcpy(bgdt, ((uint8_t*)buffer)+bgdt_index*BGDT_SIZE, BGDT_SIZE);
+    memcpy(bgdt, ((uint8_t*)buffer)+(bgdt_index*BGDT_SIZE), BGDT_SIZE);
 
     free(buffer);
 }
 
 
 void get_inode_from_bgdt(
-        ext2fs_inode_t * inode,
-        ext2fs_block_group_desc_t * bgdt, 
+        e2_inode_t * inode,
+        e2_bgdt_t * bgdt, 
         uint32_t sectors_per_block,
         uint32_t index)
 {
     // inodes start at 1
-    --index;
+    //--index;
 
     uint32_t inode_table = bgdt->inode_table_addr;
 
     uint32_t inode_sector = inode_table * sectors_per_block;
-    inode_sector += (index * sizeof(ext2fs_inode_t))/SECTOR_SIZE;
+    inode_sector += (index * sizeof(e2_inode_t))/SECTOR_SIZE;
 
     uint16_t * buffer = malloc(SECTOR_SIZE);
 
     read_sectors(buffer, 0xA0, inode_sector, 1);
     read_sectors(buffer, 0xA0, inode_sector, 1);
 
-    memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(ext2fs_inode_t)), sizeof(ext2fs_inode_t));
+    memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(e2_inode_t)), sizeof(e2_inode_t));
 
     free(buffer);
 
@@ -109,6 +110,9 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     if(superblock[current_drive].fs_state == FS_ERR_STATE){
         // handle error here
         // kernel_panic maybe ?
+
+        printf("Filesystem is in an error state\n");
+        //kernel_panic("Invalid Filesystem \n");
     }else{
         printf("Filesystem is clean (no errors)\n");
     }
@@ -137,7 +141,7 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     
     uint32_t inode_block_group = (ROOT_INODE-1) / superblock[current_drive].inodes_per_group;
 
-    ext2fs_block_group_desc_t * bgdt = malloc(sizeof(ext2fs_block_group_desc_t));
+    e2_bgdt_t * bgdt = malloc(sizeof(e2_bgdt_t));
     get_bgdt_from_group(bgdt, bgdt_block, inode_block_group, sectors_per_block);
 
     printf("Block usage bitmap at block #%d\n", bgdt->block_usage_bitmap_addr);
@@ -146,7 +150,7 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     printf("Number of dirs in current group: %d\n", bgdt->n_dirs);
     printf("Inode table at block #%d\n", bgdt->inode_table_addr);
 
-    ext2fs_inode_t * inode = malloc(sizeof(ext2fs_inode_t));
+    e2_inode_t * inode = malloc(sizeof(e2_inode_t));
     get_inode_from_bgdt(inode, bgdt, sectors_per_block, ROOT_INODE);
 
     printf("Mode 0x%x\n", inode->mode & 0xF000);
@@ -157,8 +161,8 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
 
     read_sectors(buffer, 0xA0, inode->direct_block_ptrs[0] * sectors_per_block, 1);
 
-    ext2fs_dirent_t  * dirent = malloc(sizeof(ext2fs_dirent_t));
-    memcpy(dirent, buffer, sizeof(ext2fs_dirent_t));
+    e2_dirent_t  * dirent = malloc(sizeof(e2_dirent_t));
+    memcpy(dirent, buffer, sizeof(e2_dirent_t));
 
     printf("Folder name %s\n", dirent->name_chars);
     
