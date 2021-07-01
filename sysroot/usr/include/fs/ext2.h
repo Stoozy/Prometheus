@@ -1,7 +1,23 @@
 #pragma once
 #include <kernel/typedefs.h>
 
-#define EXT2_MAX_FILENAME_LEN       4096
+
+#define EXT2_MAX_FILENAME_LEN           256 // http://www.science.smith.edu/~nhowe/teaching/csc262/oldlabs/ext2.html
+#define EXT2_FIFO                       0x1000 	
+#define EXT2_CHARDEV                    0x2000
+#define EXT2_DIRENT                     0x4000
+#define EXT2_BLOCKDEV                   0x6000
+#define EXT2_FILE                       0x8000
+#define EXT2_SYMBOLIC_FILE              0xA000
+#define EXT2_UNIX_SOCKET                0xC000
+
+
+#define FS_ERR_STATE                    1
+#define FS_CLEAN_STATE                  2
+#define SECTOR_SIZE                     512
+#define BGDT_SIZE                       32
+#define BGDT_PER_SECTOR                 16
+#define ROOT_INODE                      2
 
 typedef struct EXT2FS_SUPERBLOCK{
 
@@ -131,11 +147,13 @@ typedef struct EXT2FS_INODE{
 
 
 typedef struct EXT2FS_DIR_ENTRY{
-    uint32_t inode; 
-    uint16_t total_size;
-    uint8_t name_len;
-    uint8_t type;
-    uint8_t name_chars[EXT2_MAX_FILENAME_LEN];
+
+    uint32_t    inode; 
+    uint16_t    total_size;
+    uint8_t     name_len;
+    uint8_t     type;
+    uint8_t     name_chars[EXT2_MAX_FILENAME_LEN];
+
 } e2_dirent_t;
 
 void init_fs(uint32_t * superblock, uint8_t drive);

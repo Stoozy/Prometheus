@@ -6,13 +6,6 @@
 
 #include <string.h>
 
-#define FS_ERR_STATE        1
-#define FS_CLEAN_STATE      2
-#define SECTOR_SIZE       512
-#define BGDT_SIZE          32
-#define BGDT_PER_SECTOR    16
-#define ROOT_INODE          2
-
 
 extern void kernel_panic(const char * reason);
 
@@ -23,6 +16,10 @@ static e2_superblock_t superblock[4];
 uint32_t get_block_size(e2_superblock_t * superblock){
     return 1024 << superblock->block_size;
 } 
+
+uint32_t get_inode_type(e2_inode_t * inode){
+    return inode->mode & 0xF000;
+}
 
 uint32_t get_frag_size(e2_superblock_t * superblock){
     return 1024 << superblock->frag_size;
@@ -54,8 +51,38 @@ void get_bgdt_from_group(
     memcpy(bgdt, ((uint8_t*)buffer)+(bgdt_index*BGDT_SIZE), BGDT_SIZE);
 
     free(buffer);
+
 }
 
+
+void dirents_dump(e2_inode_t * inode, uint32_t sectors_per_block){
+    if(get_inode_type(inode) != EXT2_DIRENT){
+        printf("Not a dir!");
+        return;
+    }
+    
+    printf("\n");
+
+    uint8_t * buffer = malloc(SECTOR_SIZE);
+
+    e2_dirent_t * dirent = malloc(sizeof(e2_dirent_t));
+    uint8_t * dirent_addr = (uint8_t*)buffer;
+    
+    // dummy dirent
+    dirent->total_size = 0;
+
+    read_sectors((uint16_t*)buffer, 0xA0, inode->direct_block_ptrs[0] * sectors_per_block, 1);
+
+    while(dirent->total_size < sizeof(e2_dirent_t)){
+        memcpy(dirent, dirent_addr, sizeof(e2_dirent_t));
+
+        printf("%s - %d bytes \n", dirent->name_chars, dirent->total_size);
+        dirent_addr += dirent->total_size;
+    }
+    
+    free(dirent);
+    free(buffer);
+}
 
 void get_inode_from_bgdt(
         e2_inode_t * inode,
@@ -64,7 +91,7 @@ void get_inode_from_bgdt(
         uint32_t index)
 {
     // inodes start at 1
-    //--index;
+    --index;
 
     uint32_t inode_table = bgdt->inode_table_addr;
 
@@ -156,16 +183,8 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     printf("Mode 0x%x\n", inode->mode & 0xF000);
     printf("Size 0x%x\n", inode->size);
 
-
-    uint16_t * buffer = malloc(SECTOR_SIZE);
-
-    read_sectors(buffer, 0xA0, inode->direct_block_ptrs[0] * sectors_per_block, 1);
-
-    e2_dirent_t  * dirent = malloc(sizeof(e2_dirent_t));
-    memcpy(dirent, buffer, sizeof(e2_dirent_t));
-
-    printf("Folder name %s\n", dirent->name_chars);
-    
+    printf("Root directory contents");
+    dirents_dump(inode, sectors_per_block);
 }
 
 
