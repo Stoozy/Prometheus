@@ -9,9 +9,17 @@
 
 extern void kernel_panic(const char * reason);
 
+/* block group descriptor table is 
+ * at block 1 by default.
+ * It starts at block 2 only for 1024
+ * bytes block size 
+ */
+
 static uint8_t bgdt_block = 1;
 
 static e2_superblock_t superblock[4];
+static uint32_t inodes_per_group = 0; 
+static uint32_t block_size = 4096;
 
 uint32_t get_block_size(e2_superblock_t * superblock){
     return 1024 << superblock->block_size;
@@ -23,6 +31,10 @@ uint32_t get_inode_type(e2_inode_t * inode){
 
 uint32_t get_frag_size(e2_superblock_t * superblock){
     return 1024 << superblock->frag_size;
+}
+
+void get_inode_from_index(uint32_t index){
+
 }
 
 void get_bgdt_from_group(
@@ -76,7 +88,8 @@ void dirents_dump(e2_inode_t * inode, uint32_t sectors_per_block){
     while(dirent->total_size < sizeof(e2_dirent_t)){
         memcpy(dirent, dirent_addr, sizeof(e2_dirent_t));
 
-        printf("%s - %d bytes \n", dirent->name_chars, dirent->total_size);
+        printf("%s - %d bytes (Inode #%d)\n", dirent->name_chars, dirent->total_size, dirent->inode);
+        if(dirent->type == EXT2_DIRENT_FILE) dump_file(dirent, sectors_per_block);
         dirent_addr += dirent->total_size;
     }
     
@@ -103,7 +116,7 @@ void get_inode_from_bgdt(
     read_sectors(buffer, 0xA0, inode_sector, 1);
     read_sectors(buffer, 0xA0, inode_sector, 1);
 
-    memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(e2_inode_t)), sizeof(e2_inode_t));
+    memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(e2_inode_t)%SECTOR_SIZE), sizeof(e2_inode_t));
 
     free(buffer);
 
@@ -113,6 +126,51 @@ static uint32_t number_of_block_groups(uint32_t total_blocks, uint32_t blocks_pe
     if(total_blocks % blocks_per_group != 0 )
         return (total_blocks/blocks_per_group)+1;
     return total_blocks/blocks_per_group;
+}
+
+
+void dump_file(e2_dirent_t * dirent, uint32_t sectors_per_block){
+    if(dirent->type != EXT2_DIRENT_FILE){
+        printf("Not a valid file");
+        return;
+    }
+    uint8_t * bytes = malloc(dirent->total_size);
+
+    /* get inode group */
+    uint32_t inode_block_group = (dirent->inode-1) / inodes_per_group;
+    uint32_t index = (dirent->inode-1) % inodes_per_group;
+
+    uint32_t sectors_to_read = dirent->total_size/SECTOR_SIZE;
+
+    /* increase sectors to read based on overflowing data */
+    if(dirent->total_size % SECTOR_SIZE != 0) sectors_to_read++;
+
+    e2_bgdt_t * bgdt = malloc(sizeof(e2_bgdt_t));
+    get_bgdt_from_group(bgdt, bgdt_block, inode_block_group, sectors_per_block);
+
+    e2_inode_t * inode = malloc(sizeof(e2_inode_t));
+    get_inode_from_bgdt(inode, bgdt, sectors_per_block, dirent->inode);
+    
+    uint32_t blocks_to_read = dirent->total_size/block_size;
+    if(dirent->total_size % block_size != 0) blocks_to_read++;
+    
+    uint16_t * buffer = malloc(block_size);
+
+    for(int i=0; i<blocks_to_read; ++i){
+        if(inode->direct_block_ptrs[i] != 0 ){
+            printf("Reading %d sectors  \n", sectors_to_read);
+            Sleep(1000);
+
+            read_sectors((uint16_t *)bytes, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
+
+            printf("%s", bytes);
+            Sleep(1000);
+        }
+    }
+
+    free(bgdt);
+    free(inode);
+    free(bytes);
 }
 
 void init_fs(uint32_t * sb_buf, uint8_t drive){
@@ -127,6 +185,8 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
         }
 
     sectors_per_block = get_block_size(&superblock[drive]) / SECTOR_SIZE;
+    inodes_per_group = superblock[drive].inodes_per_group;
+    block_size = get_block_size(&superblock[drive]);
 
     // verify ext2 fs
     if(superblock[current_drive].signature != 0xef53) {
@@ -144,15 +204,6 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
         printf("Filesystem is clean (no errors)\n");
     }
 
-
-    /* block group descriptor table is 
-     * at block 1 by default.
-     * It starts at block 2 only for 1024
-     * bytes block size 
-     */
-
-    uint32_t bgdt_block = 1;
-
     if(get_block_size(&superblock[current_drive]) == 1024) bgdt_block = 2;
 
 
@@ -164,8 +215,8 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
 
     uint32_t n_block_groups = superblock[current_drive].n_blocks/superblock[current_drive].blocks_per_group;
     
-    // get bgdt 
     
+    // get bgdt 
     uint32_t inode_block_group = (ROOT_INODE-1) / superblock[current_drive].inodes_per_group;
 
     e2_bgdt_t * bgdt = malloc(sizeof(e2_bgdt_t));

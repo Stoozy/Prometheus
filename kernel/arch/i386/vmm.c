@@ -24,13 +24,13 @@ static node_t * freelist;
 node_t * search(node_t * head, virt_addr search_addr){
     node_t * current = head;
 
-    printf("Searching for address: 0x%x\n", search_addr);
-    printf("Current :%x Search: %x\n", current->start, search_addr);
+    //printf("Searching for address: 0x%x\n", search_addr);
+    //printf("Current :%x Search: %x\n", current->start, search_addr);
     if( current->start == search_addr)
         return current;
 
     while (current->next != NULL) {
-        printf("Current :%x Search: %x\n", current->start, search_addr);
+        //printf("Current :%x Search: %x\n", current->start, search_addr);
         if( current->start == search_addr)
             return current;
         current = current->next;
@@ -76,7 +76,7 @@ void vmm_free_page(virt_addr addr, size_t size){
         following->start = addr;
         following->size += size;
     } else {
-        printf("Pushing to free list: 0x%x size: %d\n", addr, size);
+        //printf("Pushing to free list: 0x%x size: %d\n", addr, size);
         push(freelist, addr, size);
     }     
 

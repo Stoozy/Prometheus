@@ -2,6 +2,9 @@
 #include <kernel/typedefs.h>
 
 
+/*
+ * Inode mode types 
+ */
 #define EXT2_MAX_FILENAME_LEN           256 // http://www.science.smith.edu/~nhowe/teaching/csc262/oldlabs/ext2.html
 #define EXT2_FIFO                       0x1000 	
 #define EXT2_CHARDEV                    0x2000
@@ -11,13 +14,24 @@
 #define EXT2_SYMBOLIC_FILE              0xA000
 #define EXT2_UNIX_SOCKET                0xC000
 
+/* 
+ * Dirent types
+ */
+#define EXT2_DIRENT_UNKNOWN                 0
+#define EXT2_DIRENT_FILE                    1
+#define EXT2_DIRENT_DIR                     2
+#define EXT2_DIRENT_CHARDEV                 3
+#define EXT2_DIRENT_BLOCKDEV                4
+#define EXT2_DIRENT_FIFO                    5
+#define EXT2_DIRENT_SOCKET                  6
+#define EXT2_SYMBOLIC_LINK                  7
 
-#define FS_ERR_STATE                    1
-#define FS_CLEAN_STATE                  2
-#define SECTOR_SIZE                     512
-#define BGDT_SIZE                       32
-#define BGDT_PER_SECTOR                 16
-#define ROOT_INODE                      2
+#define FS_ERR_STATE                        1
+#define FS_CLEAN_STATE                      2
+#define SECTOR_SIZE                         512
+#define BGDT_SIZE                           32
+#define BGDT_PER_SECTOR                     16
+#define ROOT_INODE                          2
 
 typedef struct EXT2FS_SUPERBLOCK{
 
