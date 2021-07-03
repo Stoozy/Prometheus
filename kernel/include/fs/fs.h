@@ -26,8 +26,10 @@ typedef struct fs_node{
     uint32_t impl;               
     
     /* File I/O functions */
+    
     uint32_t (*read)            (struct fs_node *, uint32_t, uint32_t, uint8_t *);
     uint32_t (*write)           (struct fs_node *, uint32_t, uint32_t, uint8_t *);
+
     void (*open)                (struct fs_node *);
     void (*close)               (struct fs_node *);
 
@@ -40,9 +42,8 @@ typedef struct fs_node{
 
 typedef struct file_system_type {
     char name[128];             // file system name e.g. ext2, fat, etc
-    int fs_flags;
-    dirent_t * (*mount)         (struct file_system_type *, int, const char *, void *);
-    void (*kill_sb) (struct super_block *);
+    dirent_t * (*mount)         (struct file_system_type *, const char *);
+    void (*umount)              (fs_node_t *);
 }fs_type_t; 
 
 

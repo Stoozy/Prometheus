@@ -6,6 +6,8 @@
 
 #include <string.h>
 
+#include <fs/fs.h>
+
 
 extern void kernel_panic(const char * reason);
 
@@ -25,6 +27,21 @@ static uint32_t block_size = 4096;
 uint32_t get_block_size(e2_superblock_t * superblock){
     return 1024 << superblock->block_size;
 } 
+
+dirent_t * ext2_mount(fs_type_t * type){
+    // root node is always 2
+    dirent_t * root_dir = malloc(sizeof(dirent_t));
+    memcpy(root_dir->name, "/", sizeof("/"));
+    //root_dir->name = "/";
+    root_dir->inode = ROOT_INODE;
+
+    return root_dir;
+}
+
+void ext2_umount(){
+    printf("Unmounted");
+    return;
+}
 
 uint32_t get_inode_type(e2_inode_t * inode){
     return inode->mode & 0xF000;
@@ -207,7 +224,17 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
         // TODO: handle error here
 
         printf("Filesystem is in an error state\n");
-        //kernel_panic("Invalid Filesystem \n");
+        
+        switch(superblock[current_drive].err_action){
+            case 0: 
+                printf("Continuing ...");
+                break;
+            case 1:
+                printf("Mount as RO");
+            case 2:
+                kernel_panic("Invalid Filesystem");
+        }
+
     }else{
         printf("Filesystem is clean (no errors)\n");
     }
@@ -242,8 +269,16 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     printf("Mode 0x%x\n", inode->mode & 0xF000);
     printf("Size 0x%x\n", inode->size);
 
-    printf("Root directory contents");
-    dirents_dump(inode, sectors_per_block);
+    fs_type_t * ext2_fs = malloc(sizeof(fs_type_t));
+
+    memcpy(ext2_fs->name, "ext2\0", sizeof("ext2\0"));
+    ext2_fs->mount = &ext2_mount;
+    ext2_fs->umount = &ext2_umount;
+
+    register_fs(ext2_fs);
+
+    //printf("Root directory contents");
+    //dirents_dump(inode, sectors_per_block);
 }
 
 

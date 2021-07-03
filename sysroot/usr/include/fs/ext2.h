@@ -57,7 +57,7 @@ typedef struct EXT2FS_SUPERBLOCK{
 
     uint16_t signature;
     uint16_t fs_state;
-    uint16_t padding_1;
+    uint16_t err_action;
     uint16_t v_minor;
 
     uint32_t last_fsck;  /* POSIX time */
