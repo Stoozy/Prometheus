@@ -11,6 +11,7 @@
 
 extern void kernel_panic(const char * reason);
 
+
 /* block group descriptor table is 
  * at block 1 by default.
  * It starts at block 2 only for 1024
@@ -79,7 +80,34 @@ void get_bgdt_from_group(
 
     free(buffer);
 
-}
+} // get_bgdt_from_group
+
+void get_inode_from_bgdt(
+        e2_inode_t * inode,
+        e2_bgdt_t * bgdt, 
+        uint32_t sectors_per_block,
+        uint32_t index)
+{
+    // inodes start at 1
+    --index;
+
+    /* Starting block address of the inode table */
+    uint32_t inode_table = bgdt->inode_table_addr;
+
+    uint32_t inode_sector = inode_table * sectors_per_block;
+    inode_sector += (index * sizeof(e2_inode_t))/SECTOR_SIZE;
+
+    uint16_t * buffer = malloc(SECTOR_SIZE);
+
+    read_sectors(buffer, 0xA0, inode_sector, 1);
+    read_sectors(buffer, 0xA0, inode_sector, 1);
+
+    memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(e2_inode_t)%SECTOR_SIZE), sizeof(e2_inode_t));
+
+    free(buffer);
+} // get_inode_from_bgdt()
+
+
 
 
 void dump_dirent(e2_inode_t * inode, uint32_t sectors_per_block){
@@ -94,117 +122,96 @@ void dump_dirent(e2_inode_t * inode, uint32_t sectors_per_block){
     uint8_t * buffer = malloc(SECTOR_SIZE);
 
     e2_dirent_t * dirent = malloc(sizeof(e2_dirent_t));
+
     uint8_t * dirent_addr = (uint8_t*)buffer;
     
     // dummy dirent
     dirent->total_size = 0;
 
+    e2_inode_t * current_inode = malloc(sizeof(e2_inode_t));
     read_sectors((uint16_t*)buffer, 0xA0, inode->direct_block_ptrs[0] * sectors_per_block, 1);
 
     while(dirent->total_size < sizeof(e2_dirent_t)){
         memcpy(dirent, dirent_addr, sizeof(e2_dirent_t));
 
+        get_inode(current_inode, dirent->inode);
+        //printf("Size: %d\n", current_inode->size);
+
         // set end of name
         dirent->name_chars[dirent->name_len] = '\0';
+        printf("Inode #%d: %s %d\n", dirent->inode, dirent->name_chars, current_inode->size);
 
-        printf("Inode #%d: %s\n", dirent->inode,  dirent->name_chars);
-
-        if(dirent->type == EXT2_DIRENT_FILE) dump_file(dirent, sectors_per_block);
+        if(dirent->type == EXT2_DIRENT_FILE){
+            dump_file_inode(current_inode);
+        }
+    
         dirent_addr += dirent->total_size;
     }
     
     free(dirent);
     free(buffer);
-}
-
-void get_inode_from_bgdt(
-        e2_inode_t * inode,
-        e2_bgdt_t * bgdt, 
-        uint32_t sectors_per_block,
-        uint32_t index)
-{
-    // inodes start at 1
-    --index;
-
-    uint32_t inode_table = bgdt->inode_table_addr;
-
-    uint32_t inode_sector = inode_table * sectors_per_block;
-    inode_sector += (index * sizeof(e2_inode_t))/SECTOR_SIZE;
-
-    uint16_t * buffer = malloc(SECTOR_SIZE);
-
-    read_sectors(buffer, 0xA0, inode_sector, 1);
-    read_sectors(buffer, 0xA0, inode_sector, 1);
-
-    memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(e2_inode_t)%SECTOR_SIZE), sizeof(e2_inode_t));
-
-    free(buffer);
-}
+} // dump_dirent()
 
 
-void get_inode_from_index(e2_inode_t * inode_ptr, uint32_t inode){
+
+void get_inode(e2_inode_t * inode, uint32_t index){
+
+    //if(dirent->type != EXT2_DIRENT_FILE){
+    //    printf("Not a valid file");
+    //    return;
+    //}
+
+    uint32_t sectors_per_block = block_size/SECTOR_SIZE;
 
     /* get inode group */
-    uint32_t inode_block_group = (inode-1) / inodes_per_group;
-    uint32_t index = (inode-1) % inodes_per_group;
+    uint32_t inode_block_group = (index-1) / inodes_per_group;
 
-    /* increase sectors to read based on overflowing data */
     e2_bgdt_t * bgdt = malloc(sizeof(e2_bgdt_t));
     get_bgdt_from_group(bgdt, bgdt_block, inode_block_group, sectors_per_block);
 
-    get_inode_from_bgdt(inode_ptr, bgdt, sectors_per_block, inode);
+    //e2_inode_t * inode = malloc(sizeof(e2_inode_t));
+    get_inode_from_bgdt(inode, bgdt, sectors_per_block, index);
 
-    free(bgdt);
+
+    //free(bgdt);
+} // get_inode()
+
+void dump_file_inode(e2_inode_t * inode){
+
+    if(get_inode_type(inode) != EXT2_FILE){
+        printf("Not a file! (0x%x)\n", get_inode_type(inode));
+        return;
+    }
+    
+    uint32_t sectors_per_block = block_size/SECTOR_SIZE;
+
+    uint32_t sectors_to_read = inode->size/SECTOR_SIZE;
+    /* increase sectors to read based on overflowing data */
+    if(inode->size % SECTOR_SIZE != 0) sectors_to_read++;
+
+    uint32_t blocks_to_read = inode->size/block_size;
+    if(inode->size % block_size != 0) blocks_to_read++;
+
+    uint16_t * buffer = malloc(block_size);
+    printf("%d bytes\n", inode->size);
+
+    for(int i=0; i<blocks_to_read+1; ++i){
+        if(inode->direct_block_ptrs[i] != 0 ){
+            printf("Reading %d sectors\n", sectors_per_block);
+            read_sectors(buffer, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
+            printf("%s", buffer);
+
+            Sleep(3000);
+        }
+    }
+    printf("\n\n");
+    free(buffer);
 }
 
 static uint32_t number_of_block_groups(uint32_t total_blocks, uint32_t blocks_per_group){
     if(total_blocks % blocks_per_group != 0 )
         return (total_blocks/blocks_per_group)+1;
     return total_blocks/blocks_per_group;
-}
-
-
-void dump_file(e2_dirent_t * dirent, uint32_t sectors_per_block){
-    if(dirent->type != EXT2_DIRENT_FILE){
-        printf("Not a valid file");
-        return;
-    }
-    dirent->name_chars[dirent->name_len] = '\0';
-
-    printf("Contents of %s : \n", dirent->name_chars);
-
-    e2_inode_t * inode = malloc(sizeof(e2_inode_t));
-    get_inode_from_index(inode, dirent->inode);
-
-    uint8_t * bytes = malloc(inode->size);
-
-
-    uint32_t sectors_to_read = inode->size/SECTOR_SIZE;
-    if(inode->size % SECTOR_SIZE != 0) sectors_to_read++;
-
-    uint32_t blocks_to_read = inode->size/block_size;
-    if(dirent->total_size % block_size != 0) blocks_to_read++;
-    
-    uint16_t * buffer = malloc(blocks_to_read * block_size);
-
-    printf("Reading %d block(s)  \n", blocks_to_read);
-    for(int i=0; i<blocks_to_read; ++i){
-        if(inode->direct_block_ptrs[i] != 0 ){
-            printf("Reading %d sectors  \n", sectors_to_read);
-
-            read_sectors(buffer, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
-            read_sectors(buffer, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
-
-            memcpy(bytes, buffer, inode->size);
-
-            printf("%s", bytes);
-
-            Sleep(2000);
-        }
-    }
-
-    free(inode);
-    free(bytes);
 }
 
 void init_fs(uint32_t * sb_buf, uint8_t drive){
@@ -229,8 +236,6 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     }
 
     if(superblock[current_drive].fs_state == FS_ERR_STATE){
-        // TODO: handle error here
-
         printf("Filesystem is in an error state\n");
         
         switch(superblock[current_drive].err_action){
@@ -291,7 +296,8 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
 
     //printf("Root directory contents");
     dump_dirent(inode, sectors_per_block);
-}
+
+} // init_fs()
 
 
 void fs_dump_info(uint8_t drive){
@@ -314,7 +320,7 @@ void fs_dump_info(uint8_t drive){
     printf("Unallocated blocks : %d\n", superblock[drive].n_unalloc_blocks);
     printf("Unallocated inodes : %d\n", superblock[drive].n_unalloc_inodes);
 
-}
+} // fs_dump_info
 
 
 

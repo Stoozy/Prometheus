@@ -173,6 +173,8 @@ typedef struct EXT2FS_DIR_ENTRY{
 void init_fs(uint32_t * superblock, uint8_t drive);
 void fs_dump_info(uint8_t drive);
 
+void get_inode(e2_inode_t * inode, uint32_t index);
+
 uint32_t get_block_size(e2_superblock_t * superblock);
 uint32_t get_frag_size(e2_superblock_t * superblock);
 
