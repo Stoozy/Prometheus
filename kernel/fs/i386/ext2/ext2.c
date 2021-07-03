@@ -82,7 +82,8 @@ void get_bgdt_from_group(
 }
 
 
-void dirents_dump(e2_inode_t * inode, uint32_t sectors_per_block){
+void dump_dirent(e2_inode_t * inode, uint32_t sectors_per_block){
+
     if(get_inode_type(inode) != EXT2_DIRENT){
         printf("Not a dir!");
         return;
@@ -103,7 +104,11 @@ void dirents_dump(e2_inode_t * inode, uint32_t sectors_per_block){
     while(dirent->total_size < sizeof(e2_dirent_t)){
         memcpy(dirent, dirent_addr, sizeof(e2_dirent_t));
 
-        printf("%s - %d bytes (Inode #%d)\n", dirent->name_chars, dirent->total_size, dirent->inode);
+        // set end of name
+        dirent->name_chars[dirent->name_len] = '\0';
+
+        printf("Inode #%d: %s\n", dirent->inode,  dirent->name_chars);
+
         if(dirent->type == EXT2_DIRENT_FILE) dump_file(dirent, sectors_per_block);
         dirent_addr += dirent->total_size;
     }
@@ -164,6 +169,7 @@ void dump_file(e2_dirent_t * dirent, uint32_t sectors_per_block){
         printf("Not a valid file");
         return;
     }
+    dirent->name_chars[dirent->name_len] = '\0';
 
     printf("Contents of %s : \n", dirent->name_chars);
 
@@ -179,15 +185,17 @@ void dump_file(e2_dirent_t * dirent, uint32_t sectors_per_block){
     uint32_t blocks_to_read = inode->size/block_size;
     if(dirent->total_size % block_size != 0) blocks_to_read++;
     
-    uint16_t * buffer = malloc(block_size);
+    uint16_t * buffer = malloc(blocks_to_read * block_size);
 
-    printf("Reading %d blocks  \n", blocks_to_read);
+    printf("Reading %d block(s)  \n", blocks_to_read);
     for(int i=0; i<blocks_to_read; ++i){
         if(inode->direct_block_ptrs[i] != 0 ){
             printf("Reading %d sectors  \n", sectors_to_read);
 
-            read_sectors((uint16_t *)bytes, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
-            read_sectors((uint16_t *)bytes, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
+            read_sectors(buffer, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
+            read_sectors(buffer, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
+
+            memcpy(bytes, buffer, inode->size);
 
             printf("%s", bytes);
 
@@ -282,7 +290,7 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     register_fs(ext2_fs);
 
     //printf("Root directory contents");
-    //dirents_dump(inode, sectors_per_block);
+    dump_dirent(inode, sectors_per_block);
 }
 
 
