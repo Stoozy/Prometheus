@@ -19,6 +19,7 @@ static uint8_t bgdt_block = 1;
 
 static e2_superblock_t superblock[4];
 static uint32_t inodes_per_group = 0; 
+static uint32_t sectors_per_block = 0;
 static uint32_t block_size = 4096;
 
 uint32_t get_block_size(e2_superblock_t * superblock){
@@ -33,9 +34,6 @@ uint32_t get_frag_size(e2_superblock_t * superblock){
     return 1024 << superblock->frag_size;
 }
 
-void get_inode_from_index(uint32_t index){
-
-}
 
 void get_bgdt_from_group(
         e2_bgdt_t * bgdt, 
@@ -119,7 +117,22 @@ void get_inode_from_bgdt(
     memcpy(inode, ((uint8_t*)buffer)+(index*sizeof(e2_inode_t)%SECTOR_SIZE), sizeof(e2_inode_t));
 
     free(buffer);
+}
 
+
+void get_inode_from_index(e2_inode_t * inode_ptr, uint32_t inode){
+
+    /* get inode group */
+    uint32_t inode_block_group = (inode-1) / inodes_per_group;
+    uint32_t index = (inode-1) % inodes_per_group;
+
+    /* increase sectors to read based on overflowing data */
+    e2_bgdt_t * bgdt = malloc(sizeof(e2_bgdt_t));
+    get_bgdt_from_group(bgdt, bgdt_block, inode_block_group, sectors_per_block);
+
+    get_inode_from_bgdt(inode_ptr, bgdt, sectors_per_block, inode);
+
+    free(bgdt);
 }
 
 static uint32_t number_of_block_groups(uint32_t total_blocks, uint32_t blocks_per_group){
@@ -134,41 +147,37 @@ void dump_file(e2_dirent_t * dirent, uint32_t sectors_per_block){
         printf("Not a valid file");
         return;
     }
-    uint8_t * bytes = malloc(dirent->total_size);
 
-    /* get inode group */
-    uint32_t inode_block_group = (dirent->inode-1) / inodes_per_group;
-    uint32_t index = (dirent->inode-1) % inodes_per_group;
-
-    uint32_t sectors_to_read = dirent->total_size/SECTOR_SIZE;
-
-    /* increase sectors to read based on overflowing data */
-    if(dirent->total_size % SECTOR_SIZE != 0) sectors_to_read++;
-
-    e2_bgdt_t * bgdt = malloc(sizeof(e2_bgdt_t));
-    get_bgdt_from_group(bgdt, bgdt_block, inode_block_group, sectors_per_block);
+    printf("Contents of %s : \n", dirent->name_chars);
 
     e2_inode_t * inode = malloc(sizeof(e2_inode_t));
-    get_inode_from_bgdt(inode, bgdt, sectors_per_block, dirent->inode);
-    
-    uint32_t blocks_to_read = dirent->total_size/block_size;
+    get_inode_from_index(inode, dirent->inode);
+
+    uint8_t * bytes = malloc(inode->size);
+
+
+    uint32_t sectors_to_read = inode->size/SECTOR_SIZE;
+    if(inode->size % SECTOR_SIZE != 0) sectors_to_read++;
+
+    uint32_t blocks_to_read = inode->size/block_size;
     if(dirent->total_size % block_size != 0) blocks_to_read++;
     
     uint16_t * buffer = malloc(block_size);
 
+    printf("Reading %d blocks  \n", blocks_to_read);
     for(int i=0; i<blocks_to_read; ++i){
         if(inode->direct_block_ptrs[i] != 0 ){
             printf("Reading %d sectors  \n", sectors_to_read);
-            Sleep(1000);
 
+            read_sectors((uint16_t *)bytes, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
             read_sectors((uint16_t *)bytes, 0xA0, inode->direct_block_ptrs[i] * sectors_per_block, sectors_per_block);
 
             printf("%s", bytes);
-            Sleep(1000);
+
+            Sleep(2000);
         }
     }
 
-    free(bgdt);
     free(inode);
     free(bytes);
 }
@@ -195,8 +204,7 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
     }
 
     if(superblock[current_drive].fs_state == FS_ERR_STATE){
-        // handle error here
-        // kernel_panic maybe ?
+        // TODO: handle error here
 
         printf("Filesystem is in an error state\n");
         //kernel_panic("Invalid Filesystem \n");
@@ -241,7 +249,7 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
 
 void fs_dump_info(uint8_t drive){
 
-
+    printf("\nFilesystem information: \n");
     printf("Signature: 0x%x\n", superblock[drive].signature);
     printf("Number of inodes : %d \n", superblock[drive].n_inodes);
     printf("Number of  blocks: %d \n", superblock[drive].n_blocks);

@@ -40,6 +40,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 void ATA_WAIT_INT();
+void set_video_mode();
 
 
 typedef struct multiboot_mmap_entry mmap_entry_t;
@@ -156,8 +157,7 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
         uint16_t * buf = malloc(1024*sizeof(char));
 
         // dummy read
-        read_sectors(buf, 0xA0, 0, 1); 
-
+        read_sectors(buf, 0xA0, 2, 2); 
 
         // assuming 512 bytes per sector
         // superblcok should take about 2, 1024 bytes
@@ -167,38 +167,12 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
         printf("\n\n");
         init_fs(superblock, 0);
-        //fs_dump_info(0);
+        fs_dump_info(0);
 
         free(buf);
     }
 
-    printf("\n\n");
-
-    //uint8_t * bga_framebuffer;
-
-    //if(bga_available() == 1){
-    //    // setup bga here
-    //    device_t bga = get_bga(); 
-
-    //    // read BAR0 of bga to get LFB
-    //    if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
-    //        uint32_t bga_lfb_address = pci_get_bar(bga, 0);
-
-    //        printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
-
-    //        bga_set_video_mode(1024, 768, 8, 0, 1);
-
-    //        bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
-    //        for(int i=0; i<1024; ++i) {
-    //            for(int j=0; j<768; ++j){
-    //                if( i%20 == 0 || j%20 ==0 )
-    //                    bga_framebuffer[i+j*1024] = 0x0;
-    //                else
-    //                    bga_framebuffer[i+j*1024] = 0xF;
-    //            }
-    //        }
-    //    }
-    //}
+    //set_video_mode();
 
 
     printf("\n\n");
@@ -214,6 +188,35 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
 
     hang();
+}
+
+void set_video_mode(){
+    uint8_t * bga_framebuffer;
+
+    if(bga_available() == 1){
+        // setup bga here
+        device_t bga = get_bga(); 
+
+        // read BAR0 of bga to get LFB
+        if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
+            uint32_t bga_lfb_address = pci_get_bar(bga, 0);
+
+            printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
+
+            bga_set_video_mode(1024, 768, 8, 0, 1);
+
+            bga_framebuffer = (uint8_t*) bga_lfb_address ; //  0xFD000000
+            for(int i=0; i<1024; ++i) {
+                for(int j=0; j<768; ++j){
+                    if( i%20 == 0 || j%20 ==0 )
+                        bga_framebuffer[i+j*1024] = 0x0;
+                    else
+                        bga_framebuffer[i+j*1024] = 0xF;
+                }
+            }
+        }
+    }
+
 }
 
 
