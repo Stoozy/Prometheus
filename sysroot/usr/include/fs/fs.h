@@ -47,7 +47,7 @@ typedef struct file_system_type {
 }fs_type_t; 
 
 
-int register_fs(fs_type_t * type);
+int register_fs(fs_type_t *);
 int unregister_fs(fs_type_t * type);
     
 

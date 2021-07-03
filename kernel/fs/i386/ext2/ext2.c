@@ -231,8 +231,12 @@ void init_fs(uint32_t * sb_buf, uint8_t drive){
                 break;
             case 1:
                 printf("Mount as RO");
+                break;
             case 2:
                 kernel_panic("Invalid Filesystem");
+                break;
+            default:
+                break;
         }
 
     }else{
