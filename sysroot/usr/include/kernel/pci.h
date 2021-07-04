@@ -2,20 +2,6 @@
 #include <kernel/typedefs.h>
 
 
-struct PCIInfo{
-	uint16_t deviceID;
-	uint16_t vendorID;
-	
-	uint8_t bus;
-	uint8_t slot;
-	uint8_t func;
-
-	uint8_t classCode;
-	uint8_t subclass;
-	uint8_t progIf;
-};
-
-
 typedef struct device {
     uint16_t vendor_id;
     uint16_t device_id;
@@ -30,8 +16,9 @@ typedef struct device {
 
 } device_t; 
 
-device_t get_ide_controller();
+device_t * get_storage_controller();
 device_t get_bga();
+
 uint16_t pci_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset);
 uint32_t pci_read_long(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset);
 uint32_t pci_get_bar(device_t dev, uint8_t index);

@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <kernel/idt.h>
 
-static device_t ide_controller;
+static device_t storage_controller;
 static device_t bga;
 
-device_t get_ide_controller (){
-    return ide_controller;
+device_t * get_storage_controller (){
+    return &storage_controller;
 }
 
 device_t get_bga(){
@@ -93,16 +93,16 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
             }
 
             if(class == 0x01 && subclass == 0x01 ) {
-                ide_controller.vendor_id = vendor;
-                ide_controller.device_id = device;
+                storage_controller.vendor_id = vendor;
+                storage_controller.device_id = device;
 
-                ide_controller.bus = bus;
-                ide_controller.slot = slot;
-                ide_controller.function = function;
+                storage_controller.bus = bus;
+                storage_controller.slot = slot;
+                storage_controller.function = function;
 
-                ide_controller.mainclass = class;
-                ide_controller.subclass  = subclass;
-                ide_controller.prog_if = prog_if;
+                storage_controller.mainclass = class;
+                storage_controller.subclass  = subclass;
+                storage_controller.prog_if = prog_if;
 
             }
             

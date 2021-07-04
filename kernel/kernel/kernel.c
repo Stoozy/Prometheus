@@ -150,27 +150,28 @@ void kernel_main(multiboot_info_t* mbd, unsigned int magic) {
 
     printf("\n\n");
 
+    ahci_init(get_storage_controller());
 
 
-    if(ATA_IDENTIFY(0xA0)){
+    //if(ATA_IDENTIFY(0xA0)){
 
-        uint16_t * buf = malloc(1024*sizeof(char));
+    //    uint16_t * buf = malloc(1024*sizeof(char));
 
-        // dummy read
-        read_sectors(buf, 0xA0, 2, 2); 
+    //    // dummy read
+    //    read_sectors(buf, 0xA0, 2, 2); 
 
-        // assuming 512 bytes per sector
-        // superblcok should take about 2, 1024 bytes
+    //    // assuming 512 bytes per sector
+    //    // superblcok should take about 2, 1024 bytes
 
-        read_sectors(buf, 0xA0, 2, 2); 
-        uint32_t * superblock = (uint32_t *) buf;
+    //    read_sectors(buf, 0xA0, 2, 2); 
+    //    uint32_t * superblock = (uint32_t *) buf;
 
-        printf("\n\n");
-        init_fs(superblock, 0);
-        //fs_dump_info(0);
+    //    printf("\n\n");
+    //    init_fs(superblock, 0);
+    //    //fs_dump_info(0);
 
-        free(buf);
-    }
+    //    free(buf);
+    //}
 
     //set_video_mode();
 
