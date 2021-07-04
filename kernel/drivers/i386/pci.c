@@ -33,7 +33,6 @@ uint16_t  pci_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset)
     /* (offset & 2) * 8) = 0 will choose the first word of the 32 bits register */
     tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
     return (tmp);
-
 }
 
 
@@ -75,9 +74,10 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
         if ((vendor = pci_read_word(bus,slot,function, 0)) != 0xFFFF) {
             device = pci_read_word(bus,slot,function, 2);
 
-            uint16_t class = pci_read_word(bus, slot, function, 0xA) & (0xff00) >> 8; 
-            uint16_t subclass = pci_read_word(bus, slot, function, 0xA) & (0x00ff); 
-            uint16_t prog_if = pci_read_word(bus, slot, function, 0x8) & (0xff00) >> 8;
+            uint8_t class = (uint8_t)(pci_read_long(bus, slot, function, 0x8) >> 24); 
+            uint8_t subclass = (uint8_t)(pci_read_long(bus, slot, function, 0x8) >> 16); 
+
+            uint8_t prog_if = (uint8_t)(pci_read_long(bus, slot, function, 0x8)  >> 8);
 
             if(vendor == 0x1234 && device == 0x1111){
                 bga.vendor_id = vendor;
@@ -92,7 +92,7 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
                 bga.prog_if = prog_if;
             }
 
-            if(class == 0x01 && subclass == 0x01 ) {
+            if(class == 0x01 && subclass == 0x06 && prog_if == 0x01 ) {
                 storage_controller.vendor_id = vendor;
                 storage_controller.device_id = device;
 
@@ -113,7 +113,7 @@ uint16_t pci_check_vendor(uint8_t bus, uint8_t slot){
             printf("    device id: 0x%x\n", device);
             printf("    prog IF: 0x%x\n", prog_if);
             printf("\n");
-
+            Sleep(4000);
         }
     } 
 
