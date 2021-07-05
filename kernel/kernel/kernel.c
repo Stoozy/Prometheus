@@ -29,6 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <drivers/bga.h>
 #include <drivers/ata.h>
+#include <drivers/ahci.h>
 
 #include <fs/ext2.h>
 
@@ -196,10 +197,10 @@ void set_video_mode(){
 
     if(bga_available() == 1){
         // setup bga here
-        device_t bga = get_bga(); 
+        device_t  * bga = get_bga(); 
 
         // read BAR0 of bga to get LFB
-        if(bga.vendor_id == 0x1234  && bga.device_id == 0x1111){
+        if(bga->vendor_id == 0x1234  && bga->device_id == 0x1111){
             uint32_t bga_lfb_address = pci_get_bar(bga, 0);
 
             printf("Got BGA BAR0: 0x%x\n", bga_lfb_address);
