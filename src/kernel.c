@@ -7,6 +7,7 @@
 #include <cpu/io.h>
 
 #include <drivers/serial.h>
+#include <kprintf.h>
 
 // We need to tell the stivale bootloader where we want our stack to be.
 // We are going to allocate our stack as an uninitialised array in .bss.
@@ -53,6 +54,7 @@ void _start(struct stivale_struct *stivale_struct) {
 
     serial_init();
     turn_color_on();
+    kprintf("Testing print\n");
 
     // We're done, just hang...
     for (;;) {
