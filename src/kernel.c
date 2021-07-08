@@ -7,6 +7,8 @@
 #include <cpu/io.h>
 
 #include <drivers/serial.h>
+#include <drivers/gui.h>
+
 #include <kprintf.h>
 
 // We need to tell the stivale bootloader where we want our stack to be.
@@ -45,16 +47,18 @@ static struct stivale_header stivale_hdr = {
 // The following will be our kernel's entry point.
 void _start(struct stivale_struct *stivale_struct) {
     // Let's get the address of the framebuffer.
-    u8 *fb_addr = (u8 *)stivale_struct->framebuffer_addr;
+    u32 * fb_addr = (u32 *)stivale_struct->framebuffer_addr;
     // Let's try to paint a few pixels white in the top left, so we know
     // that we booted correctly.
-    for (u64 i = 0; i < 1024*768; i++) {
-        fb_addr[i] = 0xff;
-    }
-
     serial_init();
     turn_color_on();
-    kprintf("Testing print\n");
+
+    kprintf("Framebuffer height : %d\n", stivale_struct->framebuffer_height);
+    kprintf("Framebuffer width : %d\n", stivale_struct->framebuffer_width);
+    kprintf("Framebuffer addr : 0x%x\n", stivale_struct->framebuffer_addr);
+    kprintf("Framebuffer bpp : %d\n", stivale_struct->framebuffer_bpp);
+    
+    screen_init(stivale_struct);
 
     // We're done, just hang...
     for (;;) {
