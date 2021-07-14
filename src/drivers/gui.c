@@ -12,7 +12,6 @@ static u32 * gp_framebuffer;
 static struct stivale_struct * gp_vbe_info;
 
 
-
 void screen_init(struct stivale_struct * ss){
     gp_vbe_info =  ss;
 
@@ -21,7 +20,12 @@ void screen_init(struct stivale_struct * ss){
 
     gp_framebuffer = (u32 *)gp_vbe_info->framebuffer_addr;
 
-    draw_rect(50, 50, 100, 100, 0xffffff);
+    for(int x=0; x<gp_vbe_info->framebuffer_width; ++x){
+        for(int y=0; y<gp_vbe_info->framebuffer_height; ++y){
+            gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = 0x5d9b84;
+        }
+    }
+    draw_rect(50, 50, 500, 500, 0xffffff);
 
 } // screen_init
 
@@ -29,7 +33,7 @@ void screen_init(struct stivale_struct * ss){
 
 void draw_pixel(int x, int y, int color){
 
-    if(x <0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
+    if(x < 0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
     // invalid input
 
     gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;

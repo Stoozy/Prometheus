@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stivale.h>
 #include <cpu/io.h>
+#include <cpu/idt.h>
 
 #include <drivers/serial.h>
 #include <drivers/gui.h>
@@ -58,8 +59,10 @@ void _start(struct stivale_struct *stivale_struct) {
     kprintf("Framebuffer addr : 0x%x\n", stivale_struct->framebuffer_addr);
     kprintf("Framebuffer bpp : %d\n", stivale_struct->framebuffer_bpp);
     
+
     screen_init(stivale_struct);
 
+    idt_init();
     // We're done, just hang...
     for (;;) {
         asm ("hlt");
