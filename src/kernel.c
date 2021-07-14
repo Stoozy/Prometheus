@@ -62,6 +62,7 @@ void _start(struct stivale_struct *stivale_struct) {
 
     screen_init(stivale_struct);
 
+    asm("cli");
     idt_init();
     // We're done, just hang...
     for (;;) {
