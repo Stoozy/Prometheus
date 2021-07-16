@@ -3,7 +3,7 @@
 
 //#include <stdint.h>
 #include <stddef.h>
-#include <stivale.h>
+#include "stivale.h"
 #include <cpu/io.h>
 #include <cpu/idt.h>
 
@@ -53,6 +53,23 @@ void _start(struct stivale_struct *stivale_struct) {
     // that we booted correctly.
     serial_init();
     turn_color_on();
+
+    kprintf("%d mmap entries\n", stivale_struct->memory_map_entries);
+    kprintf("mmap addr : 0x%x\n", stivale_struct->memory_map_addr);
+
+    struct stivale_mmap_entry * mmap_entries = (struct stivale_mmap_entry*) stivale_struct->memory_map_addr;
+
+    pmm_init();
+    for(int i=0; i<stivale_struct->memory_map_entries;++i){
+        if(mmap_entries[i].type == STIVALE_MMAP_USABLE){
+            kprintf("Base 0x%x\n", mmap_entries[i].base);
+            kprintf("Size %d MiB\n", mmap_entries[i].length/(1024*1024));
+            kprintf("Type %d\n", mmap_entries[i].type);
+            pmm_init_region(mmap_entries[i].base, mmap_entries[i].length);
+        }
+    }
+
+    pmm_dump();
 
     kprintf("Framebuffer height : %d\n", stivale_struct->framebuffer_height);
     kprintf("Framebuffer width : %d\n", stivale_struct->framebuffer_width);
