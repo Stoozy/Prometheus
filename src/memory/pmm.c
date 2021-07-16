@@ -7,7 +7,7 @@
 
 #define BLOCK_SIZE          4096
 #define BLOCKS_PER_BYTE     8
-#define MAX_BITMAPS         131072
+#define MAX_BITMAPS         8388608
 
 static u32     total_blocks;
 static u32     total_bmaps;
@@ -42,11 +42,13 @@ void pmm_init(){
 
 
 void pmm_init_region(void * addr, size_t size){
+    kprintf("Initializing address: 0x%x with size: %ld bytes \n", addr, size);
+
     u32 start_frame = ((u32)addr)/BLOCK_SIZE;
     if(start_frame == 0){
         // start freeing from 4MiB
         start_frame = (1024*1024*4)/BLOCK_SIZE;
-        kprintf("Starting at frame #%d instead of 0\n", start_frame);
+        /* kprintf("Starting at frame #%d instead of 0\n", start_frame); */
     }
 
     u32 end_frame = start_frame + size/BLOCK_SIZE;
