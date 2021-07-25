@@ -19,144 +19,121 @@ global irq13
 global irq14
 global irq15
 
-extern kprintf
 
-section .data
+extern irq0_handler
+extern irq1_handler
+extern irq2_handler
+extern irq3_handler
+extern irq4_handler
+extern irq5_handler
+extern irq6_handler
+extern irq7_handler
+extern irq8_handler
+extern irq9_handler
+extern irq10_handler
+extern irq11_handler
+extern irq12_handler
+extern irq13_handler
+extern irq14_handler
+extern irq15_handler
 
-success_msg db `Initialized IDT!\n`, 0
-irq_fired_msg db `Interrupt fired!\n`, 0
 
 section .text
 
 irq0:
     pushfq
-    jmp print_irq_fired
-    ;call irq0_handler
+    call irq0_handler
     popfq
     iretq
  
 irq1:
     pushfq
-    jmp print_irq_fired
-    ;call irq1_handler
+    call irq1_handler
     popfq
     iretq
  
 irq2:
     pushfq
-    jmp print_irq_fired
-    ;call irq2_handler
+    call irq2_handler
     popfq
     iretq
  
 irq3:
     pushfq
-    jmp print_irq_fired
-    ;call irq3_handler
+    call irq3_handler
     popfq
     iretq
  
 irq4:
     pushfq
-    jmp print_irq_fired
-    ;call irq4_handler
+    call irq4_handler
     popfq
     iretq
  
 irq5:
     pushfq
-    jmp print_irq_fired
-    ;call irq5_handler
+    call irq5_handler
     popfq
     iretq
  
 irq6:
     pushfq
-    jmp print_irq_fired
-    ;call irq6_handler
+    call irq6_handler
     popfq
     iretq
  
 irq7:
     pushfq
-    jmp print_irq_fired
-    ;call irq7_handler
+    call irq7_handler
     popfq
     iretq
  
 irq8:
     pushfq
-    jmp print_irq_fired
-    ;call irq8_handler
+    call irq8_handler
     popfq
     iretq
  
 irq9:
     pushfq
-    jmp print_irq_fired
-    ;call irq9_handler
+    call irq9_handler
     popfq
     iretq
  
 irq10:
     pushfq
-    jmp print_irq_fired
-    ;call irq10_handler
+    call irq10_handler
     popfq
     iretq
  
 irq11:
     pushfq
-    jmp print_irq_fired
-    ;call irq11_handler
+    call irq11_handler
     popfq
     iretq
  
 irq12:
     pushfq
-    jmp print_irq_fired
-    ;call irq12_handler
+    call irq12_handler
     popfq
     iretq
  
 irq13:
     pushfq
-    jmp print_irq_fired
-    ;call irq13_handler
+    call irq13_handler
     popfq
     iretq
  
 irq14:
     pushfq
-    jmp print_irq_fired
-    ;call irq14_handler
+    call irq14_handler
     popfq
     iretq
  
 irq15:
     pushfq
-    jmp print_irq_fired
-    ;call irq15_handler
+    call irq15_handler
     popfq
     iretq
 
-load_idt:
-    mov edx, [esp+4] 
-    lidt [edx]
-    sti
 
-    push rbp
-    lea rdi, [rel success_msg]
-    call kprintf  wrt  ..plt
-    pop rbp
-
-    ret
-
-print_irq_fired:
-    push rbp
-    lea rdi, [rel irq_fired_msg]
-    call kprintf wrt ..plt
-    pop rbp
-    ret
-
-    

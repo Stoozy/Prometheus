@@ -10,6 +10,7 @@
 #include <memory/pmm.h>
 
 #include <drivers/serial.h>
+#include <drivers/mouse.h>
 #include <drivers/gui.h>
 
 #include <kprintf.h>
@@ -56,6 +57,7 @@ void _start(struct stivale_struct *stivale_struct) {
     serial_init();
     turn_color_on();
 
+
     kprintf("%d mmap entries\n", stivale_struct->memory_map_entries);
     kprintf("mmap addr : 0x%x\n", stivale_struct->memory_map_addr);
 
@@ -70,18 +72,18 @@ void _start(struct stivale_struct *stivale_struct) {
         }
     }
 
-    /* pmm_dump(); */
+    pmm_dump(); 
 
     kprintf("Framebuffer height : %d\n", stivale_struct->framebuffer_height);
     kprintf("Framebuffer width : %d\n", stivale_struct->framebuffer_width);
     kprintf("Framebuffer addr : 0x%x\n", stivale_struct->framebuffer_addr);
     kprintf("Framebuffer bpp : %d\n", stivale_struct->framebuffer_bpp);
     
-
-    screen_init(stivale_struct);
-
-    asm("cli");
     idt_init();
+
+    /*screen_init(stivale_struct);*/
+    mouse_init();
+
     // We're done, just hang...
     for (;;) {
         asm ("hlt");
