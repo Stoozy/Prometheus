@@ -53,9 +53,9 @@ void _start(struct stivale_struct *stivale_struct) {
     idt_init();
     sti();
 
-    kprintf("sleeping for 5 seconds\n");
+    kprintf("sleeping for 5 second\n");
     sleep(5000);
-    kprintf("Done sleeping for 5 seconds\n");
+    kprintf("Done sleeping for 5 second\n");
     cli();
 
     while(1);
