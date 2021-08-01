@@ -3,7 +3,7 @@
 #include <cpu/io.h>
 #include <kprintf.h>
 
-static volatile u64 g_ticks = 0;
+volatile u64 g_ticks = 0;
 
 void pit_init(u32 hz){
     /* PIT mode 0 (interrupt on terminal count)/ channel 0 */
@@ -15,6 +15,7 @@ void pit_init(u32 hz){
     outb(0x40, (u8)(divisor & 0x00ff));
     outb(0x40, (u8)((divisor & 0xff00) >> 8));
 }
+
 
 void sleep(u32 ms){
     /* loop until estimated ticks reached */

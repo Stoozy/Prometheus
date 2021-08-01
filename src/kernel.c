@@ -10,9 +10,7 @@
 #include <memory/pmm.h>
 
 #include <drivers/serial.h>
-#include <drivers/mouse.h>
 #include <drivers/gui.h>
-#include <drivers/ps2.h>
 #include <drivers/pit.h>
 
 #include <kprintf.h>
@@ -49,13 +47,14 @@ void _start(struct stivale_struct *stivale_struct) {
     serial_init();
 
     pit_init(1000);
+
     cli();
     idt_init();
     sti();
 
-    kprintf("sleeping for 5 second\n");
+    kprintf("sleeping for 5 seconds\n");
     sleep(5000);
-    kprintf("Done sleeping for 5 second\n");
+    kprintf("Done sleeping for 5 seconds\n");
     cli();
 
     while(1);

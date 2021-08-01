@@ -48,4 +48,3 @@ stivale.h:
 
 clean:
 	rm -rf $(KERNEL) $(C_OBJ) $(NASM_OBJ)
-
