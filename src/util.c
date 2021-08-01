@@ -1,6 +1,15 @@
 #include "util.h"
 #include <stdbool.h>
 
+void cli(){
+    __asm__("cli");
+}
+
+void sti(){
+    __asm__("sti");
+}
+
+
 i32 abs(i32 val){
     if(val<0) return -val;
     else return val;

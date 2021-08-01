@@ -43,7 +43,6 @@ u8 kbdus[128] =
 
 
 void handle_scan(u8 scan_code){
-    while(1)
-        kprintf("%c", kbdus[scan_code]);
+    kprintf("%c", kbdus[scan_code]);
 }
 

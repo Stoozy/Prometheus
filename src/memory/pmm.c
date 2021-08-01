@@ -7,7 +7,7 @@
 
 #define BLOCK_SIZE          4096
 #define BLOCKS_PER_BYTE     8
-#define MAX_BITMAPS         8388608
+#define MAX_BITMAPS         838860
 
 static u32     total_blocks;
 static u32     total_bmaps;
@@ -179,16 +179,21 @@ u32 pmm_get_block_count(){
     return total_blocks;
 }
 
-void pmm_dump(){
-    for(u32 i=0; i<total_blocks; i++){
-        if(check_frame(i))
-            kprintf("Block #%d; Addr: 0x%x; Status: Used\n", i, i*BLOCK_SIZE );
-        else 
-            kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*BLOCK_SIZE );
-    }
 
-    for(u32 i=0; i<total_bmaps; i++){
-        kprintf("Map #%d; Value: %u\n", i, mmap[i]);
+
+void pmm_dump(){
+
+    kprintf("%llu total blocks\n", total_blocks);
+    kprintf("%llu used blocks\n", used_blocks);
+    //for(u32 i=0; i<total_blocks; i++){
+    //    if(check_frame(i))
+    //        kprintf("Block #%d; Addr: 0x%x; Status: Used\n", i, i*BLOCK_SIZE );
+    //    else 
+    //        kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*BLOCK_SIZE );
+    //}
+
+    /*for(u32 i=0; i<total_bmaps; i++){
     }
+    */
 }
 

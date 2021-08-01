@@ -18,4 +18,5 @@ typedef struct {
 
 void idt_set_descriptor(u8 vector, u64 isr, u8 flags);
 void idt_init();
+void Sleep(u32 ms);
 

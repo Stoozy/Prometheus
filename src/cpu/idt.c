@@ -1,7 +1,14 @@
 #include "idt.h"
-#include <drivers/serial.h>
-#include <cpu/io.h>
+
+#include <typedefs.h>
 #include <kprintf.h>
+
+#include <drivers/serial.h>
+#include <drivers/keyboard.h>
+#include <drivers/pit.h>
+
+#include <cpu/io.h>
+
 
 __attribute__((aligned(0x10))) IDTEntry idt[256];
 
@@ -18,13 +25,19 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags){
 
 }
 
+
 void irq0_handler() {
     kprintf("IRQ 0 fired!\n");
+    tick();
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq1_handler() {
     kprintf("IRQ 1 fired!\n");
+
+    /* keyboard driver */
+    handle_scan(inb(0x60));
+
     outb(0x20, 0x20); /* EOI */
 }
 
@@ -60,41 +73,49 @@ void irq7_handler() {
 
 void irq8_handler() {
     kprintf("IRQ 8 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq9_handler() {
     kprintf("IRQ 9 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq10_handler(){
     kprintf("IRQ 10 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq11_handler(){
     kprintf("IRQ 11 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq12_handler(){
     kprintf("IRQ 12 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq13_handler(){
     kprintf("IRQ 13 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq14_handler(){
     kprintf("IRQ 14 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq15_handler(){
     kprintf("IRQ 15 fired!\n");
+    outb(0xA0, 0x20);
     outb(0x20, 0x20); /* EOI */
 }
 
@@ -148,18 +169,9 @@ void idt_init(){
 	outb(0xA1, 0x02);
 	outb(0x21, 0x01);
 	outb(0xA1, 0x01);
-	outb(0x21, 0x0);
+	outb(0x21, 0x0); 
 	outb(0xA1, 0x0);
 
-    outb(0x43, 0x0);    // PIT mode 0 (interrupt on terminal count)/ channel 0
-
-	u32 divisor = 1193;
-    outb(0x43, 0x36);
-    u8 l = (u8)(divisor & 0xFF);
-    u8 h = (u8)((divisor >> 8) & 0xFF);
-
-    outb(0x40, l);
-    outb(0x40, h);
 
     irq0_addr = (unsigned long)irq0;
     irq1_addr = (unsigned long)irq1;
@@ -178,6 +190,8 @@ void idt_init(){
     irq14_addr = (unsigned long)irq14;
     irq15_addr = (unsigned long)irq15;
 
+
+
     idt_set_descriptor(32, irq0_addr, 0x8e);
     idt_set_descriptor(33, irq1_addr, 0x8e);
     idt_set_descriptor(34, irq2_addr, 0x8e);
@@ -195,18 +209,13 @@ void idt_init(){
     idt_set_descriptor(46, irq14_addr, 0x8e);
     idt_set_descriptor(47, irq15_addr, 0x8e);
 
-   
     /* fill the IDT descriptor */
     idt_ptr.base = (u64)&idt[0];
     idt_ptr.limit = (u16)(sizeof(IDTEntry) * 256) - 1;
 
-	/*idt_ptr[0] = (sizeof(IDTEntry) * 256) + ((idt_address & 0xffff) << 16);*/
-	/*idt_ptr[1] = idt_address >> 16 ;*/
-
     kprintf("IDT address: 0x%x\n", &idt[0]);
 
     __asm__ volatile ("lidt %0" :: "memory"(idt_ptr));
-    __asm__ volatile ("sti");
 
     kprintf("Initialized IDT!\n");
 

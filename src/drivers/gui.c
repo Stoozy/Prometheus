@@ -6,7 +6,7 @@
 static u64 g_fb_size = 0;
 
 // FIXME: dynamically allocate mem for backbuffer
-static u8 g_backbuffer[3145728];
+/*static u8 g_backbuffer[3145728];*/
 static u32 * gp_framebuffer;
 
 static struct stivale_struct * gp_vbe_info;
@@ -22,9 +22,10 @@ void screen_init(struct stivale_struct * ss){
 
     for(int x=0; x<gp_vbe_info->framebuffer_width; ++x){
         for(int y=0; y<gp_vbe_info->framebuffer_height; ++y){
-            gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = 0x5d9b84;
+            gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = 0x0c5da6;
         }
     }
+
     draw_rect(50, 50, 500, 500, 0xffffff);
 
 } // screen_init
@@ -34,8 +35,8 @@ void screen_init(struct stivale_struct * ss){
 void draw_pixel(int x, int y, int color){
 
     if(x < 0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
-    // invalid input
 
+    // invalid input
     gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
 
 } // draw_pixel
@@ -113,9 +114,9 @@ void draw_rect(int x, int y, int w, int h, int color){
     // FIXME: check bounds
 
     draw_line(x, y, x+w, y, color);
-    draw_line(x+w, y, x+w, y+h, color);
+    draw_line(x+w, y+1, x+w, y+h+1, color);
 
-    draw_line(x, y, x, y+h, color);
+    draw_line(x, y+1, x, y+h+2, color);
     draw_line(x, y+h, x+w, y+h, color);
 
 }// draw_rect
