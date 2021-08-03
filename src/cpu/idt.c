@@ -216,6 +216,7 @@ void idt_init(){
     kprintf("IDT address: 0x%x\n", &idt[0]);
 
     __asm__ volatile ("lidt %0" :: "memory"(idt_ptr));
+    sti();
 
     kprintf("Initialized IDT!\n");
 

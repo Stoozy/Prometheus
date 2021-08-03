@@ -3,7 +3,7 @@ KERNEL := stivale.elf
 CC = cc
 NASM= nasm
 
-CFLAGS = -Wall -Wextra -O2 -pipe
+CFLAGS = -Wall -Wextra -O0 -pipe
 
 INTERNALLDFLAGS := \
 	-fno-pic  -fPIE \
