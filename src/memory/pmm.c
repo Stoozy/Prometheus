@@ -4,6 +4,7 @@
 #include <string/string.h>
 #include <stddef.h>
 #include <kprintf.h>
+#include "../stivale.h"
 
 #define BLOCK_SIZE          4096
 #define BLOCKS_PER_BYTE     8
@@ -12,8 +13,7 @@
 volatile u64     total_blocks = MAX_BITMAPS * BLOCKS_PER_BYTE; 
 volatile u64     total_bmaps; 
 volatile u64     free_blocks;
-volatile u64     used_blocks;
-volatile u64     last_checked_block = 1;
+volatile u64     used_blocks; volatile u64     last_checked_block = 1; 
 volatile u8      mmap[MAX_BITMAPS]; /* max maps for a 64 GiB memory space (takes 2 KiB) */
 
 
@@ -29,33 +29,39 @@ static bool check_frame(u64 n_block){
 }
 
 
-void pmm_init(){
+void pmm_init(struct stivale_struct * boot_info){
+
     total_bmaps = total_blocks/BLOCKS_PER_BYTE;
     used_blocks = total_blocks;
     free_blocks = 0;
 
     /* set every block to used status */
     memset(&mmap[0], 0xff, total_bmaps);
+
+
+    /* Initializing different memory regions */
+    kprintf("------------------Memory Information-------------------\n");
+
+    struct stivale_mmap_entry * mmap_entries = 
+        (struct stivale_mmap_entry * ) boot_info->memory_map_addr;
+
+    for(int i=0; i<boot_info->memory_map_entries;++i){
+        if(mmap_entries[i].type == STIVALE_MMAP_USABLE){
+            pmm_init_region((void*) mmap_entries[i].base, mmap_entries[i].length);
+            kprintf("[PMM]  Base 0x%x\n", mmap_entries[i].base);
+            kprintf("[PMM]  Size %llu bytes\n", mmap_entries[i].length);
+            kprintf("[PMM]  Type %d\n", mmap_entries[i].type);
+        }
+    }
 }
 
 
 void pmm_init_region(void * addr, u64 size){
 
-    kprintf("[PMM]      Initializing address: 0x%x with size: %llu bytes.\n", addr, size);
+    kprintf("[PMM]  address: 0x%x with size: %llu bytes.\n", addr, size);
 
     u64 start_frame = ((u64)addr)/BLOCK_SIZE;
-
-    kprintf("[PMM]      Start frame: %lu\n", start_frame);
-
-    //if(start_frame == 0){
-        /* start freeing from 4MiB */
-        //start_frame = (1024*1024*4)/BLOCK_SIZE;
-        /* kprintf("Starting at frame #%d instead of 0\n", start_frame); */
-    //}
-
     u64 end_frame = start_frame + (size/BLOCK_SIZE);
-
-    kprintf("[PMM]      End frame: %lu\n", end_frame);
     
     for(u64 i=start_frame; i<end_frame; i++){
        set_frame_free(i);
@@ -63,8 +69,8 @@ void pmm_init_region(void * addr, u64 size){
        --used_blocks;
     }
 
-    kprintf("[PMM]      Free Blocks: %lu\n", free_blocks);
-    kprintf("[PMM]      Used Blocks: %lu\n\n", used_blocks);
+    kprintf("[PMM]  Free Blocks: %lu\n", free_blocks);
+    kprintf("[PMM]  Blocks: %lu\n\n", used_blocks);
 
     return; 
 }
@@ -187,9 +193,9 @@ u64 pmm_get_block_count(){
 void pmm_dump(){
 
     kprintf("---------------------PMM Information-------------------\n");
-    kprintf("[PMM]      %lu total blocks\n", total_blocks);
-    kprintf("[PMM]      %lu free blocks\n", free_blocks);
-    kprintf("[PMM]      %lu used blocks\n", used_blocks);
+    kprintf("[PMM]  %lu total blocks\n", total_blocks);
+    kprintf("[PMM]  %lu free blocks\n", free_blocks);
+    kprintf("[PMM]  %lu used blocks\n", used_blocks);
 
     //for(u64 i=0; i<total_blocks; i++){
     //    if(check_frame(i))

@@ -3,8 +3,9 @@ ENTRY(_start)
 
 SECTIONS
 {
-    /* We wanna be placed in the higher half, 2MiB above 0 in physical memory. */
+    /* We wanna be placed in the higher half, 2MiB above 0 in physical memory. (2GiB)*/
     . = 0xffffffff80200000;
+    k_start = .;
 
     /* We place the .stivalehdr section containing the header in its own section, */
     /* and we use the KEEP directive on it to make sure it doesn't get discarded. */
@@ -29,4 +30,6 @@ SECTIONS
         *(COMMON)
         *(.bss*)
     }
+
+    k_end = .;
 }
