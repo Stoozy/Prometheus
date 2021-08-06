@@ -1,4 +1,4 @@
-#ifdef GUI_H
+#ifndef GUI_H
 #define GUI_H 1
 
 void screen_init();

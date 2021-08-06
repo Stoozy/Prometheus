@@ -1,7 +1,7 @@
 #include "gui.h"
-#include <typedefs.h>
-#include <stivale.h>
-#include <float.h>
+#include "../typedefs.h"
+#include "../stivale.h"
+#include "gui.h"
 
 static u64 g_fb_size = 0;
 
@@ -26,7 +26,7 @@ void screen_init(struct stivale_struct * ss){
         }
     }
 
-    draw_rect(50, 50, 500, 500, 0xffffff);
+    /*draw_rect(50, 50, 500, 500, 0xffffff);*/
 
 } // screen_init
 
@@ -107,8 +107,8 @@ void draw_line(int x1, int y1, int x2, int y2, int color){
 
     }
 
-
 } // draw_line
+
 
 void draw_rect(int x, int y, int w, int h, int color){
     // FIXME: check bounds

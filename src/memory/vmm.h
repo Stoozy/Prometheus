@@ -1,10 +1,17 @@
 #ifndef _VMM_H
 #define _VMM_H 1
 
-#include <typedefs.h>
+#include "../typedefs.h"
 #include <stdbool.h>
 
-struct Pml4e {
+typedef struct {
+    u64 pml4i;
+    u64 pml3i;
+    u64 pml2i;
+    u64 pml1i;
+} __attribute__((packed)) PageIndex;
+
+typedef struct {
     bool present : 1;
     bool writable : 1;
     bool user : 1;
@@ -15,9 +22,9 @@ struct Pml4e {
     u64 physical_address : 36;
     int zero1: 15;
     bool execute_disabled : 1;
-};
+} __attribute__((packed)) Pml4e;
 
-struct Pml3e {
+typedef struct {
     bool present : 1;
     bool writable : 1;
     bool user : 1;
@@ -30,9 +37,9 @@ struct Pml3e {
     u64 physical_address : 36;
     int zero2: 15;
     bool execute_disabled : 1;
-};
+} __attribute__((packed)) Pml3e;
 
-struct Pml2e {
+typedef struct {
     bool present : 1;               // Must be 1 to reference a PML-1
     bool writable : 1;              // If 0, writes may not be allowed.
     bool user : 1;                  // If 0, user-mode accesses are not allowed
@@ -46,9 +53,9 @@ struct Pml2e {
     int zero2 : 15;                 // Ignored
     bool execute_disabled : 1;      // If IA32_EFER.NXE = 1, Execute-disable
 
-};
+}__attribute__((packed)) Pml2e;
 
-struct Pml1e {
+typedef struct  {
     bool present : 1;             
     bool writable : 1;            
     bool user : 1;                
@@ -62,28 +69,31 @@ struct Pml1e {
     u64 physical_address : 36;
     int zero1 : 10;               
     bool execute_disabled : 1;    
-};
+} __attribute__((packed)) Pml1e;
 
-struct PML4 {
-    struct Pml4e entries[512];
-} __attribute__((packed));
-
-
-struct PML3 {
-    struct Pml3e entries[512];
-} __attribute__((packed));
+typedef struct {
+    Pml4e entries[512];
+} __attribute__((packed)) PML4;
 
 
-struct PML2 {
-    struct Pml2e entries[512];
-} __attribute__((packed));
+typedef struct {
+    Pml3e entries[512];
+} __attribute__((packed)) PML3;
 
 
-struct PML1 {
-    struct Pml1e entries[512];
-} __attribute__((packed));
+typedef struct {
+    Pml2e entries[512];
+} __attribute__((packed)) PML2;
+
+
+typedef struct  {
+    Pml1e entries[512];
+} __attribute__((packed)) PML1;
+
 
 
 i32 vmm_init();
+i32 vmm_map(void * p_virtual, void * p_physical);
+PageIndex vmm_get_index(u64 vaddr);
 
 #endif 

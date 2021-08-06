@@ -4,17 +4,18 @@
 //#include <stdint.h>
 #include <stddef.h>
 #include "stivale.h"
-#include <cpu/io.h>
-#include <cpu/idt.h>
+#include "cpu/io.h"
+#include "cpu/idt.h"
 
-#include <memory/pmm.h>
-#include <memory/vmm.h>
+#include "memory/pmm.h"
+#include "memory/vmm.h"
 
-#include <drivers/serial.h>
-#include <drivers/gui.h>
-#include <drivers/pit.h>
+#include "drivers/serial.h"
+#include "drivers/gui.h"
+#include "drivers/pit.h"
 
-#include <kprintf.h>
+#include "util.h"
+#include "kprintf.h"
 
 
 extern u64 k_start;
@@ -37,8 +38,7 @@ static struct stivale_header stivale_hdr = {
     // to pick the best it can.
     .framebuffer_width  = 0,
     .framebuffer_height = 0,
-    .framebuffer_bpp    = 0,
-    .entry_point = 0
+    .framebuffer_bpp    = 0, .entry_point = 0
 };
 
 
@@ -50,12 +50,8 @@ void _start(struct stivale_struct * stivale_struct) {
     
     kprintf("Kernel starts at 0x%x\n", &k_start);
     kprintf("Kernel ends at 0x%x\n", &k_end);
-    vmm_init();
 
-
-    cli();
-    while(1);
-
+    /*vmm_init();*/
     /* kprintf("------------------Framebuffer Information--------------\n");
     kprintf("[KMAIN]    Framebuffer height : %d\n", stivale_struct->framebuffer_height);
     kprintf("[KMAIN]    Framebuffer width : %d\n", stivale_struct->framebuffer_width);
@@ -66,6 +62,8 @@ void _start(struct stivale_struct * stivale_struct) {
     pit_init(1000);
     idt_init();
 
+    cli(); 
+    while(1);
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }

@@ -1,9 +1,9 @@
-#include <memory/pmm.h>
-#include <util.h>
+#include "pmm.h"
+#include "../util.h"
 
-#include <string/string.h>
+#include "../string/string.h"
 #include <stddef.h>
-#include <kprintf.h>
+#include "../kprintf.h"
 #include "../stivale.h"
 
 #define BLOCK_SIZE          4096
