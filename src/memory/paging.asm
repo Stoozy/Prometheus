@@ -3,9 +3,9 @@ global invalidate_tlb;
 
 load_pagedir:
     mov cr3, rdi
-    ret
+    retq
 
 invalidate_tlb:
     mov rax, cr3
     mov cr3, rax
-    ret
+    retq

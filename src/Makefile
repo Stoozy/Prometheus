@@ -1,9 +1,9 @@
 KERNEL := stivale.elf
 
-CC = clang
+CC = gcc 
 NASM= nasm
 
-CFLAGS = -Wall -Wextra -O2 -pipe
+CFLAGS = -Wall -Wextra -O0 -pipe
 
 INTERNALLDFLAGS := \
 	-fno-pic  -fPIE \

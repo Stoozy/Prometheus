@@ -38,7 +38,8 @@ static struct stivale_header stivale_hdr = {
     // to pick the best it can.
     .framebuffer_width  = 0,
     .framebuffer_height = 0,
-    .framebuffer_bpp    = 0, .entry_point = 0
+    .framebuffer_bpp    = 0, 
+    .entry_point = 0
 };
 
 
@@ -51,7 +52,16 @@ void _start(struct stivale_struct * stivale_struct) {
     kprintf("Kernel starts at 0x%x\n", &k_start);
     kprintf("Kernel ends at 0x%x\n", &k_end);
 
-    /*vmm_init();*/
+    pmm_mark_region_used((void*)&k_start, (void*)(&k_end)); 
+    pmm_dump();
+
+    vmm_init();
+
+    /*pit_init(1000);
+    idt_init();
+
+    */
+ 
     /* kprintf("------------------Framebuffer Information--------------\n");
     kprintf("[KMAIN]    Framebuffer height : %d\n", stivale_struct->framebuffer_height);
     kprintf("[KMAIN]    Framebuffer width : %d\n", stivale_struct->framebuffer_width);
@@ -59,13 +69,9 @@ void _start(struct stivale_struct * stivale_struct) {
     kprintf("[KMAIN]    Framebuffer bpp : %d\n", stivale_struct->framebuffer_bpp);
     */
 
-    pit_init(1000);
-    idt_init();
-
-    cli(); 
-    while(1);
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
     
 }
+
