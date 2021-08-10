@@ -94,52 +94,53 @@ i32 vmm_map(void * virt_addr, void* phys_addr){
 
 i32 vmm_init(){
     gp_pml4 = (PageTable*) pmm_alloc_block();
+
     kprintf("[VMM]  PML4 Created at 0x%x\n", (u64)gp_pml4);
     /* clear all entries */
     memset((void*)gp_pml4, 0x0, sizeof(PageTable));
-    kprintf("[VMM]  PML4 cleared at 0x%x\n", (u64)gp_pml4);
+    //kprintf("[VMM]  PML4 cleared at 0x%x\n", (u64)gp_pml4);
 
     /* id maps 8 gib*/
     for(u64 addr = 0x0; addr < 0x200000000; addr+=0x1000){ 
         vmm_map((void*)addr, (void*)addr);
     }
 
-    for(u64 addr = 0x0; addr < 0x200000000; addr+=0x1000){ 
-        vmm_map((void*)(0xffff800000000000+addr), (void*)addr);
-    }
+    //for(u64 addr = 0x0; addr < 0x200000000; addr+=0x1000){ 
+    //    vmm_map((void*)(0xffff800000000000+addr), (void*)addr);
+    //}
 
-    for(u64 addr = 0x0; addr < 0x80000000; addr+=0x1000){ 
-        vmm_map((void*)(0xffffffff80000000+addr), (void*)addr);
-    }
+    //for(u64 addr = 0x0; addr < 0x80000000; addr+=0x1000){ 
+    //    vmm_map((void*)(0xffffffff80000000+addr), (void*)addr);
+    //}
 
-    if(!gp_pml4->entries[0].present){
-        kprintf("pml4e not present\n");
-    }else{
-        kprintf("pml4e present\n");
-        PageTable * p_pml3 = (PageTable*)((u64)gp_pml4->entries[0].address * PAGE_SIZE);
-        if(!p_pml3->entries[0].present){
-            kprintf("pml3e not present\n");
-        }else{
-            kprintf("pml3e present\n");
-            PageTable * p_pml2 = (PageTable*)((u64)p_pml3->entries[0].address * PAGE_SIZE);
-            if(!p_pml2->entries[0].present){
-                kprintf("pml2e not present\n");
-            }else{
-                kprintf("pml2e present\n");
-                PageTable * p_pml1 = (PageTable*)((u64)p_pml2->entries[0].address * PAGE_SIZE);
-                if(!p_pml1->entries[0].present){
-                    kprintf("pml1e not present\n");
-                }else{
-                    kprintf("pml1e present\n");
-                    kprintf("Pml1e address: 0x%x\n", p_pml1->entries[0].address);
-                }
-            }
-        }
-    }
+    //if(!gp_pml4->entries[0].present){
+    //    kprintf("pml4e not present\n");
+    //}else{
+    //    kprintf("pml4e present\n");
+    //    PageTable * p_pml3 = (PageTable*)((u64)gp_pml4->entries[0].address * PAGE_SIZE);
+    //    if(!p_pml3->entries[0].present){
+    //        kprintf("pml3e not present\n");
+    //    }else{
+    //        kprintf("pml3e present\n");
+    //        PageTable * p_pml2 = (PageTable*)((u64)p_pml3->entries[0].address * PAGE_SIZE);
+    //        if(!p_pml2->entries[0].present){
+    //            kprintf("pml2e not present\n");
+    //        }else{
+    //            kprintf("pml2e present\n");
+    //            PageTable * p_pml1 = (PageTable*)((u64)p_pml2->entries[0].address * PAGE_SIZE);
+    //            if(!p_pml1->entries[0].present){
+    //                kprintf("pml1e not present\n");
+    //            }else{
+    //                kprintf("pml1e present\n");
+    //                kprintf("Pml1e address: 0x%x\n", p_pml1->entries[0].address);
+    //            }
+    //        }
+    //    }
+    //}
     
     load_pagedir(gp_pml4);
     //asm ("mov %0, %%cr3" : : "r" (gp_pml4));
-    //kprintf("[VMM]  Initialized paging\n");
+    kprintf("[VMM]  Initialized paging\n");
 
     return SUCCESS;
 } /* vmm_init */

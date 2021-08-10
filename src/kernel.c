@@ -47,17 +47,18 @@ void _start(struct stivale_struct * stivale_struct) {
     serial_init(); /* init debugging */
 
     pmm_init(stivale_struct); /* reads memory map and initializes memory manager */
-    pmm_dump();
     
     kprintf("Kernel starts at 0x%x\n", &k_start);
     kprintf("Kernel ends at 0x%x\n", &k_end);
 
     pmm_mark_region_used((void*)&k_start, (void*)(&k_end));
-    pmm_dump();
 
+    pmm_mark_region_used((void*)0x0, (void*)0x100000);
+
+
+    vmm_init();
     cli();
     while(1);
-    vmm_init();
 
     /*pit_init(1000);
     idt_init();

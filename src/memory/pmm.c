@@ -18,21 +18,21 @@ volatile u64     last_checked_block = 1;
 volatile u8      mmap[MAX_BITMAPS]; /* max maps for a 64 GiB memory space (takes 2 KiB) */
 
 static void set_frame_used(u64 block){
-    u8 byte = mmap[block/8];
-    byte  |= (1 << (block % 8));
+    u8 index = block/8;
+    mmap[index]  |= (1 << (block % 8));
     return;
 }
 
 static void set_frame_free(u64 block){ 
-    u8 byte = mmap[block/8];
-    byte &= ~(1 << (block % 8));
+    u8 index = block/8;
+    mmap[index] &= ~(1 << (block % 8));
     return;
 }
 
 static bool check_frame(u64 block){
     // 1 if used; 0 if free
-    u8 byte = mmap[block/8];
-    return byte & (1 << (block % 8));
+    u8 index = block/8; 
+    return mmap[index] & (1 << (block % 8));
 }
 
 
@@ -48,7 +48,6 @@ void pmm_init(struct stivale_struct * boot_info){
 
     /* Initializing different memory regions */
     kprintf("------------------Memory Information-------------------\n");
-
     struct stivale_mmap_entry * mmap_entries = 
         (struct stivale_mmap_entry * ) boot_info->memory_map_addr;
 
@@ -89,7 +88,7 @@ void pmm_init_region(void * addr, u64 size){
     u64 end_frame = start_frame + (size/BLOCK_SIZE);
     
     for(u64 i=start_frame; i<end_frame; i++){
-       //set_frame_free(i);
+       set_frame_free(i);
        ++free_blocks;
        --used_blocks;
     }
@@ -223,12 +222,12 @@ void pmm_dump(){
     kprintf("[PMM]  %lu free blocks\n", free_blocks);
     kprintf("[PMM]  %lu used blocks\n", used_blocks);
 
-    //for(u64 i=0; i<total_blocks; i++){
-    //    if(check_frame(i))
-    //        kprintf("Block #%d; Addr: 0x%x; Status: Used\n", i, i*BLOCK_SIZE );
-    //    else 
-    //        kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*BLOCK_SIZE );
-    //}
+    for(u64 i=0; i<total_blocks; i++){
+        if(check_frame(i))
+            kprintf("Block #%d; Addr: 0x%x; Status: Used\n", i, i*BLOCK_SIZE );
+        else 
+            kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*BLOCK_SIZE );
+    }
 
     /*for(u64 i=0; i<total_bmaps; i++){
     }
