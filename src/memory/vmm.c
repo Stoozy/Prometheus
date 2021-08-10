@@ -13,7 +13,6 @@ extern void invalidate_tlb();
 
 
 volatile PageIndex g_page_index;
-PageTable g_pml4;
 PageTable * gp_pml4;
 
 PageIndex vmm_get_page_index(u64 vaddr){
@@ -94,11 +93,11 @@ i32 vmm_map(void * virt_addr, void* phys_addr){
 
 
 i32 vmm_init(){
-
-    gp_pml4 = &g_pml4;
-
+    gp_pml4 = (PageTable*) pmm_alloc_block();
+    kprintf("[VMM]  PML4 Created at 0x%x\n", (u64)gp_pml4);
     /* clear all entries */
     memset((void*)gp_pml4, 0x0, sizeof(PageTable));
+    kprintf("[VMM]  PML4 cleared at 0x%x\n", (u64)gp_pml4);
 
     /* id maps 8 gib*/
     for(u64 addr = 0x0; addr < 0x200000000; addr+=0x1000){ 
@@ -138,7 +137,6 @@ i32 vmm_init(){
         }
     }
     
-    invalidate_tlb();
     load_pagedir(gp_pml4);
     //asm ("mov %0, %%cr3" : : "r" (gp_pml4));
     //kprintf("[VMM]  Initialized paging\n");

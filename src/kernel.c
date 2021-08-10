@@ -52,9 +52,11 @@ void _start(struct stivale_struct * stivale_struct) {
     kprintf("Kernel starts at 0x%x\n", &k_start);
     kprintf("Kernel ends at 0x%x\n", &k_end);
 
-    pmm_mark_region_used((void*)&k_start, (void*)(&k_end)); 
+    pmm_mark_region_used((void*)&k_start, (void*)(&k_end));
     pmm_dump();
 
+    cli();
+    while(1);
     vmm_init();
 
     /*pit_init(1000);
