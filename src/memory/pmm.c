@@ -62,17 +62,17 @@ void pmm_init(struct stivale_struct * boot_info){
 }
 
 
+
 void pmm_mark_region_used(void *  start_addr, void *  end_addr ){
 
     u64 start_block = (u64)start_addr / BLOCK_SIZE;
     u64 end_block =  ((u64)end_addr / BLOCK_SIZE) + 1; 
 
-    kprintf("Marking blocks from 0x%x to 0x%x as used\n", 
+    kprintf("[PMM]  Marking blocks from 0x%x to 0x%x as used\n", 
             start_block * BLOCK_SIZE, end_block * BLOCK_SIZE);
 
     for(u64 block = start_block; block < end_block; ++block){
         set_frame_used(block);
-        /* update globals */
         --free_blocks;
         ++used_blocks;
     }
@@ -101,7 +101,7 @@ void pmm_init_region(void * addr, u64 size){
 
 static int pmm_get_first_free(){
     for(; last_checked_block<total_blocks; last_checked_block++){
-        // check if fame index is free
+        // check if frame index is free
         if(!(check_bit((u8*)&mmap[last_checked_block/8], (u8)last_checked_block%8))){
             last_checked_block++;
             return last_checked_block-1;
@@ -150,7 +150,6 @@ void * pmm_alloc_blocks(u64 size){
          * do another search beginning at frame 1 
          * to make sure no frames are left free
          */
-
         sb = pmm_get_first_free();
         if(sb == -1) return 0x0; // ran out of usable mem
     }
