@@ -53,7 +53,7 @@ void * vmm_virt_to_phys(void * virt_addr){
         return 0x0;
     } else pt = (PageTable*)((u64) pte.address << 12);
 
-    return (void*)(pt->entries[index.pml1i].address << 12);
+    return (void*)(pt->entries[index.pml1i].address << 12) + ((u64)virt_addr & 0xfff);
 }
 
 i32 vmm_map(void * virt_addr, void* phys_addr){
