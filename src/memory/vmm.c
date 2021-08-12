@@ -31,6 +31,31 @@ PageIndex vmm_get_page_index(u64 vaddr){
     return g_page_index;
 } /* vmm_get_index */
 
+void * vmm_virt_to_phys(void * virt_addr){
+    PageIndex index = vmm_get_page_index((u64) virt_addr);
+    PageTableEntry pte;
+
+    pte = gp_pml4->entries[index.pml4i];
+    PageTable * pdp;
+    if(!pte.present){
+        return 0x0;
+    } else pdp = (PageTable*)((u64) pte.address << 12);
+
+    pte = pdp->entries[index.pml3i];
+    PageTable * pd;
+    if(!pte.present){
+        return 0x0;
+    } else pd = (PageTable*)((u64) pte.address << 12);
+
+    pte = pd->entries[index.pml2i];
+    PageTable * pt;
+    if(!pte.present){
+        return 0x0;
+    } else pt = (PageTable*)((u64) pte.address << 12);
+
+    return (void*)(pt->entries[index.pml1i].address << 12);
+}
+
 i32 vmm_map(void * virt_addr, void* phys_addr){
 
     PageIndex indexer = vmm_get_page_index((u64)virt_addr);
@@ -89,6 +114,7 @@ i32 vmm_map(void * virt_addr, void* phys_addr){
     PT->entries[indexer.pml1i] = PDE;
 
     invalidate_tlb();
+    load_pagedir(gp_pml4);
 
     return SUCCESS;
 } /* vmm_map */
@@ -104,6 +130,8 @@ i32 vmm_init(){
     gp_pml4 = get_pml4_address();        
 
     kprintf("[VMM]  PML4 located at 0x%x\n", (u64)gp_pml4);
+    invalidate_tlb();
+    load_pagedir(gp_pml4);
     kprintf("[VMM]  Initialized paging\n");
 
     return SUCCESS;

@@ -30,8 +30,10 @@ typedef struct {
     PageTableEntry entries[512];
 } __attribute__((packed)) PageTable;
 
-i32 vmm_init();
-i32 vmm_map(void * p_virtual, void * p_physical);
-PageIndex vmm_get_page_index(u64 vaddr);
+PageIndex   vmm_get_page_index(u64 vaddr);
+void *      vmm_virt_to_phys(void * virt_addr);
+i32         vmm_init();
+i32         vmm_map(void * p_virtual, void * p_physical);
+
 
 #endif 

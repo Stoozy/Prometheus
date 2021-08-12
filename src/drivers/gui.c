@@ -12,8 +12,8 @@ static u32 * gp_framebuffer;
 static struct stivale_struct * gp_vbe_info;
 
 
-void screen_init(struct stivale_struct * ss){
-    gp_vbe_info =  ss;
+void screen_init(struct stivale_struct * boot_info){
+    gp_vbe_info =  boot_info;
 
     g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_addr 
         *(gp_vbe_info->framebuffer_bpp/8);

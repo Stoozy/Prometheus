@@ -45,9 +45,7 @@ static struct stivale_header stivale_hdr = {
 
 void _start(struct stivale_struct * boot_info) {
     serial_init(); /* init debugging */
-
     pmm_init(boot_info); /* reads memory map and initializes memory manager */
-    
     u64 k_size = ((u64)&k_end - (u64)&k_start);
 
     kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
@@ -58,36 +56,16 @@ void _start(struct stivale_struct * boot_info) {
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
     /* lock kernel blocks and frame buffer blocks */
-    //pmm_mark_region_used((void*)&k_start, k_size + 0x1000);
     pmm_mark_region_used(&k_start, &k_end);
     pmm_mark_region_used(boot_info->framebuffer_addr, 
                             boot_info->framebuffer_addr+fb_size);
-
+    
     vmm_init();
 
-    vmm_map((void*)0xffffffff80000000, boot_info->framebuffer_addr);
-    u32 * buf = (u32 *) 0xffffffff80000000;
-
-    for(u32 i=0; i<4096/4; ++i){
-        buf[i] = 0xffffff;
-    }
-
-    kprintf("Set some pixels");
-
-    cli();
-    while(1);
-
-    /*pit_init(1000);
+    pit_init(1000);
     idt_init();
-    */
- 
-    /* kprintf("------------------Framebuffer Information--------------\n");
-    kprintf("[KMAIN]    Framebuffer height : %d\n", stivale_struct->framebuffer_height);
-    kprintf("[KMAIN]    Framebuffer width : %d\n", stivale_struct->framebuffer_width);
-    kprintf("[KMAIN]    Framebuffer addr : 0x%x\n", stivale_struct->framebuffer_addr);
-    kprintf("[KMAIN]    Framebuffer bpp : %d\n", stivale_struct->framebuffer_bpp);
-    */
-
+    
+    while(1);
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
