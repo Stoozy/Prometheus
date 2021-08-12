@@ -15,6 +15,7 @@
 #include "drivers/pit.h"
 
 #include "util.h"
+#include "kmalloc.h"
 #include "kprintf.h"
 
 
@@ -52,20 +53,34 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
     kprintf("[_start]   Kernel size is %lu bytes\n", k_size);
 
+    screen_init(boot_info);
+
     u64 fb_size = boot_info->framebuffer_bpp * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
     /* lock kernel blocks and frame buffer blocks */
     pmm_mark_region_used(&k_start, &k_end);
-    pmm_mark_region_used(boot_info->framebuffer_addr, 
-                            boot_info->framebuffer_addr+fb_size);
+    pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
+                            (void*)boot_info->framebuffer_addr+fb_size);
     
     vmm_init();
 
+    /*
+    u32 *  test = kmalloc(sizeof(u32));
+    u32 i =0 ;
+    while(test != (void*)0x0){
+        * test = i;
+        kprintf("[_start]   Kmalloc test. Value: %d Address :0x%x \n", *test, test);
+
+        test = kmalloc(sizeof(u32));
+        ++i;
+    }
+    */
+
+    while(1);
+
     pit_init(1000);
     idt_init();
-    
-    while(1);
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
