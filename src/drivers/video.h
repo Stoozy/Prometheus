@@ -1,5 +1,5 @@
-#ifndef GUI_H
-#define GUI_H 1
+#ifndef _VIDEO_H 
+#define _VIDEO_H  1
 
 void screen_init();
 void draw_pixel(int X, int Y, int RGB);

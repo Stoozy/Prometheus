@@ -11,7 +11,7 @@
 #include "memory/vmm.h"
 
 #include "drivers/serial.h"
-#include "drivers/gui.h"
+#include "drivers/video.h"
 #include "drivers/pit.h"
 
 #include "util.h"
@@ -53,9 +53,9 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
     kprintf("[_start]   Kernel size is %lu bytes\n", k_size);
 
-    screen_init(boot_info);
 
-    u64 fb_size = boot_info->framebuffer_bpp * 
+
+    u64 fb_size = (boot_info->framebuffer_bpp/8) * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
     /* lock kernel blocks and frame buffer blocks */
@@ -63,6 +63,12 @@ void _start(struct stivale_struct * boot_info) {
     pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
                             (void*)boot_info->framebuffer_addr+fb_size);
     
+    /* allocate 5 MiB for kernel memory */
+    kmalloc_init(5*1024*1024);
+
+    screen_init(boot_info);
+
+
     vmm_init();
 
     /*

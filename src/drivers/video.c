@@ -1,13 +1,11 @@
-#include "gui.h"
 #include "../typedefs.h"
 #include "../stivale.h"
-#include "gui.h"
+#include "video.h"
+#include "string/string.h"
 
-static u64 g_fb_size = 0;
-
-// FIXME: dynamically allocate mem for backbuffer
-/*static u8 g_backbuffer[3145728];*/
-static u32 * gp_framebuffer;
+static volatile u64 g_fb_size = 0;
+static volatile u32 * gp_framebuffer;
+static volatile u32 * gp_backbuffer;
 
 static struct stivale_struct * gp_vbe_info;
 
@@ -15,18 +13,23 @@ static struct stivale_struct * gp_vbe_info;
 void screen_init(struct stivale_struct * boot_info){
     gp_vbe_info =  boot_info;
 
-    g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_addr 
-        *(gp_vbe_info->framebuffer_bpp/8);
+    g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_height
+        * (gp_vbe_info->framebuffer_bpp/8);
 
-    gp_framebuffer = (u32 *)gp_vbe_info->framebuffer_addr;
 
-    for(int x=0; x<gp_vbe_info->framebuffer_width; ++x){
-        for(int y=0; y<gp_vbe_info->framebuffer_height; ++y){
-            gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = 0x0c5da6;
-        }
+    kprintf("[VIDEO]    Framebuffer size is : %d bytes\n", g_fb_size);
+
+    gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
+    gp_backbuffer  = (u32*) kmalloc(g_fb_size);
+
+    /* clear background */
+    for(int i=0; i<gp_vbe_info->framebuffer_width*gp_vbe_info->framebuffer_height; ++i){
+        gp_backbuffer[i] = 0x6C7A89;
     }
 
-    /*draw_rect(50, 50, 500, 500, 0xffffff);*/
+    memcpy(gp_framebuffer, gp_backbuffer, g_fb_size);
+    draw_rect(50, 50, 500, 500, 0xffffff);
+    memcpy(gp_framebuffer, gp_backbuffer, g_fb_size);
 
 } // screen_init
 
@@ -37,7 +40,7 @@ void draw_pixel(int x, int y, int color){
     if(x < 0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
 
     // invalid input
-    gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
+    gp_backbuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
 
 } // draw_pixel
 
