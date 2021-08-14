@@ -1,3 +1,6 @@
+#define SSFN_CONSOLEBITMAP_TRUECOLOR
+#define NULL (void*)0
+
 #include "typedefs.h"
 #include "stivale.h"
 #include "cpu/io.h"
@@ -52,10 +55,12 @@ void _start(struct stivale_struct * boot_info) {
 
     kprintf("[_start]   %d Module(s)\n", boot_info->module_count);
 
-    u32 i=0;
-    struct stivale_module * modules = boot_info->modules;
-    kprintf("[_start]   Module (%s) \n", modules->string);
+    struct stivale_module * module = (struct stivale_module *)boot_info->modules;
+    u64 module_size =  module->end -module->begin;
 
+    kprintf("[_start]   Modules begin at 0x%x\n", module->begin);
+    kprintf("[_start]   Module name : %s\n", module->string);
+    kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
     u64 fb_size = (boot_info->framebuffer_bpp/8) * 
@@ -72,21 +77,36 @@ void _start(struct stivale_struct * boot_info) {
 
     screen_init(boot_info);
 
-    /* set up context by global variables */
-    //ssfn_src = &;                               /* the bitmap font to use */
-    //ssfn_dst.ptr = boot_info->framebuffer_addr; /* framebuffer address and bytes per line */
-    //ssfn_dst.p = 4096;
-    //ssfn_dst.fg = 0xFFFFFFFF;                   /* colors, white on black */
-    //ssfn_dst.bg = 0;
-    //ssfn_dst.x = 100;                           /* coordinates to draw to */
-    //ssfn_dst.y = 200;
-    
-    ///* render text directly to the screen and then adjust ssfn_dst.x and ssfn_dst.y */
-    //ssfn_putc('H');
-    //ssfn_putc('e');
-    //ssfn_putc('l');
-    //ssfn_putc('l');
-    //ssfn_putc('o');
+    ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
+
+    //kprintf(" %c %c %c %c", ssfn_src->magic[0], ssfn_src->magic[1], ssfn_src->magic[2], ssfn_src->magic[3]);
+
+    ssfn_dst.ptr = (u8*)boot_info->framebuffer_addr;            /* address of the linear frame buffer */
+    ssfn_dst.w = boot_info->framebuffer_width;                  /* width */
+    ssfn_dst.h = boot_info->framebuffer_height;                 /* height */
+    ssfn_dst.p = boot_info->framebuffer_width*
+        (boot_info->framebuffer_bpp/8);                         /* bytes per line */
+    ssfn_dst.x = ssfn_dst.y = 0;                              /* pen position */
+    ssfn_dst.fg = 0xFFFFFF;                                     /* foreground color */
+
+    /* render UNICODE codepoints directly to the screen and then adjust pen position */
+    ssfn_putc(' ');
+    ssfn_putc('H');
+    ssfn_putc('e');
+    ssfn_putc('l');
+    ssfn_putc('l');
+    ssfn_putc('o');
+    ssfn_putc(' ');
+    ssfn_putc('W');
+    ssfn_putc('o');
+    ssfn_putc('r');
+    ssfn_putc('l');
+    ssfn_putc('d');
+    ssfn_putc('!');
+    ssfn_putc('\n');
+    ssfn_putc(' ');
+    ssfn_putc(':');
+    ssfn_putc(')');
 
 
     vmm_init();

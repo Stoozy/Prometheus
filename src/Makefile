@@ -2,6 +2,7 @@ KERNEL := dead_kernel.elf
 
 CC = gcc 
 NASM= nasm
+HEADERS= misc/ssfn.h
 
 CFLAGS = -Wall -Wextra -O0 -pipe
 
@@ -35,7 +36,7 @@ NASM_OBJ    := $(ASM_FILES:.asm=.o)
 all: $(KERNEL)
 
 $(KERNEL): $(NASM_OBJ) $(C_OBJ)
-	$(CC) $(INTERNALLDFLAGS) $(NASM_OBJ) $(C_OBJ) -o $@
+	$(CC) $(INTERNALLDFLAGS)  $(NASM_OBJ) $(C_OBJ) -o $@
 
 stivale.h:
 	wget https://github.com/stivale/stivale/raw/master/stivale.h
@@ -43,7 +44,7 @@ stivale.h:
 %.o : %.asm
 	$(NASM) -f elf64 $< -o $@
 
-%.o: %.c stivale.h
+%.o: %.c stivale.h 
 	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
 clean:
