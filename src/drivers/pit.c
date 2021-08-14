@@ -28,7 +28,6 @@ void sleep(u32 ms){
 
 /* called by irq0 */
 void tick(){ 
-    kprintf("Ticks: %d\n", g_ticks);
     ++g_ticks; 
 }
 

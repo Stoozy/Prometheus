@@ -7,7 +7,6 @@ volatile u64 KMEM_MAX;
 
 void kmalloc_init(u64 mem_size){
     current_address = pmm_alloc_blocks(mem_size / _PMM_BLOCK_SIZE);
-    kprintf("[KMALLOC]  Initializing at address : 0x%x\n", current_address);
     KMEM_MAX = current_address+mem_size;
 }
 

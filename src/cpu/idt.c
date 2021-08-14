@@ -27,14 +27,11 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags){
 
 
 void irq0_handler() {
-    kprintf("IRQ 0 fired!\n");
     tick();
     outb(0x20, 0x20); /* EOI */
 }
 
 void irq1_handler() {
-    kprintf("IRQ 1 fired!\n");
-
     /* keyboard driver */
     handle_scan(inb(0x60));
 

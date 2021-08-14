@@ -18,22 +18,8 @@ void screen_init(struct stivale_struct * boot_info){
     g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_height
         * (gp_vbe_info->framebuffer_bpp/8);
 
-
-    kprintf("[VIDEO]    Framebuffer size is : %d bytes\n", g_fb_size);
-
     gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
     gp_backbuffer  = (u32*) kmalloc(g_fb_size);
-
-    /* clear background */
-    for(int i=0; i<gp_vbe_info->framebuffer_width*gp_vbe_info->framebuffer_height; ++i){
-        gp_backbuffer[i] = 0x141414;
-    }
-
-    memcpy(gp_framebuffer, gp_backbuffer, g_fb_size);
-    //draw_rect(50, 50, 500, 500, 0xffffff);
-    //memcpy(gp_framebuffer, gp_backbuffer, g_fb_size);
-    //draw_rect(570, 50, 200, 500, 0xffffff);
-    //memcpy(gp_framebuffer, gp_backbuffer, g_fb_size);
 
 } // screen_init
 

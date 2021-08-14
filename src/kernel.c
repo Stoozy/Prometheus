@@ -45,8 +45,30 @@ static struct stivale_header stivale_hdr = {
 
 
 void _start(struct stivale_struct * boot_info) {
-    serial_init(); /* init debugging */
-    pmm_init(boot_info); /* reads memory map and initializes memory manager */
+    serial_init();                      /* init debugging */
+    pit_init(1000);
+    idt_init();
+
+    struct stivale_module * module = (struct stivale_module *)boot_info->modules;
+    ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
+
+    //kprintf(" %c %c %c %c", ssfn_src->magic[0], ssfn_src->magic[1], ssfn_src->magic[2], ssfn_src->magic[3]);
+
+    ssfn_dst.ptr = (u8*)boot_info->framebuffer_addr;            /* address of the linear frame buffer */
+    ssfn_dst.w = boot_info->framebuffer_width;                  /* width */
+    ssfn_dst.h = boot_info->framebuffer_height;                 /* height */
+    ssfn_dst.p = boot_info->framebuffer_width*
+        (boot_info->framebuffer_bpp/8);                         /* bytes per line */
+    ssfn_dst.x = ssfn_dst.y = 0;                                /* pen position */
+    ssfn_dst.fg = 0xFFFFFF;                                     /* foreground color */
+
+
+    pmm_init(boot_info);                /* reads memory map and initializes memory manager */
+
+    /* allocate 5 MiB for kernel memory */
+    kmalloc_init(5*1024*1024);
+    screen_init(boot_info);
+
     u64 k_size = ((u64)&k_end - (u64)&k_start);
 
     kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
@@ -55,7 +77,6 @@ void _start(struct stivale_struct * boot_info) {
 
     kprintf("[_start]   %d Module(s)\n", boot_info->module_count);
 
-    struct stivale_module * module = (struct stivale_module *)boot_info->modules;
     u64 module_size =  module->end -module->begin;
 
     kprintf("[_start]   Modules begin at 0x%x\n", module->begin);
@@ -66,54 +87,12 @@ void _start(struct stivale_struct * boot_info) {
     u64 fb_size = (boot_info->framebuffer_bpp/8) * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
-    /* lock kernel blocks and frame buffer blocks */
-    /*pmm_mark_region_used(&k_start, &k_end);*/
+    /* mark frame buffer blocks as used*/
     pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
                             (void*)boot_info->framebuffer_addr+fb_size);
-    
-    
-    /* allocate 5 MiB for kernel memory */
-    kmalloc_init(5*1024*1024);
-
-    screen_init(boot_info);
-
-    ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
-
-    //kprintf(" %c %c %c %c", ssfn_src->magic[0], ssfn_src->magic[1], ssfn_src->magic[2], ssfn_src->magic[3]);
-
-    ssfn_dst.ptr = (u8*)boot_info->framebuffer_addr;            /* address of the linear frame buffer */
-    ssfn_dst.w = boot_info->framebuffer_width;                  /* width */
-    ssfn_dst.h = boot_info->framebuffer_height;                 /* height */
-    ssfn_dst.p = boot_info->framebuffer_width*
-        (boot_info->framebuffer_bpp/8);                         /* bytes per line */
-    ssfn_dst.x = ssfn_dst.y = 0;                              /* pen position */
-    ssfn_dst.fg = 0xFFFFFF;                                     /* foreground color */
 
     /* render UNICODE codepoints directly to the screen and then adjust pen position */
-    ssfn_putc(' ');
-    ssfn_putc('H');
-    ssfn_putc('e');
-    ssfn_putc('l');
-    ssfn_putc('l');
-    ssfn_putc('o');
-    ssfn_putc(' ');
-    ssfn_putc('W');
-    ssfn_putc('o');
-    ssfn_putc('r');
-    ssfn_putc('l');
-    ssfn_putc('d');
-    ssfn_putc('!');
-    ssfn_putc('\n');
-    ssfn_putc(' ');
-    ssfn_putc(':');
-    ssfn_putc(')');
-
-
     vmm_init();
-    while(1);
-
-    pit_init(1000);
-    idt_init();
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
