@@ -55,6 +55,16 @@ void pmm_init(struct stivale_struct * boot_info){
             //kprintf("[PMM]  Type %d\n", mmap_entries[i].type);
         }
     }
+
+    /* mark kernel and modules as used */
+    for(int i=0; i<boot_info->memory_map_entries;++i){
+        if(mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES){
+                pmm_mark_region_used((void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length));
+                kprintf("[PMM]  Kernel & modules Base 0x%x\n", mmap_entries[i].base);
+                kprintf("[PMM]  Kernel & modules size %d bytes\n", mmap_entries[i].length);
+
+        }
+    }
 }
 
 

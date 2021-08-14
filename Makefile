@@ -17,14 +17,14 @@ limine:
 	git clone https://github.com/limine-bootloader/limine.git --branch=v2.0-branch-binary --depth=1
 	make -C limine
 
-src/stivale.elf:
+src/dead_kernel.elf:
 	$(MAKE) -C src
 
-$(ISO_IMAGE): limine src/stivale.elf
+$(ISO_IMAGE): limine src/dead_kernel.elf
 	rm -rf iso_root
 	mkdir -p iso_root
-	cp src/stivale.elf \
-		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin iso_root/
+	cp src/dead_kernel.elf \
+		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin FreeSans.sfn iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		--efi-boot limine-eltorito-efi.bin \

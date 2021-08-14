@@ -1,5 +1,5 @@
-#ifndef TYPEDEFS_H
-#define TYPEDEFS_H
+#ifndef _TYPEDEFS_H
+#define _TYPEDEFS_H 1
 
 typedef unsigned char u8;
 typedef unsigned short u16;

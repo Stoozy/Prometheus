@@ -1,4 +1,4 @@
-KERNEL := stivale.elf
+KERNEL := dead_kernel.elf
 
 CC = gcc 
 NASM= nasm

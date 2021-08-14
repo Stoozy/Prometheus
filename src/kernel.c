@@ -1,11 +1,8 @@
-
 #include "typedefs.h"
-
-//#include <stdint.h>
-#include <stddef.h>
 #include "stivale.h"
 #include "cpu/io.h"
 #include "cpu/idt.h"
+#include "misc/ssfn.h"
 
 #include "memory/pmm.h"
 #include "memory/vmm.h"
@@ -53,36 +50,46 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
     kprintf("[_start]   Kernel size is %lu bytes\n", k_size);
 
+    kprintf("[_start]   %d Module(s)\n", boot_info->module_count);
 
+    u32 i=0;
+    struct stivale_module * modules = boot_info->modules;
+    kprintf("[_start]   Module (%s) \n", modules->string);
+
+    kprintf("\n");
 
     u64 fb_size = (boot_info->framebuffer_bpp/8) * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
     /* lock kernel blocks and frame buffer blocks */
-    pmm_mark_region_used(&k_start, &k_end);
+    /*pmm_mark_region_used(&k_start, &k_end);*/
     pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
                             (void*)boot_info->framebuffer_addr+fb_size);
+    
     
     /* allocate 5 MiB for kernel memory */
     kmalloc_init(5*1024*1024);
 
     screen_init(boot_info);
 
+    /* set up context by global variables */
+    //ssfn_src = &;                               /* the bitmap font to use */
+    //ssfn_dst.ptr = boot_info->framebuffer_addr; /* framebuffer address and bytes per line */
+    //ssfn_dst.p = 4096;
+    //ssfn_dst.fg = 0xFFFFFFFF;                   /* colors, white on black */
+    //ssfn_dst.bg = 0;
+    //ssfn_dst.x = 100;                           /* coordinates to draw to */
+    //ssfn_dst.y = 200;
+    
+    ///* render text directly to the screen and then adjust ssfn_dst.x and ssfn_dst.y */
+    //ssfn_putc('H');
+    //ssfn_putc('e');
+    //ssfn_putc('l');
+    //ssfn_putc('l');
+    //ssfn_putc('o');
+
 
     vmm_init();
-
-    /*
-    u32 *  test = kmalloc(sizeof(u32));
-    u32 i =0 ;
-    while(test != (void*)0x0){
-        * test = i;
-        kprintf("[_start]   Kmalloc test. Value: %d Address :0x%x \n", *test, test);
-
-        test = kmalloc(sizeof(u32));
-        ++i;
-    }
-    */
-
     while(1);
 
     pit_init(1000);
