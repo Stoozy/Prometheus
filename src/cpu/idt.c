@@ -33,7 +33,7 @@ void irq0_handler() {
 
 void irq1_handler() {
     /* keyboard driver */
-    handle_scan(inb(0x60));
+    //handle_scan(inb(0x60));
 
     outb(0x20, 0x20); /* EOI */
 }

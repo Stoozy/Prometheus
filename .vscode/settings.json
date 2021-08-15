@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "typedefs.h": "c",
-        "ssfn.h": "c"
+        "ssfn.h": "c",
+        "kmalloc.h": "c"
     }
 }

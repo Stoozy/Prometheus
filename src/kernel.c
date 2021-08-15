@@ -14,6 +14,8 @@
 #include "drivers/video.h"
 #include "drivers/pit.h"
 
+#include "process/elf.h"
+
 #include "util.h"
 #include "kmalloc.h"
 #include "kprintf.h"
@@ -64,9 +66,19 @@ void _start(struct stivale_struct * boot_info) {
 
 
     pmm_init(boot_info);                /* reads memory map and initializes memory manager */
+    /* mark frame buffer blocks as used*/
+    
+    
+    u64 fb_size = (boot_info->framebuffer_bpp/8) * 
+        boot_info->framebuffer_height * boot_info->framebuffer_width;
+
+    pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
+                            (void*)boot_info->framebuffer_addr+fb_size);
+
 
     /* allocate 5 MiB for kernel memory */
-    kmalloc_init(5*1024*1024);
+    kmalloc_init(0x500000);
+
     screen_init(boot_info);
 
     u64 k_size = ((u64)&k_end - (u64)&k_start);
@@ -74,25 +86,19 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
     kprintf("[_start]   Kernel size is %lu bytes\n", k_size);
-
     kprintf("[_start]   %d Module(s)\n", boot_info->module_count);
 
-    u64 module_size =  module->end -module->begin;
-
+    // first module is a font module
+    u64 module_size =  module->end - module->begin;
     kprintf("[_start]   Modules begin at 0x%x\n", module->begin);
     kprintf("[_start]   Module name : %s\n", module->string);
     kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
-    u64 fb_size = (boot_info->framebuffer_bpp/8) * 
-        boot_info->framebuffer_height * boot_info->framebuffer_width;
-
-    /* mark frame buffer blocks as used*/
-    pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
-                            (void*)boot_info->framebuffer_addr+fb_size);
-
     /* render UNICODE codepoints directly to the screen and then adjust pen position */
     vmm_init();
+
+    kprintf("[_start]   Size of 64-bit elf header %d bytes\n", sizeof(ElfHeader64));
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
