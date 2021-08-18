@@ -3,26 +3,34 @@
 
 #include "../typedefs.h"
 
+#define EI_NIDENT   16
+
 typedef struct {
-    u32 magic;
-    u8  bits;
-    u8  endianness;
-    u8  abi;
-    u64 padding; 
-    u16 type;
-    u16 instruction_set;
-    u32 elf_version;
-    u64 p_entry_position;
-    u64 p_header_table_position;
-    u64 s_header_table_position;
-    u32 flags;
-    u16 header_size;
-    u16 p_header_entry_size;
-    u16 p_header_entries;
-    u16 s_header_entry_size;
-    u16 s_header_entries;
-    u16 s_header_index;
+    u8  e_ident[EI_NIDENT];
+    u16 e_type;
+    u16 e_machine; 
+    u32 e_version;
+    u64 e_entry;
+    u64 e_phoff;
+    u64 e_shoff;
+    u32 e_flags;
+    u16 e_ehsize;
+    u16 e_phentsize;
+    u16 e_phnum;
+    u16 e_shentsz; 
+    u16 e_shnum;
+    u16 e_shstridx;
 } ElfHeader64;
 
+typedef struct {
+    u32 p_type;
+    u32 flags;
+    u64 p_offset;
+    u64 p_vaddr;
+    u64 undefined;
+    u64 p_filesz;
+    u64 p_memsz;
+    u64 p_align;
+} ElfProgramHeader64;
 
 #endif

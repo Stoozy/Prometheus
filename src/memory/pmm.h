@@ -3,6 +3,7 @@
 
 #include "../typedefs.h"
 #include <stddef.h>
+#include <stdbool.h>
 
 #define _PMM_BLOCK_SIZE          4096
 #define _PMM_BLOCKS_PER_BYTE     8
@@ -22,6 +23,7 @@ void        pmm_free_blocks(u64 addl, u64 blocks);
 u64         pmm_get_free_block_count();
 u64         pmm_get_block_count();
 
+bool        pmm_is_block_free(u64 block);
 void        pmm_dump();
 
 #endif

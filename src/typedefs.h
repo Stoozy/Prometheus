@@ -1,6 +1,7 @@
 #ifndef _TYPEDEFS_H
 #define _TYPEDEFS_H 1
 
+#define _U64_PTR_MAX    0xffffffffffffffff
 
 typedef unsigned char u8;
 typedef unsigned short u16;

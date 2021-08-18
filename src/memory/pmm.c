@@ -6,6 +6,7 @@
 #include "../kprintf.h"
 #include "../stivale.h"
 
+
 volatile u64     total_blocks = _PMM_MAX_BITMAPS * _PMM_BLOCKS_PER_BYTE; 
 volatile u64     total_bmaps; 
 volatile u64     free_blocks;
@@ -25,12 +26,15 @@ static void set_frame_free(u64 block){
     return;
 }
 
-static bool check_frame(u64 block){
+static bool is_block_used(u64 block){
     // 1 if used; 0 if free
     u8 index = block/8; 
     return mmap[index] & (1 << (block % 8));
 }
 
+bool pmm_is_block_free(u64 block){
+    return !is_block_used(block);
+}
 
 void pmm_init(struct stivale_struct * boot_info){
 
@@ -55,6 +59,9 @@ void pmm_init(struct stivale_struct * boot_info){
     /* mark kernel and modules as used */
     for(int i=0; i<boot_info->memory_map_entries;++i){
         if(mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES){
+            kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",
+                (void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length)
+            );
             pmm_mark_region_used((void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length));
         }
     }
@@ -101,7 +108,8 @@ void pmm_init_region(void * addr, u64 size){
 static int pmm_get_first_free(){
     for(; last_checked_block<total_blocks; last_checked_block++){
         // check if frame index is free
-        if(!(check_bit((u8*)&mmap[last_checked_block/8], (u8)last_checked_block%8))){
+        //if(!(check_bit((u8*)&mmap[last_checked_block/8], (u8)last_checked_block%8))){
+        if(!is_block_used(last_checked_block)){
             last_checked_block++;
             return last_checked_block-1;
         }
@@ -121,11 +129,11 @@ static int pmm_get_first_free_chunk(u64 blocks){
                 u64 start_idx = last_checked_block * 8 + i;
                 if(start_idx == total_blocks-1) return -1;
                 // found free block
-                if(!check_frame(start_idx)){
+                if(!is_block_used(start_idx)){
                     u64 free = 0; 
                     for(u64 j=start_idx; j<=(start_idx+blocks); j++){
                         // used
-                        if(check_frame(j)){
+                        if(is_block_used(j)){
                             start_idx++;
                             break;
                         }
@@ -149,6 +157,7 @@ void * pmm_alloc_blocks(u64 size){
          * do another search beginning at frame 1 
          * to make sure no frames are left free
          */
+        last_checked_block = 1;
         sb = pmm_get_first_free();
         if(sb == -1) return 0x0; // ran out of usable mem
     }
@@ -173,8 +182,11 @@ void * pmm_alloc_block(){
          * do another search beginning at frame 1 
          * to make sure no frames are left free
          */
+        last_checked_block = 1; 
         block = pmm_get_first_free();
-        if(block == -1) return 0x0; // ran out of usable mem
+        if(block == -1) {
+            return 0x0; // ran out of usable mem
+        }
     } 
 
     u64 addr = block * _PMM_BLOCK_SIZE;
@@ -221,7 +233,7 @@ void pmm_dump(){
     kprintf("[PMM]  %lu used blocks\n", used_blocks);
 
     for(u64 i=0; i<total_blocks; i++){
-        if(check_frame(i))
+        if(is_block_used(i))
             kprintf("Block #%d; Addr: 0x%x; Status: Used\n", i, i*_PMM_BLOCK_SIZE );
         else 
             kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*_PMM_BLOCK_SIZE );

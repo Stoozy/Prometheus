@@ -48,9 +48,6 @@ static struct stivale_header stivale_hdr = {
 
 void _start(struct stivale_struct * boot_info) {
     serial_init();                      /* init debugging */
-    pit_init(1000);
-    idt_init();
-
     struct stivale_module * module = (struct stivale_module *)boot_info->modules;
     ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
 
@@ -75,13 +72,20 @@ void _start(struct stivale_struct * boot_info) {
     pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
                             (void*)boot_info->framebuffer_addr+fb_size);
 
-
-    /* allocate 5 MiB for kernel memory */
-    kmalloc_init(0x500000);
-
-    screen_init(boot_info);
-
     u64 k_size = ((u64)&k_end - (u64)&k_start);
+    kprintf("[_start]   Kernel size is %d bytes\n", k_size);
+    vmm_init();
+
+    pit_init(1000);
+    idt_init();
+
+
+    //kprintf("[_start]   Kernel physical start address : 0x%x\n", vmm_virt_to_phys((void*)&k_start));
+    //kprintf("[_start]   Kernel physical end address : 0x%x\n", vmm_virt_to_phys((void*)&k_end));
+    /* allocate 5 MiB for kernel memory */
+
+    //screen_init(boot_info);
+
 
     kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
@@ -95,8 +99,6 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
-    /* render UNICODE codepoints directly to the screen and then adjust pen position */
-    vmm_init();
 
     kprintf("[_start]   Size of 64-bit elf header %d bytes\n", sizeof(ElfHeader64));
 

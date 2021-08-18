@@ -2,6 +2,8 @@
     "files.associations": {
         "typedefs.h": "c",
         "ssfn.h": "c",
-        "kmalloc.h": "c"
-    }
+        "kmalloc.h": "c",
+        "random": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }

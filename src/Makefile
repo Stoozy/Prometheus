@@ -2,9 +2,8 @@ KERNEL := dead_kernel.elf
 
 CC = gcc 
 NASM= nasm
-HEADERS= misc/ssfn.h
 
-CFLAGS = -Wall -Wextra -O0 -pipe
+CFLAGS = -Wall -Wextra -O2 -pipe
 
 INTERNALLDFLAGS := \
 	-fno-pic  -fPIE \
