@@ -119,7 +119,7 @@ void irq15_handler(){
 
 void idt_init(){
 
-    kprintf("Initializing IDT\n");
+    //kprintf("Initializing IDT\n");
 
     extern int irq0(); 
     extern int irq1(); 
@@ -210,12 +210,12 @@ void idt_init(){
     idt_ptr.base = (u64)&idt[0];
     idt_ptr.limit = (u16)(sizeof(IDTEntry) * 256) - 1;
 
-    kprintf("IDT address: 0x%x\n", &idt[0]);
+    kprintf("[IDT]  IDT address: 0x%x\n", &idt[0]);
 
     __asm__ volatile ("lidt %0" :: "memory"(idt_ptr));
     sti();
 
-    kprintf("Initialized IDT!\n");
+    kprintf("[IDT]  Initialized IDT!\n");
 
 }
 

@@ -1,6 +1,7 @@
 #include "kmalloc.h"
 #include "kprintf.h"
 #include "memory/pmm.h"
+#include "string/string.h"
 
 volatile void * current_address; 
 volatile u64 KMEM_MAX;
