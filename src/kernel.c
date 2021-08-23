@@ -70,13 +70,19 @@ void _start(struct stivale_struct * boot_info) {
     u64 fb_size = (boot_info->framebuffer_bpp/8) * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
+    kprintf("[_start]   Framebuffer addr: 0x%x\n", boot_info->framebuffer_addr);
     pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
                             (void*)boot_info->framebuffer_addr+fb_size);
+
 
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
-    vmm_init();
+    vmm_init(boot_info);
+
+    screen_init(boot_info);
+    kprintf("[_start]   Kprintf test\n");
+
 
     for(;;);
     pit_init(1000);
@@ -84,10 +90,9 @@ void _start(struct stivale_struct * boot_info) {
 
 
     kprintf("[_start]   Kernel physical start address : 0x%x\n", vmm_virt_to_phys((void*)&k_start));
-    //kprintf("[_start]   Kernel physical end address : 0x%x\n", vmm_virt_to_phys((void*)&k_end));
+    kprintf("[_start]   Kernel physical end address : 0x%x\n", vmm_virt_to_phys((void*)&k_end));
     /* allocate 5 MiB for kernel memory */
 
-    //screen_init(boot_info);
 
 
     //kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);

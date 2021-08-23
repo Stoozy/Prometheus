@@ -2,7 +2,8 @@
 #include "../typedefs.h"
 #include "../stivale.h"
 #include "video.h"
-#include "string/string.h"
+#include "../string/string.h"
+#include "../kmalloc.h"
 
 static volatile u64 g_fb_size = 0;
 static volatile u32 * gp_framebuffer;
@@ -12,14 +13,15 @@ static struct stivale_struct * gp_vbe_info;
 
 
 void screen_init(struct stivale_struct * boot_info){
-
     gp_vbe_info =  boot_info;
 
     g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_height
         * (gp_vbe_info->framebuffer_bpp/8);
 
-    gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
-    gp_backbuffer  = (u32*) kmalloc(g_fb_size);
+    //gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
+    //gp_backbuffer  = (u32*) kmalloc(g_fb_size);
+
+    memset((void*)boot_info->framebuffer_addr, 0xff, g_fb_size);
 
 } // screen_init
 

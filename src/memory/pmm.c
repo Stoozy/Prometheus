@@ -36,38 +36,6 @@ bool pmm_is_block_free(u64 block){
     return !is_block_used(block);
 }
 
-void pmm_init(struct stivale_struct * boot_info){
-
-    total_bmaps = total_blocks / _PMM_BLOCKS_PER_BYTE;
-    used_blocks = total_blocks;
-    free_blocks = 0;
-
-    /* set every block to used status */
-    memset(&mmap[0], 0xff, total_bmaps);
-
-
-    /* Initializing different memory regions */
-    struct stivale_mmap_entry * mmap_entries = 
-        (struct stivale_mmap_entry * ) boot_info->memory_map_addr;
-
-    for(int i=0; i<boot_info->memory_map_entries;++i){
-        if(mmap_entries[i].type == STIVALE_MMAP_USABLE){
-            pmm_init_region((void*) mmap_entries[i].base, mmap_entries[i].length);
-        }
-    }
-
-    /* mark kernel and modules as used */
-    for(int i=0; i<boot_info->memory_map_entries;++i){
-        if(mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES){
-            kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",
-                (void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length)
-            );
-            pmm_mark_region_used((void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length));
-        }
-    }
-}
-
-
 
 void pmm_mark_region_used(void *  start_addr, void *  end_addr ){
 
@@ -224,7 +192,6 @@ u64 pmm_get_block_count(){
 }
 
 
-
 void pmm_dump(){
 
     kprintf("---------------------PMM Information-------------------\n");
@@ -245,3 +212,33 @@ void pmm_dump(){
 
 }
 
+void pmm_init(struct stivale_struct * boot_info){
+
+    total_bmaps = total_blocks / _PMM_BLOCKS_PER_BYTE;
+    used_blocks = total_blocks;
+    free_blocks = 0;
+
+    /* set every block to used status */
+    memset((void*)&mmap[0], 0xff, total_bmaps);
+
+
+    /* Initializing different memory regions */
+    struct stivale_mmap_entry * mmap_entries = 
+        (struct stivale_mmap_entry * ) boot_info->memory_map_addr;
+
+    for(int i=0; i<boot_info->memory_map_entries;++i){
+        if(mmap_entries[i].type == STIVALE_MMAP_USABLE){
+            pmm_init_region((void*) mmap_entries[i].base, mmap_entries[i].length);
+        }
+    }
+
+    /* mark kernel and modules as used */
+    for(int i=0; i<boot_info->memory_map_entries;++i){
+        if(mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES){
+            kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",
+                (void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length)
+            );
+            pmm_mark_region_used((void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length));
+        }
+    }
+}

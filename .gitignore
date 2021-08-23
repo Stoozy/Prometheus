@@ -2,6 +2,7 @@
 *.img
 *.log
 *.swp
+*.swo
 .vscode
 .vscode/*.*
 limine

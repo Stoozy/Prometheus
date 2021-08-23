@@ -20,8 +20,8 @@ static bool print(const char* data, size_t length) {
     const unsigned char* bytes = (const unsigned char*) data;
     turn_color_on();
     for (size_t i = 0; i < length; i++)
-        //write_serial(bytes[i]);
-        ssfn_putc(bytes[i]);
+        write_serial(bytes[i]);
+        //ssfn_putc(bytes[i]);
     turn_color_off();
     return true;
 }

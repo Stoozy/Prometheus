@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "../string/string.h"
 
-#include "stivale.h"
+#include "../stivale.h"
 #include "vmm.h"
 #include "pmm.h"
 
@@ -17,7 +17,6 @@ extern void load_pagedir();
 extern void invalidate_tlb();
 extern u64 k_start;
 extern u64 k_end;
-
 
 
 PageTable * gp_pml4;
@@ -132,6 +131,7 @@ static PageTable * get_pml4_address(){
     return (PageTable *) cr3;
 }
 
+
 i32 vmm_init(struct stivale_struct * boot_info){
     gp_pml4 = pmm_alloc_block();
     memset(gp_pml4, 0x0, sizeof(PageTable));
@@ -152,11 +152,11 @@ i32 vmm_init(struct stivale_struct * boot_info){
     //for(int i=0; i<boot_info->memory_map_entries;++i){
 
     //    if( 
-    //        mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES ||
-    //        mmap_entries[i].type == STIVALE_MMAP_USABLE ||
-    //        mmap_entries[i].type == STIVALE_MMAP_FRAMEBUFFER  
-    //        mmap_entries[i].type == STIVALE_MMAP_BOOTLOADER_RECLAIMABLE ||
-    //        mmap_entries[i].type == STIVALE_MMAP_ACPI_RECLAIMABLE
+    //        //mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES ||
+    //        mmap_entries[i].type == STIVALE_MMAP_USABLE
+    //        //mmap_entries[i].type == STIVALE_MMAP_FRAMEBUFFER  
+    //        //mmap_entries[i].type == STIVALE_MMAP_BOOTLOADER_RECLAIMABLE ||
+    //        //mmap_entries[i].type == STIVALE_MMAP_ACPI_RECLAIMABLE
     //        ){
     //            
     //            for( u64 addr = mmap_entries[i].base; addr < mmap_entries[i].base + mmap_entries[i].length;addr += PAGE_SIZE){
@@ -167,7 +167,19 @@ i32 vmm_init(struct stivale_struct * boot_info){
     //}
 
 
+    u64 fb_size = (boot_info->framebuffer_bpp/8) * 
+        boot_info->framebuffer_height * boot_info->framebuffer_width;
+
+    u64 fb_begin = (u64) boot_info->framebuffer_addr;
+
+
+    kprintf("[VMM]   Framebuffer addr: 0x%x\n", boot_info->framebuffer_addr);
+    for(u64 addr=fb_begin; addr< fb_begin+fb_size; addr+=PAGE_SIZE){
+        vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET);
+    }
+
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
+        vmm_map(gp_pml4, (void*)addr, (void*)addr);
         vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
     }
 
