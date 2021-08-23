@@ -30,7 +30,6 @@ static bool print(const char* data, size_t length) {
 int kprintf(const char* restrict format, ...) {
     char buf[50];
     bool wide = 0;
-    char pad_with = ' ';
     int padding = 0;
     int precision = 0;
 
@@ -61,7 +60,6 @@ int kprintf(const char* restrict format, ...) {
         const char* format_begun_at = format++;
 
         if(*format == '0'){
-            pad_with = '0';
             format++;
         }
 
@@ -124,16 +122,7 @@ int kprintf(const char* restrict format, ...) {
                 if(i==0) kprintf("0");
                 else{
                     if(padding){
-                        int p;
-                        char * pad_str;
-                        // padding with 0s and printing
-                        for(p = 0; p<padding; p++)
-                            pad_str[p] = pad_with;
-                        pad_str[p] = '\0';
-
-                        char * str = lltoa(i, &buf[p], 10);
-                        kprintf("%s", strcat(pad_str, str));
-
+                        // TODO: handle padding 
                     }else kprintf("%s", lltoa(i, &buf[0], 10));
                 }
             }else{
@@ -141,13 +130,7 @@ int kprintf(const char* restrict format, ...) {
                 if(i==0) kprintf("0");
                 else{
                     if(padding){
-                        int p;
-                        char * pad_str;
-                        for(p = 0; p<padding; p++)
-                            pad_str[p] = pad_with;
-                        pad_str[p] = '\0';
-                        char * str = itoa(i, &buf[p], 10);
-                        kprintf("%s", strcat(pad_str, str));
+                        /* TODO: Handle padding */
                     }else {
                         kprintf("%s", itoa(i, &buf[0], 10));
                     }

@@ -8,11 +8,11 @@ volatile u64 KMEM_MAX;
 
 void kmalloc_init(u64 mem_size){
     current_address = pmm_alloc_blocks(mem_size / _PMM_BLOCK_SIZE);
-    KMEM_MAX = current_address+mem_size;
+    KMEM_MAX = (u64)current_address+mem_size;
 }
 
 void * kmalloc(size_t size){
-    if(current_address+size > KMEM_MAX){
+    if((u64)(current_address+size) > KMEM_MAX){
         kprintf("[KMALLOC]  OUT OF MEMORY!\n");
         while(1); // crash
     }

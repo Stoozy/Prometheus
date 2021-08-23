@@ -15,6 +15,8 @@ INTERNALLDFLAGS := \
 
 INTERNALCFLAGS  :=       \
 	-I.                  \
+	-Wall				 \
+	-Wextra				 \
 	-std=gnu11           \
 	-ffreestanding       \
 	-fno-stack-protector \

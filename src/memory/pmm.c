@@ -226,14 +226,14 @@ void pmm_init(struct stivale_struct * boot_info){
     struct stivale_mmap_entry * mmap_entries = 
         (struct stivale_mmap_entry * ) boot_info->memory_map_addr;
 
-    for(int i=0; i<boot_info->memory_map_entries;++i){
+    for(u64 i=0; i<boot_info->memory_map_entries;++i){
         if(mmap_entries[i].type == STIVALE_MMAP_USABLE){
             pmm_init_region((void*) mmap_entries[i].base, mmap_entries[i].length);
         }
     }
 
     /* mark kernel and modules as used */
-    for(int i=0; i<boot_info->memory_map_entries;++i){
+    for(u64 i=0; i<boot_info->memory_map_entries;++i){
         if(mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES){
             kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",
                 (void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length)

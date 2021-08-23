@@ -18,7 +18,7 @@ void screen_init(struct stivale_struct * boot_info){
     g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_height
         * (gp_vbe_info->framebuffer_bpp/8);
 
-    //gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
+    gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
     //gp_backbuffer  = (u32*) kmalloc(g_fb_size);
 
     memset((void*)boot_info->framebuffer_addr, 0xff, g_fb_size);

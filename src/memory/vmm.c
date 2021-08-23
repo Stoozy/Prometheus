@@ -125,47 +125,17 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
 } /* vmm_map */
 
 
-static PageTable * get_pml4_address(){
-    u64 cr3;
-    asm volatile ("mov %%cr3, %%rax" : "=a" (cr3));
-    return (PageTable *) cr3;
-}
-
 
 i32 vmm_init(struct stivale_struct * boot_info){
     gp_pml4 = pmm_alloc_block();
     memset(gp_pml4, 0x0, sizeof(PageTable));
     kprintf("[VMM]  PML4 located at 0x%x\n", (u64)gp_pml4);
 
-    //0000000000000000-0000000280000000 0000000280000000 -rw
-    //ffff800000000000-ffff800280000000 0000000280000000 -rw
-    //ffffffff80000000-0001000000000000 0000000080000000 -rw
-    
-    struct stivale_mmap_entry * mmap_entries = 
-        (struct stivale_mmap_entry * ) boot_info->memory_map_addr;
-
-   
     for(u64 addr = 0; addr < 128 * 1024 * 1024 ; addr+=4096){
+        vmm_map(gp_pml4, (void*)addr, (void*)addr);
         vmm_map(gp_pml4, (void*)addr+PAGING_VIRTUAL_OFFSET, (void*)addr);
     }
     
-    //for(int i=0; i<boot_info->memory_map_entries;++i){
-
-    //    if( 
-    //        //mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES ||
-    //        mmap_entries[i].type == STIVALE_MMAP_USABLE
-    //        //mmap_entries[i].type == STIVALE_MMAP_FRAMEBUFFER  
-    //        //mmap_entries[i].type == STIVALE_MMAP_BOOTLOADER_RECLAIMABLE ||
-    //        //mmap_entries[i].type == STIVALE_MMAP_ACPI_RECLAIMABLE
-    //        ){
-    //            
-    //            for( u64 addr = mmap_entries[i].base; addr < mmap_entries[i].base + mmap_entries[i].length;addr += PAGE_SIZE){
-    //                vmm_map(gp_pml4, (void*)addr+PAGING_VIRTUAL_OFFSET, (void*)addr);
-    //            }
-    //        }
-    //        
-    //}
-
 
     u64 fb_size = (boot_info->framebuffer_bpp/8) * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;

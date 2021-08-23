@@ -1,13 +1,13 @@
 #include "idt.h"
 
-#include <typedefs.h>
-#include <kprintf.h>
+#include "../typedefs.h"
+#include "../kprintf.h"
 
-#include <drivers/serial.h>
-#include <drivers/keyboard.h>
-#include <drivers/pit.h>
+#include "../drivers/serial.h"
+#include "../drivers/keyboard.h"
+#include "../drivers/pit.h"
 
-#include <cpu/io.h>
+#include "io.h"
 
 
 __attribute__((aligned(0x10))) IDTEntry idt[256];
@@ -213,7 +213,7 @@ void idt_init(){
     kprintf("[IDT]  IDT address: 0x%x\n", &idt[0]);
 
     __asm__ volatile ("lidt %0" :: "memory"(idt_ptr));
-    sti();
+    __asm__ volatile ("sti");
 
     kprintf("[IDT]  Initialized IDT!\n");
 

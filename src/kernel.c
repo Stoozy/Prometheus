@@ -51,6 +51,23 @@ void _start(struct stivale_struct * boot_info) {
 
     struct stivale_module * module = (struct stivale_module *)boot_info->modules;
     ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
+    
+    kprintf("[_start]   Kernel physical start address : 0x%x\n", vmm_virt_to_phys((void*)&k_start));
+    kprintf("[_start]   Kernel physical end address : 0x%x\n", vmm_virt_to_phys((void*)&k_end));
+
+    /* allocate 5 MiB for kernel memory */
+    kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
+    kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
+
+    //first module is a font module
+    u64 module_size =  module->end - module->begin;
+    kprintf("[_start]   Modules begin at 0x%x\n", module->begin);
+    kprintf("[_start]   Module name : %s\n", module->string);
+    kprintf("[_start]   Module size: %lu bytes\n", module_size);
+    kprintf("\n");
+
+
+
 
     //kprintf(" %c %c %c %c", ssfn_src->magic[0], ssfn_src->magic[1], ssfn_src->magic[2], ssfn_src->magic[3]);
 
@@ -70,7 +87,6 @@ void _start(struct stivale_struct * boot_info) {
     u64 fb_size = (boot_info->framebuffer_bpp/8) * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
-    kprintf("[_start]   Framebuffer addr: 0x%x\n", boot_info->framebuffer_addr);
     pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
                             (void*)boot_info->framebuffer_addr+fb_size);
 
@@ -82,33 +98,11 @@ void _start(struct stivale_struct * boot_info) {
 
     screen_init(boot_info);
     kprintf("[_start]   Kprintf test\n");
-
-
-    for(;;);
     pit_init(1000);
     idt_init();
 
 
-    kprintf("[_start]   Kernel physical start address : 0x%x\n", vmm_virt_to_phys((void*)&k_start));
-    kprintf("[_start]   Kernel physical end address : 0x%x\n", vmm_virt_to_phys((void*)&k_end));
-    /* allocate 5 MiB for kernel memory */
-
-
-
-    //kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
-    //kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
-    //kprintf("[_start]   Kernel size is %lu bytes\n", k_size);
-    //kprintf("[_start]   %d Module(s)\n", boot_info->module_count);
-
-    // first module is a font module
-    //u64 module_size =  module->end - module->begin;
-    //kprintf("[_start]   Modules begin at 0x%x\n", module->begin);
-    //kprintf("[_start]   Module name : %s\n", module->string);
-    //kprintf("[_start]   Module size: %lu bytes\n", module_size);
-    //kprintf("\n");
-
-
-    //kprintf("[_start]   Size of 64-bit elf header %d bytes\n", sizeof(ElfHeader64));
+    kprintf("[_start]   Size of 64-bit elf header %d bytes\n", sizeof(ElfHeader64));
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }

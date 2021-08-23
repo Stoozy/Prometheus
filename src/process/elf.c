@@ -6,7 +6,6 @@
 i32 load_elf_bin(u8 * elf_image){
     ElfHeader64 header;
     ElfProgramHeader64 ph;
-    u64 base = _U64_PTR_MAX;
 
     memcpy(&header, elf_image, sizeof(header));
 
@@ -18,6 +17,8 @@ i32 load_elf_bin(u8 * elf_image){
 
         return -1;
 
-
+    
     return 0;
+
 }
+
