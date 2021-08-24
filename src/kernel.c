@@ -50,7 +50,7 @@ void _start(struct stivale_struct * boot_info) {
     serial_init();                      /* init debugging */
 
     struct stivale_module * module = (struct stivale_module *)boot_info->modules;
-    ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
+    //ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
     
     kprintf("[_start]   Kernel physical start address : 0x%x\n", vmm_virt_to_phys((void*)&k_start));
     kprintf("[_start]   Kernel physical end address : 0x%x\n", vmm_virt_to_phys((void*)&k_end));
@@ -59,31 +59,28 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
 
-    //first module is a font module
     u64 module_size =  module->end - module->begin;
     kprintf("[_start]   Modules begin at 0x%x\n", module->begin);
     kprintf("[_start]   Module name : %s\n", module->string);
     kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
-
-
+    
 
     //kprintf(" %c %c %c %c", ssfn_src->magic[0], ssfn_src->magic[1], ssfn_src->magic[2], ssfn_src->magic[3]);
 
-    ssfn_dst.ptr = (u8*)boot_info->framebuffer_addr;            /* address of the linear frame buffer */
-    ssfn_dst.w = boot_info->framebuffer_width;                  /* width */
-    ssfn_dst.h = boot_info->framebuffer_height;                 /* height */
-    ssfn_dst.p = boot_info->framebuffer_width*
-        (boot_info->framebuffer_bpp/8);                         /* bytes per line */
-    ssfn_dst.x = ssfn_dst.y = 0;                                /* pen position */
-    ssfn_dst.fg = 0xFFFFFF;                                     /* foreground color */
+    //ssfn_dst.ptr = (u8*)boot_info->framebuffer_addr;            /* address of the linear frame buffer */
+    //ssfn_dst.w = boot_info->framebuffer_width;                  /* width */
+    //ssfn_dst.h = boot_info->framebuffer_height;                 /* height */
+    //ssfn_dst.p = boot_info->framebuffer_width*
+    //    (boot_info->framebuffer_bpp/8);                         /* bytes per line */
+    //ssfn_dst.x = ssfn_dst.y = 0;                                /* pen position */
+    //ssfn_dst.fg = 0xFFFFFF;                                     /* foreground color */
 
 
     pmm_init(boot_info);                /* reads memory map and initializes memory manager */
-    /* mark frame buffer blocks as used*/
     
-    
+    /* TODO: move this to the pmm_init func */
     u64 fb_size = (boot_info->framebuffer_bpp/8) * 
         boot_info->framebuffer_height * boot_info->framebuffer_width;
 
@@ -95,6 +92,7 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
     vmm_init(boot_info);
+
 
     screen_init(boot_info);
     kprintf("[_start]   Kprintf test\n");

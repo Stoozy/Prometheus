@@ -7,7 +7,6 @@
 #include "vmm.h"
 #include "pmm.h"
 
-#define PAGE_SIZE   4096
 #define PAGING_KERNEL_OFFSET        0xffffffff80000000
 #define PAGING_VIRTUAL_OFFSET       0xffff800000000000
 
@@ -81,6 +80,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     if (!PTE.present){
         PDP = (PageTable*)pmm_alloc_block();
         memset(PDP, 0, 0x1000);
+        memset(&PTE, 0, sizeof(PageTableEntry));
         PTE.address = (u64)PDP >> 12;
         PTE.present = true;
         PTE.rw = true;
@@ -94,6 +94,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     if (!PTE.present){
         PD = (PageTable*)pmm_alloc_block();
         memset(PD, 0, 0x1000);
+        memset(&PTE, 0, sizeof(PageTableEntry));
         PTE.address = (u64)PD >> 12;
         PTE.present = true;
         PTE.rw = true;
@@ -106,6 +107,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     if (!PTE.present){
         PT = (PageTable*)pmm_alloc_block();
         memset(PT, 0, 0x1000);
+        memset(&PTE, 0, sizeof(PageTableEntry));
         PTE.address = (u64)PT >> 12;
         PTE.present = true;
         PTE.rw = true;
@@ -113,6 +115,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     }
     else PT = (PageTable*)((u64)PTE.address << 12);
 
+    memset(&PTE, 0, sizeof(PageTableEntry));
     PTE = PT->entries[indexer.pml1i];
     PTE.address = (u64)phys_addr >> 12;
     PTE.present = true;
@@ -124,6 +127,18 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     return SUCCESS;
 } /* vmm_map */
 
+
+PageTable * vmm_create_proc_pml4(){
+    PageTable * pml4 = pmm_alloc_block();
+
+    /* map kernel */
+    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
+        vmm_map(pml4, (void*)addr, (void*)addr);
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
+    }
+
+    return pml4;
+}
 
 
 i32 vmm_init(struct stivale_struct * boot_info){

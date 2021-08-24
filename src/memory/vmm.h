@@ -1,6 +1,8 @@
 #ifndef _VMM_H
 #define _VMM_H 1
 
+#define PAGE_SIZE   4096
+
 #include "../typedefs.h"
 #include <stdbool.h>
 
@@ -30,10 +32,11 @@ typedef struct {
     PageTableEntry entries[512];
 } __attribute__((packed)) PageTable;
 
+
+PageTable * vmm_create_proc_pml4();
 PageIndex   vmm_get_page_index(u64 vaddr);
 void *      vmm_virt_to_phys(void * virt_addr);
 i32         vmm_init(struct stivale_struct *);
 i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical);
-
 
 #endif 
