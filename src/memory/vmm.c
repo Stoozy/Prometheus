@@ -80,10 +80,9 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     if (!PTE.present){
         PDP = (PageTable*)pmm_alloc_block();
         memset(PDP, 0, 0x1000);
-        memset(&PTE, 0, sizeof(PageTableEntry));
         PTE.address = (u64)PDP >> 12;
-        PTE.present = true;
-        PTE.rw = true;
+        PTE.present = 1;
+        PTE.rw = 1;
         gp_pml4->entries[indexer.pml4i] = PTE;
     }
     else PDP = (PageTable*)((u64)PTE.address << 12);
@@ -94,10 +93,9 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     if (!PTE.present){
         PD = (PageTable*)pmm_alloc_block();
         memset(PD, 0, 0x1000);
-        memset(&PTE, 0, sizeof(PageTableEntry));
         PTE.address = (u64)PD >> 12;
-        PTE.present = true;
-        PTE.rw = true;
+        PTE.present = 1;
+        PTE.rw = 1;
         PDP->entries[indexer.pml3i] = PTE;
     }
     else PD = (PageTable*)((u64)PTE.address << 12);
@@ -107,19 +105,17 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     if (!PTE.present){
         PT = (PageTable*)pmm_alloc_block();
         memset(PT, 0, 0x1000);
-        memset(&PTE, 0, sizeof(PageTableEntry));
         PTE.address = (u64)PT >> 12;
-        PTE.present = true;
-        PTE.rw = true;
+        PTE.present = 1;
+        PTE.rw = 1;
         PD->entries[indexer.pml2i] = PTE;
     }
     else PT = (PageTable*)((u64)PTE.address << 12);
 
-    memset(&PTE, 0, sizeof(PageTableEntry));
     PTE = PT->entries[indexer.pml1i];
     PTE.address = (u64)phys_addr >> 12;
-    PTE.present = true;
-    PTE.rw = true;
+    PTE.present = 1;
+    PTE.rw = 1;
     PT->entries[indexer.pml1i] = PTE;
 
 
@@ -159,7 +155,7 @@ i32 vmm_init(struct stivale_struct * boot_info){
 
 
     kprintf("[VMM]   Framebuffer addr: 0x%x\n", boot_info->framebuffer_addr);
-    for(u64 addr=fb_begin; addr< fb_begin+fb_size; addr+=PAGE_SIZE){
+    for(u64 addr=fb_begin; addr<fb_begin+fb_size; addr+=PAGE_SIZE){
         vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET);
     }
 

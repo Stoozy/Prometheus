@@ -32,7 +32,7 @@ void draw_pixel(int x, int y, int color){
     if(x < 0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
 
     // invalid input
-    gp_backbuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
+    gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
 
 } // draw_pixel
 

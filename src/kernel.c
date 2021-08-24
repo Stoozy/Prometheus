@@ -14,8 +14,6 @@
 #include "drivers/video.h"
 #include "drivers/pit.h"
 
-#include "process/elf.h"
-
 #include "util.h"
 #include "kmalloc.h"
 #include "kprintf.h"
@@ -80,27 +78,20 @@ void _start(struct stivale_struct * boot_info) {
 
     pmm_init(boot_info);                /* reads memory map and initializes memory manager */
     
-    /* TODO: move this to the pmm_init func */
-    u64 fb_size = (boot_info->framebuffer_bpp/8) * 
-        boot_info->framebuffer_height * boot_info->framebuffer_width;
-
-    pmm_mark_region_used((void*)boot_info->framebuffer_addr, 
-                            (void*)boot_info->framebuffer_addr+fb_size);
-
-
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
+    screen_init(boot_info);
     vmm_init(boot_info);
 
-
-    screen_init(boot_info);
-    kprintf("[_start]   Kprintf test\n");
+    draw_rect(400, 400, 500, 200, 0x0);
     pit_init(1000);
     idt_init();
 
 
-    kprintf("[_start]   Size of 64-bit elf header %d bytes\n", sizeof(ElfHeader64));
+
+    kprintf("[_start]   Kprintf test\n");
+
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
