@@ -20,6 +20,7 @@ extern u64 k_end;
 
 PageTable * gp_pml4;
 
+
 PageIndex vmm_get_page_index(u64 vaddr){
     PageIndex ret;
 
@@ -69,6 +70,63 @@ void * vmm_virt_to_phys(void * virt_addr){
 
     return (void*)((pte.address << 12) + ((u64)virt_addr & 0xfff));
 }
+
+i32 vmm_map_user(PageTable * pml4, void * virt_addr, void* phys_addr){
+
+    PageIndex indexer = vmm_get_page_index((u64)virt_addr);
+    PageTableEntry PTE;
+
+    PTE = pml4->entries[indexer.pml4i];
+    PageTable* PDP;
+    if (!PTE.present){
+        PDP = (PageTable*)pmm_alloc_block();
+        memset(PDP, 0, 0x1000);
+        PTE.address = (u64)PDP >> 12;
+        PTE.present = 1;
+        PTE.user = 1;
+        PTE.rw = 1;
+        gp_pml4->entries[indexer.pml4i] = PTE;
+    }
+    else PDP = (PageTable*)((u64)PTE.address << 12);
+
+
+    PTE = PDP->entries[indexer.pml3i];
+    PageTable* PD;
+    if (!PTE.present){
+        PD = (PageTable*)pmm_alloc_block();
+        memset(PD, 0, 0x1000);
+        PTE.address = (u64)PD >> 12;
+        PTE.present = 1;
+        PTE.user = 1;
+        PTE.rw = 1;
+        PDP->entries[indexer.pml3i] = PTE;
+    }
+    else PD = (PageTable*)((u64)PTE.address << 12);
+
+    PTE = PD->entries[indexer.pml2i];
+    PageTable* PT;
+    if (!PTE.present){
+        PT = (PageTable*)pmm_alloc_block();
+        memset(PT, 0, 0x1000);
+        PTE.address = (u64)PT >> 12;
+        PTE.present = 1;
+        PTE.user = 1;
+        PTE.rw = 1;
+        PD->entries[indexer.pml2i] = PTE;
+    }
+    else PT = (PageTable*)((u64)PTE.address << 12);
+
+    PTE = PT->entries[indexer.pml1i];
+    PTE.address = (u64)phys_addr >> 12;
+    PTE.present = 1;
+	PTE.user = 1;
+    PTE.rw = 1;
+    PT->entries[indexer.pml1i] = PTE;
+
+
+    invalidate_tlb();
+    return SUCCESS;
+} /* vmm_map */
 
 i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
 
@@ -124,47 +182,60 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
 } /* vmm_map */
 
 
-PageTable * vmm_create_proc_pml4(){
+PageTable * vmm_create_user_proc_pml4(){
     PageTable * pml4 = pmm_alloc_block();
+
+    //for(u64 addr = 0; addr < 128 * 1024 *1024; addr+=PAGE_SIZE){
+    //    vmm_map(gp_pml4, (void*)addr+PAGING_VIRTUAL_OFFSET, (void*)addr);
+    //}
 
     /* map kernel */
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-        vmm_map(pml4, (void*)addr, (void*)addr);
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
+        vmm_map_user(pml4, (void*)addr, (void*)addr);
+        vmm_map_user(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
     }
 
     return pml4;
 }
 
+static PageTable * get_current_cr3(){
+    PageTable * current_cr3;
+    asm volatile (" mov %%cr3, %0" : "=r"(current_cr3));
+    return current_cr3;
+}
 
 i32 vmm_init(struct stivale_struct * boot_info){
-    gp_pml4 = pmm_alloc_block();
-    memset(gp_pml4, 0x0, sizeof(PageTable));
-    kprintf("[VMM]  PML4 located at 0x%x\n", (u64)gp_pml4);
+    gp_pml4 = get_current_cr3();
+    //gp_pml4 = pmm_alloc_block();
+    //memset(gp_pml4, 0x0, sizeof(PageTable));
+    //kprintf("[VMM]  PML4 located at 0x%x\n", (u64)gp_pml4);
+   
 
-    for(u64 addr = 0; addr < 128 * 1024 * 1024 ; addr+=4096){
-        vmm_map(gp_pml4, (void*)addr, (void*)addr);
-        vmm_map(gp_pml4, (void*)addr+PAGING_VIRTUAL_OFFSET, (void*)addr);
-    }
-    
+    //u64 fb_size = (boot_info->framebuffer_bpp/8) * 
+    //    boot_info->framebuffer_height * boot_info->framebuffer_width;
 
-    u64 fb_size = (boot_info->framebuffer_bpp/8) * 
-        boot_info->framebuffer_height * boot_info->framebuffer_width;
-
-    u64 fb_begin = (u64) boot_info->framebuffer_addr;
+    //u64 fb_begin = (u64) boot_info->framebuffer_addr;
 
 
-    kprintf("[VMM]   Framebuffer addr: 0x%x\n", boot_info->framebuffer_addr);
-    for(u64 addr=fb_begin; addr<fb_begin+fb_size; addr+=PAGE_SIZE){
-        vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET);
-    }
 
-    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-        vmm_map(gp_pml4, (void*)addr, (void*)addr);
-        vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
-    }
+    //for(u64 addr = 0; addr < 128 * 1024 * 1024 ; addr+=PAGE_SIZE){
+    //    vmm_map(gp_pml4, (void*)addr+PAGING_VIRTUAL_OFFSET, (void*)addr);
+    //}
+
+
+ 
+    //kprintf("[VMM]   Framebuffer addr: 0x%x\n", boot_info->framebuffer_addr);
+    //for(u64 addr=fb_begin; addr<fb_begin+fb_size; addr+=PAGE_SIZE){
+    //    vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET);
+    //}
+
+    //for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
+    //    vmm_map(gp_pml4, (void*)addr, (void*)addr);
+    //    vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
+    //}
 
     load_pagedir(gp_pml4);
+
     //kprintf("[VMM]  Initialized paging\n");
 
     return SUCCESS;

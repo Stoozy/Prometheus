@@ -4,10 +4,11 @@
 #include "../kprintf.h"
 
 #include "../drivers/serial.h"
-#include "../drivers/keyboard.h"
 #include "../drivers/pit.h"
 
 #include "io.h"
+#include "cpu.h"
+#include "../tasking/tasking.h"
 
 
 __attribute__((aligned(0x10))) IDTEntry idt[256];
@@ -26,8 +27,14 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags){
 }
 
 
-void irq0_handler() {
+void irq0_handler(Registers regs) {
     tick();
+    kprintf("[IDT]  Registers:\n");
+    kprintf("[IDT]  RIP: %x\n", regs.rip);
+    kprintf("[IDT]  RSP: %x\n", regs.rsp);
+
+    scheduler(regs);
+    //for(;;);
     outb(0x20, 0x20); /* EOI */
 }
 

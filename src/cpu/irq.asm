@@ -20,6 +20,26 @@ global irq14
 global irq15
 
 
+%macro pushaq 	0
+    push rax
+    push rcx
+    push rdx
+    push rbx
+    push rbp
+    push rsi
+    push rdi
+%endmacro
+
+%macro popaq	0
+    pop rdi    
+    pop rsi    
+    pop rbp    
+    pop rbx    
+    pop rdx    
+    pop rcx
+    pop rax
+%endmacro
+
 extern irq0_handler
 extern irq1_handler
 extern irq2_handler
@@ -41,10 +61,10 @@ extern irq15_handler
 section .text
 
 irq0:
-    pushfq
-    call irq0_handler
-    popfq
-    iretq
+	pushaq
+	call irq0_handler
+	popaq
+	iretq
  
 irq1:
     pushfq

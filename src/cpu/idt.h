@@ -16,6 +16,8 @@ typedef struct {
     u32 rsv0;
 } __attribute__((packed)) IDTEntry;
 
+
+
 void idt_set_descriptor(u8 vector, u64 isr, u8 flags);
 void idt_init();
 void Sleep(u32 ms);

@@ -1,7 +1,7 @@
 #include "pit.h"
-#include <typedefs.h>
-#include <cpu/io.h>
-#include <kprintf.h>
+#include "../typedefs.h"
+#include "../cpu/io.h"
+#include "../kprintf.h"
 
 volatile u64 g_ticks = 0;
 
@@ -28,6 +28,7 @@ void sleep(u32 ms){
 
 /* called by irq0 */
 void tick(){ 
+    kprintf("[PIT]  Ticks: %llu\n", g_ticks);
     ++g_ticks; 
 }
 

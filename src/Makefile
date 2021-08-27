@@ -3,7 +3,7 @@ KERNEL := dead_kernel.elf
 CC = gcc 
 NASM= nasm
 
-CFLAGS = -Wall -Wextra -O3 -pipe
+CFLAGS = -g -Wall -Wextra -O3 -pipe
 
 INTERNALLDFLAGS := \
 	-fno-pic  -fPIE \

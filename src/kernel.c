@@ -18,6 +18,8 @@
 #include "kmalloc.h"
 #include "kprintf.h"
 
+#include "tasking/tasking.h"
+
 
 extern u64 k_start;
 extern u64 k_end;
@@ -63,6 +65,7 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
+    kmalloc_init(5*1024*1024);
     
 
     //kprintf(" %c %c %c %c", ssfn_src->magic[0], ssfn_src->magic[1], ssfn_src->magic[2], ssfn_src->magic[3]);
@@ -88,10 +91,7 @@ void _start(struct stivale_struct * boot_info) {
     pit_init(1000);
     idt_init();
 
-
-
-    kprintf("[_start]   Kprintf test\n");
-
+	multitasking_init();
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
