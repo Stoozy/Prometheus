@@ -85,7 +85,7 @@ i32 vmm_map_user(PageTable * pml4, void * virt_addr, void* phys_addr){
         PTE.present = 1;
         PTE.user = 1;
         PTE.rw = 1;
-        gp_pml4->entries[indexer.pml4i] = PTE;
+        pml4->entries[indexer.pml4i] = PTE;
     }
     else PDP = (PageTable*)((u64)PTE.address << 12);
 
@@ -124,7 +124,7 @@ i32 vmm_map_user(PageTable * pml4, void * virt_addr, void* phys_addr){
     PT->entries[indexer.pml1i] = PTE;
 
 
-    invalidate_tlb();
+    //invalidate_tlb();
     return SUCCESS;
 } /* vmm_map */
 
@@ -141,7 +141,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
         PTE.address = (u64)PDP >> 12;
         PTE.present = 1;
         PTE.rw = 1;
-        gp_pml4->entries[indexer.pml4i] = PTE;
+        pml4->entries[indexer.pml4i] = PTE;
     }
     else PDP = (PageTable*)((u64)PTE.address << 12);
 
@@ -177,7 +177,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
     PT->entries[indexer.pml1i] = PTE;
 
 
-    invalidate_tlb();
+    //invalidate_tlb();
     return SUCCESS;
 } /* vmm_map */
 
@@ -185,15 +185,18 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
 PageTable * vmm_create_user_proc_pml4(){
     PageTable * pml4 = pmm_alloc_block();
 
-    //for(u64 addr = 0; addr < 128 * 1024 *1024; addr+=PAGE_SIZE){
-    //    vmm_map(gp_pml4, (void*)addr+PAGING_VIRTUAL_OFFSET, (void*)addr);
-    //}
 
-    /* map kernel */
+    memset(pml4, 0x0, PAGE_SIZE);
+
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-        vmm_map_user(pml4, (void*)addr, (void*)addr);
         vmm_map_user(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
     }
+
+    /* map kernel */
+    for(u64 addr = 0; addr < 128 * 1024; addr+=PAGE_SIZE){
+        vmm_map_user(pml4, (void*)addr, (void*)addr);
+    }
+
 
     return pml4;
 }
@@ -234,7 +237,7 @@ i32 vmm_init(struct stivale_struct * boot_info){
     //    vmm_map(gp_pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
     //}
 
-    load_pagedir(gp_pml4);
+    //load_pagedir(gp_pml4);
 
     //kprintf("[VMM]  Initialized paging\n");
 

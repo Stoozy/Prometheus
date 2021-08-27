@@ -49,18 +49,16 @@ void task_a(){
 
 void create_task(void (*entrypoint)(void)){
 
-    asm volatile ("cli");
     kprintf("[SCHEDULER]    Called create task with 0x%x\n", entrypoint);
 
-    TaskControlBlock * tcb = pmm_alloc_block();
+    TaskControlBlock * tcb = kmalloc(sizeof(TaskControlBlock));
+    //TaskControlBlock * tcb = kmalloc(sizeof(TaskControlBlock));
 
     tcb->cr3 = vmm_create_user_proc_pml4();
-    kprintf("[SCHEDULER]    Created task\n");
     tcb->next = NULL;
 
     /* append task */
     
-    kprintf("[SCHEDULER]    Created task\n");
     
     TaskControlBlock * current_task = gp_current_task;
     if(tasks != 0){
@@ -73,19 +71,18 @@ void create_task(void (*entrypoint)(void)){
         gp_current_task = tcb;
     }
     
-
-    for(;;)kprintf("[SCHEDULER]    Created task\n");
     ++tasks;
+
+    kprintf("[SCHEDULER]    Created task\n");
     load_pagedir(tcb->cr3);
-    asm volatile ("sti");
 
 }
 
 void multitasking_init(){
+
     tasks = 0;
     create_task(task_a);
 
-    for(;;) kprintf("Multitasking initialized\n");
 }
 
 

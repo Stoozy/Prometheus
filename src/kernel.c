@@ -87,7 +87,6 @@ void _start(struct stivale_struct * boot_info) {
     screen_init(boot_info);
     vmm_init(boot_info);
 
-    draw_rect(400, 400, 500, 200, 0x0);
     pit_init(1000);
     idt_init();
 
