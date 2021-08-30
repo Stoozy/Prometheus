@@ -10,7 +10,7 @@ enum TaskState {
 };
 
 typedef struct task_control_block {
-	Registers cpu_registers;    
+	Registers * context;    
 	PageTable * cr3;	
 	enum TaskState task_state;
 
@@ -19,6 +19,6 @@ typedef struct task_control_block {
 
 
 void multitasking_init();
-void scheduler(Registers regs);
+volatile void scheduler(Registers * regs);
 
 #endif

@@ -28,12 +28,16 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags){
 
 
 void irq0_handler(Registers regs) {
+    scheduler(&regs);
     tick();
     kprintf("[IDT]  Registers:\n");
     kprintf("[IDT]  RIP: %x\n", regs.rip);
     kprintf("[IDT]  RSP: %x\n", regs.rsp);
+    kprintf("[IDT]  RDI: %x\n", regs.rdi);
+    kprintf("[IDT]  RSI: %x\n", regs.rsi);
+    kprintf("[IDT]  RBX: %x\n", regs.rbx);
+    kprintf("[IDT]  RBP: %x\n", regs.rbp);
 
-    scheduler(regs);
     //for(;;);
     outb(0x20, 0x20); /* EOI */
 }

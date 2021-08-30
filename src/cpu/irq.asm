@@ -21,23 +21,18 @@ global irq15
 
 
 %macro pushaq 	0
-    push rax
-    push rcx
-    push rdx
-    push rbx
     push rbp
+    push rbx
     push rsi
     push rdi
+
 %endmacro
 
 %macro popaq	0
     pop rdi    
     pop rsi    
-    pop rbp    
     pop rbx    
-    pop rdx    
-    pop rcx
-    pop rax
+    pop rbp    
 %endmacro
 
 extern irq0_handler
@@ -56,6 +51,9 @@ extern irq12_handler
 extern irq13_handler
 extern irq14_handler
 extern irq15_handler
+extern scheduler
+extern tick 
+
 
 
 section .text

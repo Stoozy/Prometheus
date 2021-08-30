@@ -185,18 +185,17 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
 PageTable * vmm_create_user_proc_pml4(){
     PageTable * pml4 = pmm_alloc_block();
 
-
     memset(pml4, 0x0, PAGE_SIZE);
 
-    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-        vmm_map_user(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
-    }
-
     /* map kernel */
-    for(u64 addr = 0; addr < 128 * 1024; addr+=PAGE_SIZE){
-        vmm_map_user(pml4, (void*)addr, (void*)addr);
+    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
     }
 
+    for(u64 addr = 0; addr <  128 * 1024; addr+=PAGE_SIZE){
+        vmm_map(pml4, (void*)addr, (void*)addr);
+        vmm_map(pml4, (void*)addr-PAGING_VIRTUAL_OFFSET, (void*)addr-PAGING_VIRTUAL_OFFSET);
+    }
 
     return pml4;
 }
