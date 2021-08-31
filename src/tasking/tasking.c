@@ -44,20 +44,17 @@ volatile void scheduler(Registers * regs){
 	kprintf("[SCHEDULER]	Old Task Registers (0x%x):  \n", &regs);
 	dump_registers(regs);
 	kprintf("[SCHEDULER]	New Task Registers (0x%x): \n", gp_current_task->context);
-	dump_registers(gp_current_task->context);
+	dump_registers(&gp_current_task->context);
 
     // save registers
-    memcpy(gp_current_task->context, regs, sizeof(Registers));
+    memcpy(&gp_current_task->context, regs, sizeof(Registers));
 
 	if(gp_current_task->next != NULL)
 		gp_current_task = gp_current_task->next;
 	else gp_current_task = gp_task_queue;
 
-	switch_to_task(gp_current_task->context);
-
+	switch_to_task(&gp_current_task->context);
     //load_pagedir(gp_current_task->cr3);
-
-	return;
 }
 
 void idle_task(){
@@ -68,41 +65,43 @@ void task_a(){
     for(;;) kprintf("Running task A\n");
 }
 
-void create_task(void (*entrypoint)(void)){
+volatile void create_task(void (*entrypoint)(void)){
 
     kprintf("[SCHEDULER]    Called create task with 0x%x\n", entrypoint);
-    TaskControlBlock * tcb = kmalloc(sizeof(TaskControlBlock));
 
-    tcb->cr3 = get_current_cr3();
-    tcb->next = NULL;
+    asm("cli");
+    TaskControlBlock * p_tcb = kmalloc(sizeof(TaskControlBlock));
 
-    kprintf("[SCHEDULER]    Created task with page dir at 0x%x\n", tcb->cr3);
+	memset((void*)p_tcb, 0x0, sizeof(TaskControlBlock));
 
-    TaskControlBlock * current_task = gp_current_task;
+    p_tcb->cr3 = get_current_cr3();
+    p_tcb->next = NULL;
 
-	tcb->context = (Registers*)kmalloc(sizeof(Registers));
-	memset((void*)tcb->context, 0x0, sizeof(Registers));
+    kprintf("[SCHEDULER]    Created task with page dir at 0x%x\n", p_tcb->cr3);
+
 	
-    tcb->context->rip = (u64)entrypoint;
-    tcb->context->rsp = (u64)pmm_alloc_block();
+    p_tcb->context.rip = (u64)entrypoint;
+    p_tcb->context.rsp = (u64)pmm_alloc_block();
 
 
     /* append task */
-    if(tasks != 0){
+    
+    TaskControlBlock * current_task = gp_task_queue;
+
+    if(current_task != NULL){
         while(current_task->next != NULL){
             current_task = current_task->next;
         }
-        current_task->next = tcb;
-    	++tasks;
+        current_task->next = p_tcb;
     }else{
         // first task created
-        gp_task_queue = tcb;
+        gp_task_queue = p_tcb;
 		gp_current_task = gp_task_queue;
-
-    	++tasks;
-		switch_to_task(tcb->context);
     }
 
+    ++tasks;
+
+    asm("sti");
 }
 
 void multitasking_init(){
@@ -110,6 +109,7 @@ void multitasking_init(){
     tasks = 0;
     create_task(task_a);
     create_task(idle_task);
+
 
 }
 

@@ -1,7 +1,6 @@
 [bits 64]
 
 global load_idt
-
 global irq0
 global irq1
 global irq2

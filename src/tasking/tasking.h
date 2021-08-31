@@ -10,9 +10,8 @@ enum TaskState {
 };
 
 typedef struct task_control_block {
-	Registers * context;    
+	Registers context;    
 	PageTable * cr3;	
-	enum TaskState task_state;
 
 	struct task_control_block * next;	
 } TaskControlBlock;
