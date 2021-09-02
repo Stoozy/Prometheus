@@ -200,14 +200,14 @@ PageTable * vmm_create_user_proc_pml4(){
     return pml4;
 }
 
-static PageTable * get_current_cr3(){
+PageTable * vmm_get_current_cr3(){
     PageTable * current_cr3;
     asm volatile (" mov %%cr3, %0" : "=r"(current_cr3));
     return current_cr3;
 }
 
 i32 vmm_init(struct stivale_struct * boot_info){
-    gp_pml4 = get_current_cr3();
+    gp_pml4 = vmm_get_current_cr3();
     //gp_pml4 = pmm_alloc_block();
     //memset(gp_pml4, 0x0, sizeof(PageTable));
     //kprintf("[VMM]  PML4 located at 0x%x\n", (u64)gp_pml4);

@@ -4,25 +4,18 @@
 #include "../kmalloc.h"
 #include "../string/string.h"
 
-#define MAX_PROCS   256
-
 ProcessControlBlock * gp_process_queue;
 ProcessControlBlock * gp_current_process;
 
-ProcessControlBlock p_table[MAX_PROCS];
-
 extern void switch_to_process(ProcessControlBlock ** old, ProcessControlBlock * new);
 extern u64 g_ticks;
-
 volatile u64 g_procs;
 
 void task_a(void);
 void idle_task(void);
 
 void idle_task(){ 
-    for(;;) {
-        kprintf("Idling...[%d processes]\n", g_procs); 
-    }
+    for(;;) kprintf("Idling...\n"); 
 }
 
 void task_a(void){ 
@@ -40,7 +33,7 @@ void dump_regs(void * stack){
 }
 
 void schedule(){
-    kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
+
     if(gp_process_queue == NULL || g_ticks % 20 != 0) return;
 
     ProcessControlBlock * current_pcb = gp_process_queue;
@@ -48,10 +41,10 @@ void schedule(){
     // second task doesn't exist, 
     // no need to switch
     // just return
-    if(gp_process_queue->next == NULL) return;
+    if(!gp_process_queue->next) return;
 
     // reached tail, go to head
-    if(gp_current_process->next == NULL){
+    if(!gp_current_process->next){
         dump_regs(gp_process_queue->stack_top);
         switch_to_process(&gp_current_process, gp_process_queue);
         gp_current_process = gp_process_queue;
@@ -60,15 +53,15 @@ void schedule(){
 
     // just go to next process 
     dump_regs(gp_process_queue->next->stack_top);
-    switch_to_process(&gp_current_process, gp_current_process->next->stack_top);
+    switch_to_process(&gp_current_process, gp_current_process->next);
     gp_current_process = gp_current_process->next;
 
 }
 
 ProcessControlBlock * create_process(void (*entry)(void)){
-    ProcessControlBlock * pcb = pmm_alloc_block();
+    ProcessControlBlock * pcb = kmalloc(sizeof(ProcessControlBlock));
 
-    pcb->stack_top = (void*)((u64)pmm_alloc_block()+0x1000);
+    pcb->stack_top = pmm_alloc_block()+0x1000;
 
     Registers * regs = (Registers*) pcb->stack_top;
     memset(regs, 0, sizeof(Registers));
@@ -85,10 +78,8 @@ void register_process(ProcessControlBlock * new_pcb){
     ProcessControlBlock * current_pcb = gp_process_queue;  
 
     // first process
-    if(current_pcb == NULL){
+    if(!current_pcb)
         gp_process_queue = new_pcb;
-        gp_current_process = gp_process_queue;
-    }
 
     while(current_pcb->next != NULL)
         current_pcb = current_pcb->next;
@@ -105,17 +96,9 @@ void multitasking_init(){
     g_procs = 0;
 
     gp_process_queue = create_process(idle_task);
-    ++g_procs;
-
     gp_current_process = gp_process_queue;
-    gp_current_process->next = create_process(task_a);
-    ++g_procs;
 
-    //ProcessControlBlock * new_pcb = create_process(idle_task);
-    //register_process(new_pcb);
-
-    //new_pcb = create_process(task_a);
-    //register_process(new_pcb);
+    register_process(create_process(task_a));
 
     asm volatile("sti");
 }

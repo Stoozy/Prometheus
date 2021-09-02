@@ -31,7 +31,8 @@ void irq0_handler(Registers regs) {
 
     tick();
     outb(0x20, 0x20); /* EOI */
-    scheduler(&regs);
+
+    schedule();
 
     kprintf("[IDT]  Registers:\n");
     kprintf("[IDT]  RIP: %x\n", regs.rip);

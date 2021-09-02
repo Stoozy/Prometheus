@@ -37,5 +37,6 @@ void *      vmm_virt_to_phys(void * virt_addr);
 i32         vmm_init(struct stivale_struct *);
 i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical);
 PageTable * vmm_create_user_proc_pml4();
+PageTable * vmm_get_current_cr3();
 
 #endif 

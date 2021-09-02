@@ -5,19 +5,22 @@
 #include "../memory/vmm.h"
 
 enum TaskState {
+    CREATED,
 	RUNNING,
-	READY_TO_RUN
+    READY,
 };
 
-typedef struct task_control_block {
-	Registers context;    
-	PageTable * cr3;	
+typedef struct process_control_block {
+    void * stack_top;
 
-	struct task_control_block * next;	
-} TaskControlBlock;
+	PageTable * cr3;	
+    enum TaskState state;
+
+	struct process_control_block * next;	
+} ProcessControlBlock;
 
 
 void multitasking_init();
-volatile void scheduler(Registers * regs);
+void schedule();
 
 #endif
