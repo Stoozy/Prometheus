@@ -32,15 +32,15 @@ void irq0_handler(Registers regs) {
     tick();
     outb(0x20, 0x20); /* EOI */
 
-    schedule();
+    schedule(&regs);
 
-    kprintf("[IDT]  Registers:\n");
-    kprintf("[IDT]  RIP: %x\n", regs.rip);
-    kprintf("[IDT]  RSP: %x\n", regs.rsp);
-    kprintf("[IDT]  RDI: %x\n", regs.rdi);
-    kprintf("[IDT]  RSI: %x\n", regs.rsi);
-    kprintf("[IDT]  RBX: %x\n", regs.rbx);
-    kprintf("[IDT]  RBP: %x\n", regs.rbp);
+    //kprintf("[IDT]  Registers:\n");
+    //kprintf("[IDT]  RIP: %x\n", regs.rip);
+    //kprintf("[IDT]  RSP: %x\n", regs.rsp);
+    //kprintf("[IDT]  RDI: %x\n", regs.rdi);
+    //kprintf("[IDT]  RSI: %x\n", regs.rsi);
+    //kprintf("[IDT]  RBX: %x\n", regs.rbx);
+    //kprintf("[IDT]  RBP: %x\n", regs.rbp);
 
     //for(;;);
 }

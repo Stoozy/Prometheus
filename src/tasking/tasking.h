@@ -11,8 +11,7 @@ enum TaskState {
 };
 
 typedef struct process_control_block {
-    void * stack_top;
-
+    void * p_stack;
 	PageTable * cr3;	
     enum TaskState state;
 

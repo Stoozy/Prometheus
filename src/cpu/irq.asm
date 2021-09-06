@@ -53,13 +53,13 @@ extern irq15_handler
 extern scheduler
 extern tick 
 
-
-
 section .text
 
 irq0:
 	pushaq
+    pushfq
 	call irq0_handler
+    popfq
 	popaq
 	iretq
  
