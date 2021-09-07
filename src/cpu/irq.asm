@@ -24,7 +24,6 @@ global irq15
     push rbx
     push rsi
     push rdi
-
 %endmacro
 
 %macro popaq	0
@@ -57,9 +56,7 @@ section .text
 
 irq0:
 	pushaq
-    pushfq
 	call irq0_handler
-    popfq
 	popaq
 	iretq
  

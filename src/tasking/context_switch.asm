@@ -3,6 +3,12 @@
 
 global switch_to_process
 
+%macro popaq	0
+    pop rdi    
+    pop rsi    
+    pop rbx    
+    pop rbp    
+%endmacro
 
 
 switch_to_process:
@@ -23,13 +29,6 @@ switch_to_process:
 
     mov rsp, rdi
 
-    pop rdi
-    pop rsi
-    pop rbx
-    pop rbp
-
-    mov al, 0x20
-    out 0x20, al
-
+    popaq
 
     iretq

@@ -186,8 +186,7 @@ void idt_init(){
 
     irq0_addr = (unsigned long)irq0;
     irq1_addr = (unsigned long)irq1;
-    irq2_addr = (unsigned long)irq2;
-    irq3_addr = (unsigned long)irq3;
+    irq2_addr = (unsigned long)irq2; irq3_addr = (unsigned long)irq3;
     irq4_addr = (unsigned long)irq4;
     irq5_addr = (unsigned long)irq5;
     irq6_addr = (unsigned long)irq6;

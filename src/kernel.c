@@ -89,8 +89,9 @@ void _start(struct stivale_struct * boot_info) {
 
     pit_init(1000);
     idt_init();
-
+    
 	multitasking_init();
+
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }

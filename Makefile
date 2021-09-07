@@ -8,7 +8,7 @@ monitor: $(ISO_IMAGE)
 	qemu-system-x86_64  -monitor stdio -vga std -machine q35 -no-reboot  -d int -no-shutdown -m 8G -cdrom $(ISO_IMAGE)
 
 run: $(ISO_IMAGE)
-	qemu-system-x86_64  -serial stdio -vga std -machine q35 -no-reboot   -d int -no-shutdown -m 8G -cdrom $(ISO_IMAGE)
+	qemu-system-x86_64  -serial stdio -vga std -machine q35 -no-reboot   -no-shutdown -m 8G -cdrom $(ISO_IMAGE)
 
 debug: $(ISO_IMAGE)
 	qemu-system-x86_64 -s -S -no-reboot -d int -m 8G -cdrom $(ISO_IMAGE)
