@@ -28,7 +28,9 @@ void sleep(u32 ms){
 
 /* called by irq0 */
 void tick(){ 
+#ifdef PIT_DEBUG
     kprintf("[PIT]  Ticks: %llu\n", g_ticks);
+#endif
     ++g_ticks; 
 }
 
