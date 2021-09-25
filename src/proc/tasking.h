@@ -11,8 +11,11 @@ enum TaskState {
 };
 
 typedef struct process_control_block {
+    u64 pid;
+    char name[256];
     void * p_stack;
 	PageTable * cr3;	
+
     enum TaskState state;
 
 	struct process_control_block * next;	

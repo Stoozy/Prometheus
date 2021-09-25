@@ -18,7 +18,7 @@
 #include "kmalloc.h"
 #include "kprintf.h"
 
-#include "tasking/tasking.h"
+#include "proc/tasking.h"
 
 
 extern u64 k_start;
@@ -67,18 +67,6 @@ void _start(struct stivale_struct * boot_info) {
 
     kmalloc_init(5*1024*1024);
     
-
-    //kprintf(" %c %c %c %c", ssfn_src->magic[0], ssfn_src->magic[1], ssfn_src->magic[2], ssfn_src->magic[3]);
-
-    //ssfn_dst.ptr = (u8*)boot_info->framebuffer_addr;            /* address of the linear frame buffer */
-    //ssfn_dst.w = boot_info->framebuffer_width;                  /* width */
-    //ssfn_dst.h = boot_info->framebuffer_height;                 /* height */
-    //ssfn_dst.p = boot_info->framebuffer_width*
-    //    (boot_info->framebuffer_bpp/8);                         /* bytes per line */
-    //ssfn_dst.x = ssfn_dst.y = 0;                                /* pen position */
-    //ssfn_dst.fg = 0xFFFFFF;                                     /* foreground color */
-
-
     pmm_init(boot_info);                /* reads memory map and initializes memory manager */
     
     u64 k_size = ((u64)&k_end - (u64)&k_start);

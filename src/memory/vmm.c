@@ -12,7 +12,7 @@
 
 #define SUCCESS     1
 
-extern void load_pagedir();
+extern void load_pagedir(PageTable *);
 extern void invalidate_tlb();
 extern u64 k_start;
 extern u64 k_end;
@@ -192,9 +192,9 @@ PageTable * vmm_create_user_proc_pml4(){
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
     }
 
-    for(u64 addr = 0; addr <  128 * 1024; addr+=PAGE_SIZE){
+    for(u64 addr = 0; addr <  1024 * 4096; addr+=PAGE_SIZE){
         vmm_map(pml4, (void*)addr, (void*)addr);
-        vmm_map(pml4, (void*)addr-PAGING_VIRTUAL_OFFSET, (void*)addr-PAGING_VIRTUAL_OFFSET);
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET);
     }
 
     return pml4;
@@ -205,6 +205,7 @@ PageTable * vmm_get_current_cr3(){
     asm volatile (" mov %%cr3, %0" : "=r"(current_cr3));
     return current_cr3;
 }
+
 
 i32 vmm_init(struct stivale_struct * boot_info){
     gp_pml4 = vmm_get_current_cr3();

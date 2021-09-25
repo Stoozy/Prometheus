@@ -1,16 +1,17 @@
+#include "../config.h"
 #include "tasking.h"
 #include "../memory/pmm.h"
 #include "../kprintf.h"
 #include "../kmalloc.h"
 #include "../string/string.h"
 
-#define MAX_PROCS   256
+
 
 ProcessControlBlock * gp_process_queue;
 ProcessControlBlock * gp_current_process;
 
-extern void switch_to_process(void * new_stack);
-extern u64 g_ticks;
+extern void switch_to_process(void * new_stack, PageTable * cr3);
+extern u64  g_ticks;
 
 volatile u64 g_procs;
 
@@ -18,16 +19,9 @@ void task_a(void);
 void idle_task(void);
 
 void idle_task(){ 
-    for(;;) kprintf("I");
+    for(;;);
 }
 
-void task_a(void){ 
-    for(;;) kprintf("A");
-}
-
-void task_b(void){ 
-    for(;;) kprintf("B");
-}
 
 void dump_regs(void * stack){
     Registers * regs = (Registers*) stack;
@@ -45,27 +39,28 @@ void schedule(Registers * regs){
     dump_regs(regs);
     kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif 
-    if(g_ticks % 20 != 0) return;
 
+    if(g_ticks % SMP_TIMESLICE != 0) return; // not time to switch yet
+
+    // save current proc 
+    gp_current_process->p_stack = (void*)regs->rsp;
+
+    u64 * stack = gp_current_process->p_stack;
+    *--stack = 0x30; // ss
+    *--stack = (u64)gp_current_process->p_stack; // rsp
+    *--stack = 512 ; // rflags
+    *--stack = 0x28; // cs
+    *--stack = (u64)regs->rip; // rip
+
+    *--stack = (u64)regs->rbp; // rbp
+    *--stack = 0; // rdx
+    *--stack = 0; // rsi
+    *--stack = 0; // rdi
+
+    gp_current_process->p_stack = stack;
 
     // reached tail, go to head
     if(gp_current_process->next == NULL){
-        // save current proc 
-        gp_current_process->p_stack = (void*)regs->rsp;
-
-        u64 * stack = gp_current_process->p_stack;
-        *--stack = 0x30; // ss
-        *--stack = (u64)gp_current_process->p_stack; // rsp
-        *--stack = 512 ; // rflags
-        *--stack = 0x28; // cs
-        *--stack = (u64)regs->rip; // rip
-
-        *--stack = (u64)regs->rbp; //ebp
-        *--stack = 0; // rdx
-        *--stack = 0; // rsi
-        *--stack = 0; // rdi
-
-        gp_current_process->p_stack = stack;
 
         // switch to head
         gp_current_process = gp_process_queue;
@@ -74,37 +69,19 @@ void schedule(Registers * regs){
         kprintf("[SCHEDULER] Switching to head:\n");
         dump_regs(gp_current_process->p_stack);
 #endif
-        switch_to_process(gp_current_process->p_stack);
+        switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
     }else{
+
         // just go to next process 
-        //dump_regs(gp_process_queue->next->p_stack-sizeof(Registers));
-
-        // save current proc 
-        gp_current_process->p_stack = (void*)regs->rsp;
-
-
-        u64 * stack = gp_current_process->p_stack;
-        *--stack = 0x30; // ss
-        *--stack = (u64)gp_current_process->p_stack; // rsp
-        *--stack = 512 ; // rflags
-        *--stack = 0x28; // cs
-        *--stack = (u64)regs->rip; // rip
-
-        *--stack = (u64)regs->rbp; //ebp
-        *--stack = 0; // rdx
-        *--stack = 0; // rsi
-        *--stack = 0; // rdi
-
-        gp_current_process->p_stack = stack;
-
         gp_current_process = gp_current_process->next;
 
 #ifdef SMP_DEBUG
         kprintf("[SCHEDULER] Switching to next:\n");
         dump_regs(gp_current_process->p_stack);
 #endif
-        switch_to_process(gp_current_process->p_stack);
+        switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
     }
+
 }
 
 ProcessControlBlock * create_process(void (*entry)(void)){
@@ -158,12 +135,7 @@ void multitasking_init(){
     g_procs = 0;
 
     asm volatile ("cli");
-
     register_process(create_process(idle_task));
-    register_process(create_process(task_a));
-    register_process(create_process(task_b));
-
     gp_current_process->next = gp_process_queue;
-
     asm volatile ("sti");
 }
