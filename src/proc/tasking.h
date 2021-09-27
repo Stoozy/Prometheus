@@ -25,4 +25,7 @@ typedef struct process_control_block {
 void multitasking_init();
 void schedule();
 
+ProcessControlBlock * create_process(void (void));
+void register_process(ProcessControlBlock *);
+
 #endif

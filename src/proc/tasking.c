@@ -19,7 +19,9 @@ void task_a(void);
 void idle_task(void);
 
 void idle_task(){ 
-    for(;;);
+    for(;;){
+        kprintf("Idling...\n");
+    }
 }
 
 
