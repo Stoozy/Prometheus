@@ -7,8 +7,8 @@
 
 
 
-ProcessControlBlock * gp_process_queue;
-ProcessControlBlock * gp_current_process;
+volatile ProcessControlBlock * gp_process_queue;
+volatile ProcessControlBlock * gp_current_process;
 
 extern void switch_to_process(void * new_stack, PageTable * cr3);
 extern u64  g_ticks;
@@ -24,6 +24,17 @@ void idle_task(){
     }
 }
 
+void dump_list(){
+    kprintf("---------PROCESS QUEUE---------\n");
+    volatile ProcessControlBlock * current = gp_process_queue;
+
+    kprintf("0x%x ->", current);
+    while(current->next != NULL){
+        current = current->next;
+        kprintf("0x%x ->", current);
+    }
+    kprintf(" NULL\n");
+}
 
 void dump_regs(void * stack){
     Registers * regs = (Registers*) stack;
@@ -109,23 +120,31 @@ ProcessControlBlock * create_process(void (*entry)(void)){
     pcb->cr3 = vmm_get_current_cr3();
     pcb->next = NULL;
 
-    ++g_procs;
-
     return pcb; 
 }
 
 void register_process(ProcessControlBlock * new_pcb){
+
+#ifdef SMP_DEBUG
+    kprintf("[TASKING]  Registering process at 0x%x\n", new_pcb);
+#endif
     ProcessControlBlock * current_pcb = gp_process_queue;  
 
     // first process
     if(current_pcb == NULL){
         gp_process_queue = new_pcb;
+        ++g_procs;
         return;
     }
 
     while(current_pcb->next != NULL)
         current_pcb = current_pcb->next;
     current_pcb->next = new_pcb;
+
+#ifdef SMP_DEBUG
+    kprintf("[TASKING]  PCB at 0x%x is after 0x%x\n", current_pcb->next, current_pcb);
+    kprintf("[TASKING]  PCB has next 0x%x\n", current_pcb->next);
+#endif
 
     ++g_procs;
 }
@@ -136,8 +155,8 @@ void multitasking_init(){
 
     g_procs = 0;
 
-    asm volatile ("cli");
+    //asm volatile ("cli");
     register_process(create_process(idle_task));
-    gp_current_process->next = gp_process_queue;
-    asm volatile ("sti");
+    gp_current_process = gp_process_queue;
+    //asm volatile ("sti");
 }

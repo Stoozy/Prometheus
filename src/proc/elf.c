@@ -5,6 +5,8 @@
 #include "../string/string.h"
 #include "../proc/tasking.h"
 
+#include "../kprintf.h"
+#include "../config.h"
 
 u8 load_elf_64(u8 * elf);
 u8 load_elf_32(u8 * elf);
@@ -58,7 +60,11 @@ u8 load_elf_64(u8 * elf){
 
     void (* entrypoint)(void) = (void*)elf64->e_entry;
     ProcessControlBlock * elf_pcb = create_process(entrypoint);
+
     register_process(elf_pcb);
+#ifdef SMP_DEBUG
+    dump_list();
+#endif
 
     return 0;
 }

@@ -24,7 +24,7 @@ $(ISO_IMAGE): limine src/dead_kernel.elf
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp src/dead_kernel.elf \
-		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin unscii-16.sfn iso_root/
+		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin unscii-16.sfn test-elf/a.out iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		--efi-boot limine-eltorito-efi.bin \

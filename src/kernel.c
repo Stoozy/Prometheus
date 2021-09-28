@@ -19,6 +19,7 @@
 #include "kprintf.h"
 
 #include "proc/tasking.h"
+#include "proc/elf.h"
 
 
 extern u64 k_start;
@@ -78,7 +79,10 @@ void _start(struct stivale_struct * boot_info) {
     pit_init(1000);
     idt_init();
     
+    cli();
 	multitasking_init();
+    load_elf_bin((u8*)module->begin);
+    sti();
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }

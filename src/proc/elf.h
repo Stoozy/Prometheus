@@ -98,15 +98,6 @@ typedef struct {
 	Elf64_Xword st_size;
 } Elf64_Sym ;
 
-extern inline unsigned char ELF64_ST_BIND(unsigned char info) {
-	return info >> 4;
-}
-extern inline unsigned char ELF64_ST_TYPE(unsigned char info) {
-	return info & 0x0F;
-}
-extern inline unsigned char ELF64_ST_INFO(unsigned char bind, unsigned char type) {
-	return (bind << 4) | type;
-}
 
 enum {
 	STB_GLOBAL = 1,
@@ -357,5 +348,8 @@ typedef struct {
 #define ELFDATA2LSB	1
 #define ELFDATA2MSB	2
 #define ELFDATANUM	3
+
+
+uint8_t load_elf_bin(uint8_t *);
 
 #endif // _ELF_H
