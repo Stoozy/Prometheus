@@ -77,7 +77,9 @@ void _start(struct stivale_struct * boot_info) {
     
     cli();
 	multitasking_init();
+    load_elf_bin((void*)module->begin);
     sti();
+
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
 }
