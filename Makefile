@@ -17,13 +17,13 @@ limine:
 	git clone https://github.com/limine-bootloader/limine.git --branch=v2.0-branch-binary --depth=1
 	make -C limine
 
-src/dead_kernel.elf:
-	$(MAKE) -C src
+kernel/src/dead_kernel.elf:
+	$(MAKE) -C kernel/src
 
-$(ISO_IMAGE): limine src/dead_kernel.elf
+$(ISO_IMAGE): limine kernel/src/dead_kernel.elf
 	rm -rf iso_root
 	mkdir -p iso_root
-	cp src/dead_kernel.elf \
+	cp kernel/src/dead_kernel.elf \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin unscii-16.sfn test-elf/a.out iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
@@ -35,4 +35,4 @@ $(ISO_IMAGE): limine src/dead_kernel.elf
 
 clean:
 	rm -f $(ISO_IMAGE)
-	$(MAKE) -C src clean
+	$(MAKE) -C kernel/src clean

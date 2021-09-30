@@ -2,7 +2,5 @@ extern void kprintf();
 
 int _start(){
 
-    while(1){
-        kprintf("Running elf binary!\n");
-    }
+    while(1) kprintf("Running 64 bit elf binary!\n");
 }
