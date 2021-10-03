@@ -1,21 +1,58 @@
 #include "vfs.h"
 #include "../kmalloc.h"
-#include "../typedefs.h"
+#include "../string.h"
+#include "../kprintf.h"
 
-int tmpfs_open(int argc, ...);
-int tmpfs_read(int argc, ...);
-int tmpfs_write(int argc, ...);
-int tmpfs_close(int argc, ...);
-
+int ustar_write(int argc, ...);
+int ustar_close(int argc, ...);
 
 
+u32 oct2bin(unsigned char *str, int size) {
+    int n = 0;
+    unsigned char *c = str;
+    while (size-- > 0) {
+        n *= 8;
+        n += *c - '0';
+        c++;
+    }
+    return n;
+}
+
+/* returns file size and pointer to file data in out */
+u64 tar_lookup(unsigned char *archive, const char *filename, unsigned char **out) {
+    unsigned char *ptr = archive;
+
+    while (!memcmp(ptr + 257, "ustar", 5)) {
+        int filesize = oct2bin(ptr + 0x7c, 11);
+        if (!memcmp(ptr, filename, strlen(filename) + 1)) {
+            *out = ptr + 512;
+            return filesize;
+        }
+        ptr += (((filesize + 511) / 512) + 1) * 512;
+    }
+    return 0;
+}
+
+int ustar_read(int argc,  u8 * archive, const char * path, u8 * buffer){
+    u8 ** data_ptr;
+    u64 filesize = tar_lookup(archive, path, data_ptr);
+
+    if(filesize == 0)
+        kprintf("%s doesn't exist\n", path);
+
+    kprintf("Read file %s; Contents:\n", path);
+    for(u8 * byte = *data_ptr; byte<(*data_ptr+filesize); ++byte)
+        kprintf("%c", byte);
+
+    return 1;
+}
 
 void init_tmpfs(u8 * tmpfs){
-    Mount * tmpfs_mount = kmalloc(sizeof(Mount));
+    Mount * ustar_mount = kmalloc(sizeof(Mount));
 
-    tmpfs_mount->read = &tmpfs_read;
-    tmpfs_mount->write = &tmpfs_write;
-    tmpfs_mount->open = &tmpfs_open;
-    tmpfs_mount->close = &tmpfs_close;
+    ustar_mount->read = &ustar_read;
+    ustar_mount->write = &ustar_write;
+    //ustar_mount->open =  &ustar_open;
+    //ustar_mount->close = &ustar_close;
 }
 

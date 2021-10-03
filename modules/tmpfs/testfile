@@ -1,0 +1,1 @@
+Each file and directory has a 512 bytes sector containing meta data (i-node with filename if you like). If the file is not empty, then that meta data sector is followed by data sectors with file contents rounded up to 512 bytes. 
