@@ -1,3 +1,5 @@
+#include <stdarg.h>
+
 #include "vfs.h"
 #include "../kmalloc.h"
 #include "../string.h"
@@ -33,26 +35,42 @@ u64 tar_lookup(unsigned char *archive, const char *filename, unsigned char **out
     return 0;
 }
 
-int ustar_read(int argc,  u8 * archive, const char * path, u8 * buffer){
+int ustar_read(int argc,  ...){
+    va_list args_list;
+
+    va_start(args_list, argc);
+
+    /*
+     * Arguments: u8 * archive, const char * path, u8 * buffer
+     */
+    u8 * archive = va_arg(args_list, u8 *);
+    const char * path = va_arg(args_list, const char *);
+    //u8 * buffer = va_arg(args_list, u8 *);
+
     u8 ** data_ptr;
     u64 filesize = tar_lookup(archive, path, data_ptr);
-
     if(filesize == 0)
         kprintf("%s doesn't exist\n", path);
 
     kprintf("Read file %s; Contents:\n", path);
-    for(u8 * byte = *data_ptr; byte<(*data_ptr+filesize); ++byte)
-        kprintf("%c", byte);
+    kprintf("%s\n", *data_ptr);
+
+    va_end(args_list);
 
     return 1;
 }
 
-void init_tmpfs(u8 * tmpfs){
+Mount * init_tmpfs(u8 * tmpfs){
     Mount * ustar_mount = kmalloc(sizeof(Mount));
 
     ustar_mount->read = &ustar_read;
-    ustar_mount->write = &ustar_write;
-    //ustar_mount->open =  &ustar_open;
-    //ustar_mount->close = &ustar_close;
+
+    /*
+     * ustar_mount->write = &ustar_write;
+     * ustar_mount->open =  &ustar_open;  
+     * ustar_mount->close = &ustar_close;
+     */
+    
+    return ustar_mount;
 }
 

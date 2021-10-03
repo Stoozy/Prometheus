@@ -1,4 +1,5 @@
 #include "../typedefs.h"
+#include "vfs.h"
 
 #define USTAR_TYPE_NORMAL       0x0
 #define USTAR_TYPE_HARDLINK     0x1
@@ -27,4 +28,4 @@ typedef struct {
     u8      filename_prefix[155];
 } UstarNode;
 
-
+Mount * init_tmpfs(u8*);

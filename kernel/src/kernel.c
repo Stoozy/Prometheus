@@ -21,6 +21,7 @@
 #include "proc/tasking.h"
 #include "proc/elf.h"
 
+#include "fs/tmpfs.h"
 
 extern u64 k_start;
 extern u64 k_end;
@@ -75,10 +76,15 @@ void _start(struct stivale_struct * boot_info) {
     pit_init(1000);
     idt_init();
     
+
     cli();
 	multitasking_init();
     sti();
 
+
+    cli();
+    Mount * mnt = init_tmpfs((u8*)module->begin);
+    mnt->read(2, module->begin, "tmpfs/testfile");
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
