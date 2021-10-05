@@ -170,7 +170,16 @@ void * pmm_alloc_block(){
 
 
 // TODO
-void  pmm_free_blocks(u64 addr, u64 blocks);
+void  pmm_free_blocks(u64 addr, u64 blocks){
+    int sb = addr/_PMM_BLOCK_SIZE; 
+
+    for(u64 b=sb; b<(sb+blocks); ++b){
+        set_frame_free(b);
+    }
+
+    used_blocks += blocks;
+    free_blocks -= blocks;
+}
 
 void pmm_free_block(u64 addr){
     int block = addr/_PMM_BLOCK_SIZE;

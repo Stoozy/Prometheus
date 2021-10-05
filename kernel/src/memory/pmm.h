@@ -18,7 +18,7 @@ void *      pmm_alloc_blocks(u64 blocks);
 void        pmm_mark_region_used(void* start, void* end);
 
 void        pmm_free_block(u64 addr);
-void        pmm_free_blocks(u64 addl, u64 blocks);
+void        pmm_free_blocks(u64 addr, u64 blocks);
 
 u64         pmm_get_free_block_count();
 u64         pmm_get_block_count();

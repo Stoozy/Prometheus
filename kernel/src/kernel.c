@@ -64,8 +64,6 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
-    kmalloc_init(5*1024*1024);
-    
     pmm_init(boot_info);                /* reads memory map and initializes memory manager */
     
     u64 k_size = ((u64)&k_end - (u64)&k_start);
@@ -75,12 +73,11 @@ void _start(struct stivale_struct * boot_info) {
 
     pit_init(1000);
     idt_init();
-    
+
 
     cli();
 	multitasking_init();
     sti();
-
 
     cli();
     Mount * mnt = init_tmpfs((u8*)module->begin);
