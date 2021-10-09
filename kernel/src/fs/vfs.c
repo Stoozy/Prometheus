@@ -1,6 +1,17 @@
 #include "vfs.h"
 
-int  vfs_open(VfsNode * node, const char * path){
+
+VfsNode * vfs_node_from_path(const char * path, ...){
+
+}
+
+VfsNode * vfs_node_from_fd(int fd){
+}
+
+int  vfs_open(const char * path, int flags, ...){
+
+    VfsNode * node = vfs_node_from_path(path);
+
     if(node->fs->open  != 0){
         return node->fs->open(1, path);
     }else{
@@ -8,9 +19,12 @@ int  vfs_open(VfsNode * node, const char * path){
     }
 }
 
-int  vfs_close(VfsNode * node, const char * path){
-    if(node->fs->close  != 0){
-        return node->fs->close(1, path);
+int  vfs_close(int fd){
+
+    VfsNode * node = vfs_node_from_fd(fd);
+
+    if(node->fs->close){
+        return node->fs->close(0);
     }else{
         return 0;
     }

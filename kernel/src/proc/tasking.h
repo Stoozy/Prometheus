@@ -23,6 +23,7 @@ typedef struct process_control_block {
 
 
 void multitasking_init();
+void _kill(void);
 void dump_list();
 void schedule();
 

@@ -5,8 +5,6 @@
 #include "../kmalloc.h"
 #include "../string/string.h"
 
-
-
 volatile ProcessControlBlock * gp_process_queue;
 volatile ProcessControlBlock * gp_current_process;
 
@@ -14,6 +12,23 @@ extern void switch_to_process(void * new_stack, PageTable * cr3);
 extern u64  g_ticks;
 
 volatile u64 g_procs;
+
+void _kill(void){
+    // remove pcb from list
+    // free pcb and allocated memory by elf loader
+    // return?
+
+    ProcessControlBlock  * next_to_current = gp_current_process;
+    ProcessControlBlock * current_pcb = gp_process_queue;
+
+    // relink the nodes
+    while(current_pcb->next != gp_current_process)
+        current_pcb = current_pcb->next;
+    current_pcb->next = next_to_current;
+
+    kfree(gp_current_process);
+}
+
 
 void task_a(){ 
     for(;;){

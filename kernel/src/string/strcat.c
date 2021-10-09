@@ -1,4 +1,4 @@
-#include <string.h>
+#include "string.h"
  
 // Function to implement strcat() function in C
 char* strcat(char* destination, const char* source)

@@ -33,8 +33,11 @@ typedef struct {
 
 } VfsNode;
 
-int     vfs_open();
-int     vfs_close();
+VfsNode * vfs_node_from_path(const char * path, ...);
+VfsNode * vfs_node_from_fd(int fd);
+
+int     vfs_open(const char * path, int flags, ...);
+int     vfs_close(int fd);
 int     vfs_read();
 int     vfs_write();
 

@@ -2,7 +2,7 @@
 
 #include "vfs.h"
 #include "../kmalloc.h"
-#include "../string.h"
+#include "../string/string.h"
 #include "../kprintf.h"
 
 int ustar_write(int argc, ...);
@@ -45,15 +45,20 @@ int ustar_read(int argc,  ...){
      */
     u8 * archive = va_arg(args_list, u8 *);
     const char * path = va_arg(args_list, const char *);
-    //u8 * buffer = va_arg(args_list, u8 *);
+    u8 * buffer = va_arg(args_list, u8 *);
 
     u8 ** data_ptr;
     u64 filesize = tar_lookup(archive, path, data_ptr);
+
+#ifdef TMPFS_DEBUG
     if(filesize == 0)
         kprintf("%s doesn't exist\n", path);
 
     kprintf("Read file %s; Contents:\n", path);
     kprintf("%s\n", *data_ptr);
+#endif
+
+    memcpy(buffer, *data_ptr, filesize);
 
     va_end(args_list);
 

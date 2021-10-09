@@ -1,4 +1,5 @@
 ISO_IMAGE = disk.iso
+SYSROOT=sysroot
 
 .PHONY: clean all run
 
@@ -20,6 +21,12 @@ limine:
 kernel/src/dead_kernel.elf:
 	$(MAKE) -C kernel/src
 
+libc:
+	mkdir $(SYSROOT)
+	$(MAKE) -C build-newlib/
+	$(MAKE) -C build-newlib/ DESTDIR=../$(SYSROOT) install
+
+
 $(ISO_IMAGE): limine kernel/src/dead_kernel.elf
 	rm -rf iso_root
 	mkdir -p iso_root
@@ -34,5 +41,6 @@ $(ISO_IMAGE): limine kernel/src/dead_kernel.elf
 	rm -rf iso_root
 
 clean:
-	rm -f $(ISO_IMAGE)
+	rm -f $(ISO_IMAGE) $(SYSROOT)
 	$(MAKE) -C kernel/src clean
+	$(MAKE) -C build-newlib/ clean
