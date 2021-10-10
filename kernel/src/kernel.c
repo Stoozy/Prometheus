@@ -5,6 +5,7 @@
 #include "stivale.h"
 #include "cpu/io.h"
 #include "cpu/idt.h"
+#include "cpu/gdt.h"
 #include "misc/ssfn.h"
 
 #include "memory/pmm.h"
@@ -70,18 +71,16 @@ void _start(struct stivale_struct * boot_info) {
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
     screen_init(boot_info);
-
     pit_init(1000);
+
+
     idt_init();
 
 
     cli();
+    gdt_init();
 	multitasking_init();
     sti();
-
-    cli();
-    Mount * mnt = init_tmpfs((u8*)module->begin);
-    mnt->read(2, module->begin, "tmpfs/testfile");
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }

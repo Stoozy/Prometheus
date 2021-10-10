@@ -4,10 +4,13 @@
 #include "../kmalloc.h"
 #include "../string/string.h"
 #include "../kprintf.h"
+#include "../config.h"
 
 int ustar_write(int argc, ...);
 int ustar_close(int argc, ...);
 
+
+volatile Mount * gp_ustar_fs;
 
 u32 oct2bin(unsigned char *str, int size) {
     int n = 0;
@@ -26,6 +29,7 @@ u64 tar_lookup(unsigned char *archive, const char *filename, unsigned char **out
 
     while (!memcmp(ptr + 257, "ustar", 5)) {
         int filesize = oct2bin(ptr + 0x7c, 11);
+
         if (!memcmp(ptr, filename, strlen(filename) + 1)) {
             *out = ptr + 512;
             return filesize;
@@ -45,9 +49,8 @@ int ustar_read(int argc,  ...){
      */
     u8 * archive = va_arg(args_list, u8 *);
     const char * path = va_arg(args_list, const char *);
-    u8 * buffer = va_arg(args_list, u8 *);
+    u8 ** data_ptr = va_arg(args_list, u8 *);
 
-    u8 ** data_ptr;
     u64 filesize = tar_lookup(archive, path, data_ptr);
 
 #ifdef TMPFS_DEBUG
@@ -58,24 +61,57 @@ int ustar_read(int argc,  ...){
     kprintf("%s\n", *data_ptr);
 #endif
 
-    memcpy(buffer, *data_ptr, filesize);
+    //memcpy(buffer, *data_ptr, filesize);
 
     va_end(args_list);
 
     return 1;
 }
 
-Mount * init_tmpfs(u8 * tmpfs){
-    Mount * ustar_mount = kmalloc(sizeof(Mount));
+int ustar_open(int argc, ...){
+    va_list args_list;
 
-    ustar_mount->read = &ustar_read;
+    VfsNode * node;
+
+    va_start(args_list, argc);
+
+    u8 * archive = va_arg(args_list, u8*);
+    const char * path = va_arg(args_list, const char *);
+
+
+    u8 ** filedata;
+    u64 filesize = tar_lookup(archive, path, filedata);
+
+    if(filesize == 0) {
+        // TODO: create file here
+
+    }else{
+        node->inode = (*filedata-archive)/512 ;
+        node->size = filesize;
+        node->position = 0; 
+        node->fs = gp_ustar_fs;
+        node->flags = 0;
+        node->mode = 0;
+        node->name = path;
+
+        return node;
+    }
+
+    va_end(args_list);
+    return node;
+}
+
+
+
+Mount * init_tmpfs(u8 * tmpfs){
+    gp_ustar_fs->read = &ustar_read;
 
     /*
      * ustar_mount->write = &ustar_write;
-     * ustar_mount->open =  &ustar_open;  
+     * gp_ustar_fs->open =  &ustar_open;
      * ustar_mount->close = &ustar_close;
      */
     
-    return ustar_mount;
+    return gp_ustar_fs;
 }
 

@@ -2,10 +2,11 @@
 
 
 VfsNode * vfs_node_from_path(const char * path, ...){
-
+    // TODO
 }
 
 VfsNode * vfs_node_from_fd(int fd){
+    // TODO
 }
 
 int  vfs_open(const char * path, int flags, ...){

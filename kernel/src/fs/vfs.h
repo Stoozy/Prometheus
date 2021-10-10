@@ -14,15 +14,15 @@ struct node;
 typedef struct {
 
     int (*read)     (int argc, ...);
-    int (*write)    (int argc,...);
+    int (*write)    (int argc, ...);
     int (*open)     (int argc, ...);
-    int (*close)    (int argc,...);
+    int (*close)    (int argc, ...);
 
 } Mount;
 
 
 typedef struct {
-    char *name;
+    char * name;
     u64 inode;
     u64 size;
     u64 position;

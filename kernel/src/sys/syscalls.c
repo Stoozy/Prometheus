@@ -23,5 +23,5 @@ int sys_execve(char *name, char **argv, char **env){
 
 
 int sys_fork(){
-    
+    return -1; 
 }
