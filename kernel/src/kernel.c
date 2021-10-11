@@ -50,6 +50,8 @@ static struct stivale_header stivale_hdr = {
 
 
 void _start(struct stivale_struct * boot_info) {
+
+    gdt_init();
     serial_init();                      /* init debugging */
 
     struct stivale_module * module = (struct stivale_module *)boot_info->modules;
@@ -70,6 +72,7 @@ void _start(struct stivale_struct * boot_info) {
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
+
     //screen_init(boot_info);
     pit_init(1000);
 
@@ -77,7 +80,6 @@ void _start(struct stivale_struct * boot_info) {
     idt_init();
 
     cli();
-    gdt_init();
 	multitasking_init();
     //sti();
 

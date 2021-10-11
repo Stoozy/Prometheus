@@ -17,7 +17,7 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags){
 
     IDTEntry * desc = &idt[vector];
     desc->offset_lo = (u64)isr & 0xFFFF;
-    desc->selector = 0x28;
+    desc->selector = 0x08;
     desc->zero = 0;
     desc->type_attr = flags;
     desc->offset_mid = (isr >> 16) & 0xFFFF;
