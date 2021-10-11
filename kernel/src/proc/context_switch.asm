@@ -3,14 +3,6 @@
 
 global switch_to_process
 
-%macro popaq	0
-    pop rdi    
-    pop rsi    
-    pop rbx    
-    pop rbp    
-%endmacro
-
-
 switch_to_process:
     ; Load new callee-saved registers
     mov rsp, rdi
@@ -24,5 +16,8 @@ switch_to_process:
     mov cr3, rsi
 
 .done:
-    popaq
+    pop rdi    
+    pop rsi    
+    pop rbx    
+    pop rbp    
     iretq

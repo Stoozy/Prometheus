@@ -1,10 +1,10 @@
 global load_gdt
 
 load_gdt:
-    lgdt  [rdi-2]     ; load GDT, rdi (1st argument) contains the gdt_ptr
+    lgdt [rdi]      ; load GDT, rdi (1st argument) contains the gdt_ptr
 
-    mov ax, 0x40    ; TSS segment is 0x40
-    ;ltr ax          ; load TSS
+    mov ax, 0x30    ; TSS segment is 0x30
+    ltr ax          ; load TSS
 
     mov ax, 0x10    ; kernel data segment is 0x10
     mov ds, ax      ; load kernel data segment in data segment registers
@@ -17,6 +17,7 @@ load_gdt:
     mov rax, 0x08   ; kernel code segment is 0x08
     push rax        ; push the kernel code segment
     push rdi        ; push the return address again
-    lretq           ; do a far return, like a normal return but
+
+    retfq           ; do a far return, like a normal return but
                     ; pop an extra argument of the stack
                     ; and load it into CS

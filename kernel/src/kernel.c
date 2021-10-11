@@ -70,17 +70,19 @@ void _start(struct stivale_struct * boot_info) {
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
-    screen_init(boot_info);
+    //screen_init(boot_info);
     pit_init(1000);
 
 
     idt_init();
 
-
     cli();
     gdt_init();
 	multitasking_init();
+    //sti();
+
     sti();
+
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
