@@ -83,10 +83,10 @@ void schedule(Registers * regs){
     gp_current_process->p_stack = (void*)regs->rsp;
 
     u64 * stack = gp_current_process->p_stack;
-    *--stack = 0x30; // ss
+    *--stack = 0x10; // ss
     *--stack = (u64)gp_current_process->p_stack; // rsp
     *--stack = 512 ; // rflags
-    *--stack = 0x28; // cs
+    *--stack = 0x08; // cs
     *--stack = (u64)regs->rip; // rip
 
     *--stack = (u64)regs->rbp; // rbp
@@ -128,10 +128,10 @@ ProcessControlBlock * create_process(void (*entry)(void)){
 
 	u64 * stack = (u64 *)(pcb->p_stack+0x1000);
 
-	*--stack = 0x30; // ss
+	*--stack = 0x10; // ss
 	*--stack = (u64)pcb->p_stack; // rsp
 	*--stack = 512 ; // rflags
-	*--stack = 0x28; // cs
+	*--stack = 0x08; // cs
 	*--stack = (u64)entry; // rip
 
 	*--stack = (u64)pcb->p_stack ; //ebp
@@ -181,7 +181,7 @@ void multitasking_init(){
     g_procs = 0;
 
     register_process(create_process(idle_task));
-    register_process(create_process(task_a));
     register_process(create_process(task_b));
+    register_process(create_process(task_a));
     gp_current_process = gp_process_queue;
 }
