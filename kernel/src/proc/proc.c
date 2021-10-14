@@ -1,5 +1,5 @@
 #include "../config.h"
-#include "tasking.h"
+#include "proc.h"
 #include "../memory/pmm.h"
 #include "../kprintf.h"
 #include "../kmalloc.h"

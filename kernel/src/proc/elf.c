@@ -3,7 +3,7 @@
 #include "../memory/pmm.h"
 #include "../memory/vmm.h"
 #include "../string/string.h"
-#include "../proc/tasking.h"
+#include "../proc/proc.h"
 
 #include "../kprintf.h"
 #include "../config.h"

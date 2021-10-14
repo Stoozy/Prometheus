@@ -8,7 +8,7 @@
 
 #include "io.h"
 #include "cpu.h"
-#include "../proc/tasking.h"
+#include "../proc/proc.h"
 
 
 __attribute__((aligned(0x10))) IDTEntry idt[256];

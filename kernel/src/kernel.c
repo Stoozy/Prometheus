@@ -19,7 +19,7 @@
 #include "kmalloc.h"
 #include "kprintf.h"
 
-#include "proc/tasking.h"
+#include "proc/proc.h"
 #include "proc/elf.h"
 
 #include "fs/tmpfs.h"
@@ -30,6 +30,7 @@ extern u64 k_end;
 // We need to tell the stivale bootloader where we want our stack to be.
 // We are going to allocate our stack as an uninitialised array in .bss.
 volatile u8 stack[4096];
+volatile u8 user_stack[4096];
 
 // The stivale specification says we need to define a "header structure".
 // This structure needs to reside in the .stivalehdr ELF section in order
@@ -48,6 +49,14 @@ static struct stivale_header stivale_hdr = {
     .entry_point = 0
 };
 
+extern void enable_sce();
+extern void to_userspace(void* entry, void* stack);
+
+
+void userspace_func(){
+    for(;;);
+        kprintf("Hello userspace!\n");
+}
 
 void _start(struct stivale_struct * boot_info) {
 
@@ -79,10 +88,12 @@ void _start(struct stivale_struct * boot_info) {
 
     idt_init();
 
-    cli();
-	multitasking_init();
-    sti();
+    enable_sce();
+    to_userspace(&userspace_func, &user_stack[4095]);
 
+    cli();
+	//multitasking_init();
+    //sti();
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }

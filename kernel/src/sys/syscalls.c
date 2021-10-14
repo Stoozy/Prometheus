@@ -1,5 +1,5 @@
 #include "syscalls.h"
-#include "../proc/tasking.h"
+#include "../proc/proc.h"
 #include "../fs/vfs.h"
 
 char * __env = {0};
