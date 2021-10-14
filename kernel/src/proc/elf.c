@@ -44,7 +44,8 @@ u8 load_elf_64(u8 * elf){
                     page<(p_header->p_vaddr+p_header->p_memsz)/PAGE_SIZE +1; ++page)
             {
                 void * phys_addr = pmm_alloc_block();
-                vmm_map(vmm_get_current_cr3(), (void*)(page*PAGE_SIZE), phys_addr);
+                int flags = PAGE_READ_WRITE | PAGE_PRESENT;
+                vmm_map(vmm_get_current_cr3(), (void*)(page*PAGE_SIZE), phys_addr, flags);
             }
 
             memset((void*)p_header->p_vaddr, 0, p_header->p_memsz);
@@ -85,7 +86,8 @@ u8 load_elf_32(u8 * elf){
                     page<(p_header->p_vaddr+p_header->p_memsz)/PAGE_SIZE +1; ++page)
             {
                 void * phys_addr = pmm_alloc_block();
-                vmm_map(vmm_get_current_cr3(), (void*)(page*PAGE_SIZE), phys_addr);
+                int flags = PAGE_PRESENT | PAGE_READ_WRITE;
+                vmm_map(vmm_get_current_cr3(), (void*)(page*PAGE_SIZE), phys_addr, flags);
             }
 
             memset((void*)p_header->p_vaddr, 0, p_header->p_memsz);

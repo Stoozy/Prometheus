@@ -68,64 +68,7 @@ void * vmm_virt_to_phys(PageTable * cr3, void * virt_addr){
     return (void*)((pte.address << 12) + ((u64)virt_addr & 0xfff));
 }
 
-i32 vmm_map_user(PageTable * pml4, void * virt_addr, void* phys_addr){
-
-    PageIndex indexer = vmm_get_page_index((u64)virt_addr);
-    PageTableEntry PTE;
-
-    PTE = pml4->entries[indexer.pml4i];
-    PageTable* PDP;
-    if (!PTE.present){
-        PDP = (PageTable*)pmm_alloc_block();
-        memset(PDP, 0, 0x1000);
-        PTE.address = (u64)PDP >> 12;
-        PTE.present = 1;
-        PTE.user = 1;
-        PTE.rw = 1;
-        pml4->entries[indexer.pml4i] = PTE;
-    }
-    else PDP = (PageTable*)((u64)PTE.address << 12);
-
-
-    PTE = PDP->entries[indexer.pml3i];
-    PageTable* PD;
-    if (!PTE.present){
-        PD = (PageTable*)pmm_alloc_block();
-        memset(PD, 0, 0x1000);
-        PTE.address = (u64)PD >> 12;
-        PTE.present = 1;
-        PTE.user = 1;
-        PTE.rw = 1;
-        PDP->entries[indexer.pml3i] = PTE;
-    }
-    else PD = (PageTable*)((u64)PTE.address << 12);
-
-    PTE = PD->entries[indexer.pml2i];
-    PageTable* PT;
-    if (!PTE.present){
-        PT = (PageTable*)pmm_alloc_block();
-        memset(PT, 0, 0x1000);
-        PTE.address = (u64)PT >> 12;
-        PTE.present = 1;
-        PTE.user = 1;
-        PTE.rw = 1;
-        PD->entries[indexer.pml2i] = PTE;
-    }
-    else PT = (PageTable*)((u64)PTE.address << 12);
-
-    PTE = PT->entries[indexer.pml1i];
-    PTE.address = (u64)phys_addr >> 12;
-    PTE.present = 1;
-	PTE.user = 1;
-    PTE.rw = 1;
-    PT->entries[indexer.pml1i] = PTE;
-
-
-    //invalidate_tlb();
-    return SUCCESS;
-} /* vmm_map */
-
-i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
+i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
 
     PageIndex indexer = vmm_get_page_index((u64)virt_addr);
     PageTableEntry PTE;
@@ -169,8 +112,8 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr){
 
     PTE = PT->entries[indexer.pml1i];
     PTE.address = (u64)phys_addr >> 12;
-    PTE.present = 1;
-    PTE.rw = 1;
+    PTE.present = flags & PAGE_PRESENT;
+    PTE.rw = flags & PAGE_READ_WRITE;
     PT->entries[indexer.pml1i] = PTE;
 
 
@@ -185,13 +128,16 @@ PageTable * vmm_create_user_proc_pml4(){
     memset(pml4, 0x0, PAGE_SIZE);
 
     /* map kernel */
+    int kflags = PAGE_READ_WRITE | PAGE_PRESENT;
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET);
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
     }
 
+    /* map some user pages */
+    int uflags = PAGE_PRESENT | PAGE_READ_WRITE | PAGE_USER;
     for(u64 addr = 0; addr <  1024 * 4096; addr+=PAGE_SIZE){
-        vmm_map(pml4, (void*)addr, (void*)addr);
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET);
+        vmm_map(pml4, (void*)addr, (void*)addr, uflags);
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
     }
 
     return pml4;

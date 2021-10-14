@@ -6,6 +6,13 @@
 #include "../typedefs.h"
 #include <stdbool.h>
 
+enum {
+    PAGE_PRESENT = 1 << 0, // same as 1
+    PAGE_READ_WRITE = 1 << 1, // same as 2, binary 10
+    PAGE_USER = 1 << 2, // same as 4, binary 100
+};
+
+
 typedef struct {
     u64 pml4i;
     u64 pml3i;
@@ -35,7 +42,7 @@ typedef struct {
 void *      vmm_virt_to_phys(PageTable * cr3, void * virt_addr);
 PageIndex   vmm_get_page_index(u64 vaddr);
 i32         vmm_init(struct stivale_struct *);
-i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical);
+i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical, int flags);
 PageTable * vmm_create_user_proc_pml4();
 PageTable * vmm_get_current_cr3();
 

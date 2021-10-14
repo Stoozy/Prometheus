@@ -88,10 +88,10 @@ void _start(struct stivale_struct * boot_info) {
 
     idt_init();
 
-    enable_sce();
-    to_userspace(&userspace_func, &user_stack[4095]);
+    //enable_sce();
+    //to_userspace(&userspace_func, &user_stack[4095]);
 
-    cli();
+    //cli();
 	//multitasking_init();
     //sti();
 
