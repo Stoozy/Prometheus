@@ -23,8 +23,8 @@ kernel/src/dead_kernel.elf:
 
 libc:
 	mkdir $(SYSROOT)
-	$(MAKE) -C build-newlib/
-	$(MAKE) -C build-newlib/ DESTDIR=../$(SYSROOT) install
+	#$(MAKE) -C build-newlib/
+	#$(MAKE) -C build-newlib/ DESTDIR=../$(SYSROOT) install
 
 
 $(ISO_IMAGE): limine kernel/src/dead_kernel.elf

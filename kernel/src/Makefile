@@ -1,6 +1,6 @@
 KERNEL := dead_kernel.elf
 
-CC = x86_64-elf-gcc
+CC =cc 
 NASM= nasm
 
 CFLAGS = -g -Wall -Wextra -O2 -pipe

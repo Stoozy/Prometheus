@@ -91,9 +91,9 @@ void _start(struct stivale_struct * boot_info) {
     //enable_sce();
     //to_userspace(&userspace_func, &user_stack[4095]);
 
-    //cli();
-	//multitasking_init();
-    //sti();
+    cli();
+	multitasking_init();
+    sti();
 
     // We're done, just hang...
     for (;;) { asm ("hlt"); }
