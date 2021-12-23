@@ -14,3 +14,4 @@ struct table_ptr {
   uint64_t base;
 } __attribute__((packed));
 
+void gdt_init();

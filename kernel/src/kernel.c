@@ -27,6 +27,9 @@
 extern u64 k_start;
 extern u64 k_end;
 
+extern void load_pagedir(PageTable *);
+extern void invalidate_tlb();
+extern void gdt_init();
 // We need to tell the stivale bootloader where we want our stack to be.
 // We are going to allocate our stack as an uninitialised array in .bss.
 volatile u8 stack[4096];
@@ -53,11 +56,13 @@ extern void enable_sce();
 extern void to_userspace(void* entry, void* stack);
 
 
-void userspace_func(){
+__attribute__ ((aligned(0x1000))) void userspace_func(){
     for(;;);
-        kprintf("Hello userspace!\n");
 }
 
+void hang(){
+    for (;;) { asm ("hlt"); }
+}
 void _start(struct stivale_struct * boot_info) {
 
     gdt_init();
@@ -88,14 +93,22 @@ void _start(struct stivale_struct * boot_info) {
 
     idt_init();
 
-    //enable_sce();
-    //to_userspace(&userspace_func, &user_stack[4095]);
+    enable_sce();
 
     cli();
 	multitasking_init();
     sti();
 
+    //int flags  = PAGE_USER | PAGE_PRESENT | PAGE_READ_WRITE;
+    //vmm_map(vmm_get_current_cr3(), (void*)&user_stack[4095], (void*)&user_stack[4095], flags);
+    //vmm_map(vmm_get_current_cr3(), &userspace_func, &userspace_func, flags);
+
+    //PageTable * pt = vmm_create_user_proc_pml4();
+    //load_pagedir(pt);
+    invalidate_tlb();
+    //to_userspace(&userspace_func, (void*)&user_stack[4095]);
+
     // We're done, just hang...
-    for (;;) { asm ("hlt"); }
+    hang();
 }
 

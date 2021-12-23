@@ -44,4 +44,4 @@ clean:
 	rm -f $(ISO_IMAGE) 
 	rm -rf $(SYSROOT)
 	$(MAKE) -C kernel/src clean
-	$(MAKE) -C build-newlib/ clean
+	#$(MAKE) -C build-newlib/ clean

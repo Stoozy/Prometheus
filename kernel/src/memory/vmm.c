@@ -81,6 +81,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         PTE.address = (u64)PDP >> 12;
         PTE.present = 1;
         PTE.rw = 1;
+        PTE.user = flags & PAGE_USER;
         pml4->entries[indexer.pml4i] = PTE;
     }
     else PDP = (PageTable*)((u64)PTE.address << 12);
@@ -94,6 +95,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         PTE.address = (u64)PD >> 12;
         PTE.present = 1;
         PTE.rw = 1;
+        PTE.user = flags & PAGE_USER;
         PDP->entries[indexer.pml3i] = PTE;
     }
     else PD = (PageTable*)((u64)PTE.address << 12);
@@ -106,6 +108,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         PTE.address = (u64)PT >> 12;
         PTE.present = 1;
         PTE.rw = 1;
+        PTE.user = flags & PAGE_USER;
         PD->entries[indexer.pml2i] = PTE;
     }
     else PT = (PageTable*)((u64)PTE.address << 12);
@@ -114,6 +117,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     PTE.address = (u64)phys_addr >> 12;
     PTE.present = flags & PAGE_PRESENT;
     PTE.rw = flags & PAGE_READ_WRITE;
+    PTE.user = flags & PAGE_USER;
     PT->entries[indexer.pml1i] = PTE;
 
 
@@ -127,17 +131,18 @@ PageTable * vmm_create_user_proc_pml4(){
 
     memset(pml4, 0x0, PAGE_SIZE);
 
+
+    /* map some user pages */
+    int uflags = PAGE_PRESENT | PAGE_READ_WRITE | PAGE_USER;
+    for(u64 addr = 0; addr <  1024*4096; addr+=PAGE_SIZE){
+        vmm_map(pml4, (void*)addr, (void*)addr, uflags);
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
+    }
+
     /* map kernel */
     int kflags = PAGE_READ_WRITE | PAGE_PRESENT;
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
-    }
-
-    /* map some user pages */
-    int uflags = PAGE_PRESENT | PAGE_READ_WRITE | PAGE_USER;
-    for(u64 addr = 0; addr <  1024 * 4096; addr+=PAGE_SIZE){
-        vmm_map(pml4, (void*)addr, (void*)addr, uflags);
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
     }
 
     return pml4;
