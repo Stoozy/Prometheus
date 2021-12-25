@@ -57,7 +57,7 @@ extern void to_userspace(void* entry, void* stack);
 
 
 __attribute__ ((aligned(0x1000))) void userspace_func(){
-    for(;;);
+    for(;;) kprintf("Hello Userspace!\n");
 }
 
 void hang(){
@@ -71,7 +71,6 @@ void _start(struct stivale_struct * boot_info) {
     struct stivale_module * module = (struct stivale_module *)boot_info->modules;
     //ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
     
-    /* allocate 5 MiB for kernel memory */
     kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
 
@@ -95,18 +94,29 @@ void _start(struct stivale_struct * boot_info) {
 
     enable_sce();
 
-    cli();
-	multitasking_init();
-    sti();
+    int flags  = PAGE_USER | PAGE_PRESENT | PAGE_READ_WRITE;
 
-    //int flags  = PAGE_USER | PAGE_PRESENT | PAGE_READ_WRITE;
-    //vmm_map(vmm_get_current_cr3(), (void*)&user_stack[4095], (void*)&user_stack[4095], flags);
-    //vmm_map(vmm_get_current_cr3(), &userspace_func, &userspace_func, flags);
 
-    //PageTable * pt = vmm_create_user_proc_pml4();
-    //load_pagedir(pt);
-    invalidate_tlb();
+#define PAGING_KERNEL_OFFSET        0xffffffff80000000
+
+    //for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
+    //    vmm_map(vmm_get_current_cr3(), (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, flags);
+    //}
+
+    //load_pagedir(cr3);
+
+    //invalidate_tlb();
+    //asm volatile("invlpg (%0)" ::"r" (&userspace_func) : "memory");
     //to_userspace(&userspace_func, (void*)&user_stack[4095]);
+
+    //cli();
+	//multitasking_init();
+    //sti();
+
+
+    PageTable * pt = vmm_create_user_proc_pml4();
+    load_pagedir(pt);
+    to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     // We're done, just hang...
     hang();

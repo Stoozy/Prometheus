@@ -19,5 +19,5 @@ enable_sce:
 to_userspace:
     mov rcx, rdi        ; first argument, new instruction pointer
     mov rsp, rsi        ; second argument, new stack pointer
-    mov r11, 0x0202     ; rflags
-    o64 sysret;         ; to space!
+    mov r11, 0x202      ; rflags
+    o64 sysret          ; to space!

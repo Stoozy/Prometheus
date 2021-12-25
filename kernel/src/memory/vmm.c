@@ -121,7 +121,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     PT->entries[indexer.pml1i] = PTE;
 
 
-    //invalidate_tlb();
+    invalidate_tlb();
     return SUCCESS;
 } /* vmm_map */
 
@@ -140,9 +140,9 @@ PageTable * vmm_create_user_proc_pml4(){
     }
 
     /* map kernel */
-    int kflags = PAGE_READ_WRITE | PAGE_PRESENT;
+    //int kflags = PAGE_READ_WRITE | PAGE_PRESENT;
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, uflags);
     }
 
     return pml4;
