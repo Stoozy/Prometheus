@@ -57,7 +57,7 @@ extern void to_userspace(void* entry, void* stack);
 
 
 __attribute__ ((aligned(0x1000))) void userspace_func(){
-    for(;;) kprintf("Hello Userspace!\n");
+    for(;;) kprintf("Bonjour\n");
 }
 
 void hang(){

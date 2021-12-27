@@ -1,6 +1,7 @@
 #include "gdt.h"
 #include "../string/string.h"
 #include "../kprintf.h"
+#include "../memory/pmm.h"
 
 extern void load_gdt(struct table_ptr *);
 
@@ -33,10 +34,28 @@ volatile struct {
     {0, 0, 0, 0x00, 0x00, 0},  /* 0x38 tss high */
 };
 
+extern volatile u8 user_stack[4096];
+extern volatile u8 stack[4096];
 void gdt_init(){
 
     memset((void*)&Tss, 0,  sizeof(Tss));
     uint64_t tss_base = ((uint64_t)&Tss);
+
+    Tss.rsp0 = (uint64_t)&stack[4095] & 0x0000FFFFFFFF;
+
+    //Tss.rsp1 = (uint64_t)pmm_alloc_block()+0x1000;
+    //Tss.rsp2 =   (uint64_t)&user_stack[4095] & 0x0000FFFFFFFF;
+    
+    Tss.iopb_offset = sizeof(Tss);
+
+    //Tss.ist1 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
+    Tss.ist1 = (uint64_t)&stack[4095] & 0x0000FFFFFFFF;
+    //Tss.ist2 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
+    //Tss.ist3 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
+    //Tss.ist4 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
+    //Tss.ist5 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
+    //Tss.ist6 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
+    //Tss.ist7 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
 
     gdt_table.tss_low.base15_0 = tss_base & 0xffff;
     gdt_table.tss_low.base23_16 = (tss_base >> 16) & 0xff;
