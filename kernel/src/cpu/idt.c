@@ -32,7 +32,7 @@ void irq0_handler(Registers regs) {
     tick();
     outb(0x20, 0x20); /* EOI */
 
-    //schedule(&regs);
+    schedule(&regs);
 }
 
 void irq1_handler() {
@@ -120,6 +120,11 @@ void irq15_handler(){
     outb(0x20, 0x20); /* EOI */
 }
 
+void dummy_handler(){
+    kprintf("DUMMY IRQ fired!\n");
+    outb(0xA0, 0x20);
+    outb(0x20, 0x20); /* EOI */
+}
 
 void idt_init(){
 
@@ -141,6 +146,7 @@ void idt_init(){
     extern int irq13(); 
     extern int irq14(); 
     extern int irq15(); 
+    extern int dummy_irq(); 
 
     u64 irq0_addr;
     u64 irq1_addr;
@@ -158,6 +164,7 @@ void idt_init(){
     u64 irq13_addr;
     u64 irq14_addr;
     u64 irq15_addr;
+    u64 dummy_irq_addr;
 
     IDTPtr idt_ptr;
 
@@ -176,7 +183,8 @@ void idt_init(){
 
     irq0_addr = (unsigned long)irq0;
     irq1_addr = (unsigned long)irq1;
-    irq2_addr = (unsigned long)irq2; irq3_addr = (unsigned long)irq3;
+    irq2_addr = (unsigned long)irq2; 
+    irq3_addr = (unsigned long)irq3;
     irq4_addr = (unsigned long)irq4;
     irq5_addr = (unsigned long)irq5;
     irq6_addr = (unsigned long)irq6;
@@ -189,25 +197,28 @@ void idt_init(){
     irq13_addr = (unsigned long)irq13;
     irq14_addr = (unsigned long)irq14;
     irq15_addr = (unsigned long)irq15;
+    dummy_irq_addr = (unsigned long)dummy_irq;
 
+    for(int i=0; i<32; i++){
+        idt_set_descriptor(i, dummy_irq_addr, 0x8e );
+    }
 
-
-    idt_set_descriptor(32, irq0_addr, 0x8e);
-    idt_set_descriptor(33, irq1_addr, 0x8e);
-    idt_set_descriptor(34, irq2_addr, 0x8e);
-    idt_set_descriptor(35, irq3_addr, 0x8e);
-    idt_set_descriptor(36, irq4_addr, 0x8e);
-    idt_set_descriptor(37, irq5_addr, 0x8e);
-    idt_set_descriptor(38, irq6_addr, 0x8e);
-    idt_set_descriptor(39, irq7_addr, 0x8e);
-    idt_set_descriptor(40, irq8_addr, 0x8e);
-    idt_set_descriptor(41, irq9_addr, 0x8e);
-    idt_set_descriptor(42, irq10_addr, 0x8e);
-    idt_set_descriptor(43, irq11_addr, 0x8e);
-    idt_set_descriptor(44, irq12_addr, 0x8e);
-    idt_set_descriptor(45, irq13_addr, 0x8e);
-    idt_set_descriptor(46, irq14_addr, 0x8e);
-    idt_set_descriptor(47, irq15_addr, 0x8e);
+    idt_set_descriptor(32, irq0_addr, 0x8e );
+    idt_set_descriptor(33, irq1_addr, 0x8e );
+    idt_set_descriptor(34, irq2_addr, 0x8e );
+    idt_set_descriptor(35, irq3_addr, 0x8e );
+    idt_set_descriptor(36, irq4_addr, 0x8e );
+    idt_set_descriptor(37, irq5_addr, 0x8e );
+    idt_set_descriptor(38, irq6_addr, 0x8e );
+    idt_set_descriptor(39, irq7_addr, 0x8e );
+    idt_set_descriptor(40, irq8_addr, 0x8e );
+    idt_set_descriptor(41, irq9_addr, 0x8e );
+    idt_set_descriptor(42, irq10_addr, 0x8e );
+    idt_set_descriptor(43, irq11_addr, 0x8e );
+    idt_set_descriptor(44, irq12_addr, 0x8e );
+    idt_set_descriptor(45, irq13_addr, 0x8e );
+    idt_set_descriptor(46, irq14_addr, 0x8e );
+    idt_set_descriptor(47, irq15_addr, 0x8e );
 
     /* fill the IDT descriptor */
     idt_ptr.base = (u64)&idt[0];

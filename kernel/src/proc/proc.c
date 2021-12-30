@@ -9,6 +9,8 @@ volatile ProcessControlBlock * gp_process_queue;
 volatile ProcessControlBlock * gp_current_process;
 
 extern void switch_to_process(void * new_stack, PageTable * cr3);
+extern void switch_to_user_proc( void * instruction_ptr, void * stack);
+extern void load_pagedir();
 extern u64  g_ticks;
 
 volatile u64 g_procs;
@@ -76,6 +78,8 @@ void schedule(Registers * regs){
     dump_regs(regs);
     kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif 
+    if(g_procs == 0)
+        return; // not enough processes
 
     if(g_ticks % SMP_TIMESLICE != 0) return; // not time to switch yet
 
@@ -83,10 +87,10 @@ void schedule(Registers * regs){
     gp_current_process->p_stack = (void*)regs->rsp;
 
     u64 * stack = gp_current_process->p_stack;
-    *--stack = 0x10; // ss
+    *--stack = 0x23; // ss
     *--stack = (u64)gp_current_process->p_stack; // rsp
-    *--stack = 512 ; // rflags
-    *--stack = 0x08; // cs
+    *--stack = 0x202 ; // rflags
+    *--stack = 0x2b; // cs
     *--stack = (u64)regs->rip; // rip
 
     *--stack = (u64)regs->rbp; // rbp
@@ -106,7 +110,14 @@ void schedule(Registers * regs){
         kprintf("[SCHEDULER] Switching to head:\n");
         dump_regs(gp_current_process->p_stack);
 #endif
-        switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+        if(gp_current_process->cr3 != vmm_get_current_cr3() && 
+                gp_current_process->state == CREATED){
+            load_pagedir(gp_current_process->cr3);
+            Registers * regs = (Registers*)gp_current_process->p_stack;
+            switch_to_user_proc((void*)regs->rip, gp_current_process->p_stack); 
+        }else{
+            switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+        }
     }else{
 
         // just go to next process 
@@ -116,32 +127,42 @@ void schedule(Registers * regs){
         kprintf("[SCHEDULER] Switching to next:\n");
         dump_regs(gp_current_process->p_stack);
 #endif
-        switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+        if(gp_current_process->cr3 != vmm_get_current_cr3() && 
+                gp_current_process->state == CREATED){
+            load_pagedir(gp_current_process->cr3);
+            Registers * regs = (Registers*) gp_current_process->p_stack;
+            switch_to_user_proc((void*)regs->rip, gp_current_process->p_stack); 
+        }else{
+            switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+        }
     }
 
 }
 
 ProcessControlBlock * create_process(void (*entry)(void)){
-    ProcessControlBlock * pcb = kmalloc(sizeof(ProcessControlBlock));
+    ProcessControlBlock * pcb = pmm_alloc_block();
+        /*kmalloc(sizeof(ProcessControlBlock));*/
 
     pcb->p_stack = pmm_alloc_block();
 
-	u64 * stack = (u64 *)(pcb->p_stack+0x1000);
+	u64 * stack = (u64 *)(pcb->p_stack);
+    PageTable * pml4 = vmm_create_user_proc_pml4(stack);
 
-	*--stack = 0x10; // ss
+
+	*--stack = 0x23; // ss
 	*--stack = (u64)pcb->p_stack; // rsp
-	*--stack = 512 ; // rflags
-	*--stack = 0x08; // cs
+	*--stack = 0x202 ; // rflags
+	*--stack = 0x2b; // cs
 	*--stack = (u64)entry; // rip
 
-	*--stack = (u64)pcb->p_stack ; //ebp
+	*--stack = (u64)pcb->p_stack; //ebp
 	*--stack = 0; // rdx
 	*--stack = 0; // rsi
 	*--stack = 0; // rdi
 
     pcb->p_stack = stack;
 
-    pcb->cr3 = vmm_get_current_cr3();
+    pcb->cr3 = pml4; 
     pcb->next = NULL;
 
     return pcb; 
@@ -181,7 +202,7 @@ void multitasking_init(){
     g_procs = 0;
 
     register_process(create_process(idle_task));
-    //register_process(create_process(task_b));
-    //register_process(create_process(task_a));
+    register_process(create_process(task_b));
+    register_process(create_process(task_a));
     gp_current_process = gp_process_queue;
 }

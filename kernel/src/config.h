@@ -1,4 +1,4 @@
-#undef SMP_DEBUG
+#define SMP_DEBUG
 #undef TMPFS_DEBUG
 #undef PIT_DEBUG 
 

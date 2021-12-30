@@ -17,6 +17,7 @@ global irq12
 global irq13
 global irq14
 global irq15
+global dummy_irq 
 
 
 %macro pushaq 	0
@@ -49,11 +50,23 @@ extern irq12_handler
 extern irq13_handler
 extern irq14_handler
 extern irq15_handler
+extern dummy_handler 
 extern scheduler
 extern tick 
 
 section .text
 
+hang:
+    hlt
+    jmp hang
+
+dummy_irq:
+	pushaq
+	call dummy_handler 
+    jmp hang
+	;popaq
+	;iretq
+ 
 irq0:
 	pushaq
 	call irq0_handler

@@ -126,14 +126,14 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
 } /* vmm_map */
 
 
-PageTable * vmm_create_user_proc_pml4(){
+PageTable * vmm_create_user_proc_pml4(void * stack){
     PageTable * pml4 = pmm_alloc_block();
 
     memset(pml4, 0x0, PAGE_SIZE);
 
+    int uflags =  PAGE_READ_WRITE | PAGE_USER | PAGE_PRESENT;
 
     /* map some user pages */
-    int uflags = PAGE_PRESENT | PAGE_READ_WRITE | PAGE_USER;
     for(u64 addr = 0; addr <  1024*4096; addr+=PAGE_SIZE){
         vmm_map(pml4, (void*)addr, (void*)addr, uflags);
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
@@ -145,8 +145,11 @@ PageTable * vmm_create_user_proc_pml4(){
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, uflags);
     }
 
+    vmm_map(pml4, stack-0x1000, stack-0x1000, uflags);
+
     return pml4;
 }
+
 
 PageTable * vmm_get_current_cr3(){
     PageTable * current_cr3;

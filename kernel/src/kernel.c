@@ -89,34 +89,15 @@ void _start(struct stivale_struct * boot_info) {
     //screen_init(boot_info);
     pit_init(1000);
 
-
     idt_init();
 
     enable_sce();
 
-    int flags  = PAGE_USER | PAGE_PRESENT | PAGE_READ_WRITE;
+    cli();
+	multitasking_init();
+    sti();
 
-
-#define PAGING_KERNEL_OFFSET        0xffffffff80000000
-
-    //for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-    //    vmm_map(vmm_get_current_cr3(), (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, flags);
-    //}
-
-    //load_pagedir(cr3);
-
-    //invalidate_tlb();
-    //asm volatile("invlpg (%0)" ::"r" (&userspace_func) : "memory");
     //to_userspace(&userspace_func, (void*)&user_stack[4095]);
-
-    //cli();
-	//multitasking_init();
-    //sti();
-
-
-    PageTable * pt = vmm_create_user_proc_pml4();
-    load_pagedir(pt);
-    to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     // We're done, just hang...
     hang();

@@ -1,9 +1,9 @@
 KERNEL := dead_kernel.elf
 
 CC =cc 
-NASM= nasm
+NASM= nasm 
 
-CFLAGS = -g -Wall -Wextra -O2 -pipe
+CFLAGS = -g -Wall -Wextra -O2 -pipe 
 
 INTERNALLDFLAGS := \
 	-fno-pic  -fPIE \
@@ -20,7 +20,7 @@ INTERNALCFLAGS  :=       \
 	-std=gnu11           \
 	-ffreestanding       \
 	-fno-stack-protector \
-	-fno-pic -fpie       \
+	-fno-pic -fPIE       \
 	-mno-80387           \
 	-mno-mmx             \
 	-mno-3dnow           \

@@ -3,71 +3,81 @@
 #include "../kprintf.h"
 #include "../memory/pmm.h"
 
-extern void load_gdt(struct table_ptr *);
+extern void gdt_flush(u64);
+extern void load_gdt(u64);
 
-struct {
-    uint32_t reserved0; uint64_t rsp0;      uint64_t rsp1;
-    uint64_t rsp2;      uint64_t reserved1; uint64_t ist1;
-    uint64_t ist2;      uint64_t ist3;      uint64_t ist4;
-    uint64_t ist5;      uint64_t ist6;      uint64_t ist7;
-    uint64_t reserved2; uint16_t reserved3; uint16_t iopb_offset;
-} Tss;
-
-__attribute__((aligned(4096)))
-volatile struct {
-  struct gdt_entry null;
-  struct gdt_entry kernel_code;
-  struct gdt_entry kernel_data;
-  struct gdt_entry null2;
-  struct gdt_entry user_data;
-  struct gdt_entry user_code;
-  struct gdt_entry tss_low;
-  struct gdt_entry tss_high;
-} gdt_table = {
-    {0, 0, 0, 0x00, 0x00, 0},  /* 0x00 null  */
-    {0, 0, 0, 0x9a, 0xa0, 0},  /* 0x08 kernel code (kernel base selector) */
-    {0, 0, 0, 0x92, 0xa0, 0},  /* 0x10 kernel data */
-    {0, 0, 0, 0x00, 0x00, 0},  /* 0x18 null (user base selector) */
-    {0, 0, 0, 0x92, 0xa0, 0},  /* 0x20 user data */
-    {0, 0, 0, 0x9a, 0xa0, 0},  /* 0x28 user code */
-    {0, 0, 0, 0x89, 0xa0, 0},  /* 0x30 tss low */
-    {0, 0, 0, 0x00, 0x00, 0},  /* 0x38 tss high */
+static TSS64 tss = {
+    .reserved = 0,
+    .rsp = {0, 0, 0},
+    .reserved0 = 0,
+    .ist = {0, 0, 0},
+    .reserved1 = 0,
+    .reserved2 = 0,
+    .reserved3 = 0,
+    .iopb_offset = 0,
 };
 
-extern volatile u8 user_stack[4096];
-extern volatile u8 stack[4096];
-void gdt_init(){
+static GDT64 gdt;
 
-    memset((void*)&Tss, 0,  sizeof(Tss));
-    uint64_t tss_base = ((uint64_t)&Tss);
+static GDTDescriptor64 gdt_descriptor = {
+    .size = sizeof(GDT64) - 1,
+    .offset = (u64)&gdt,
+};
 
-    Tss.rsp0 = (uint64_t)&stack[4095] & 0x0000FFFFFFFF;
-
-    //Tss.rsp1 = (uint64_t)pmm_alloc_block()+0x1000;
-    //Tss.rsp2 =   (uint64_t)&user_stack[4095] & 0x0000FFFFFFFF;
-    
-    Tss.iopb_offset = sizeof(Tss);
-
-    //Tss.ist1 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
-    Tss.ist1 = (uint64_t)&stack[4095] & 0x0000FFFFFFFF;
-    //Tss.ist2 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
-    //Tss.ist3 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
-    //Tss.ist4 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
-    //Tss.ist5 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
-    //Tss.ist6 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
-    //Tss.ist7 = (uint64_t)(pmm_alloc_block() + 0x1000) & 0x0000FFFFFFFF; 
-
-    gdt_table.tss_low.base15_0 = tss_base & 0xffff;
-    gdt_table.tss_low.base23_16 = (tss_base >> 16) & 0xff;
-    gdt_table.tss_low.base31_24 = (tss_base >> 24) & 0xff;
-    gdt_table.tss_low.limit15_0 = sizeof(Tss);
-    gdt_table.tss_high.limit15_0 = (tss_base >> 32) & 0xffff;
-    gdt_table.tss_high.base15_0 = (tss_base >> 48) & 0xffff;
-
-    struct table_ptr gdt_ptr = { sizeof(gdt_table)-1, (u64)&gdt_table };
-
-    kprintf("[GDT] GDT Address: 0x%x\n", &gdt_table);
-    kprintf("[GDT] GDT Pointer size: %lu bytes\n", sizeof(gdt_ptr));
-
-    load_gdt(&gdt_ptr);
+void set_entry(GDTEntry64 entry, u32 base, u32 limit, u8 gran, u8 flags){
+    entry.limit0_15 = (u16)(limit & 0xffff);
+    entry.base0_15 = (u16)(base & 0xffff);
+    entry.base16_23 = (u8)((base >> 16) & 0xff);
+    entry.flags = flags;
+    entry.limit16_19 = (limit >> 16) & 0x0f;
+    entry.granularity = gran;
+    entry.base24_31 = (u8)((base>>24) & 0xff);
 }
+
+void set_tss_entry(GDTTSSEntry64 tss_entry, u64 tss_addr){
+    tss_entry.length = sizeof(TSS64);
+    tss_entry.base_low16 = tss_addr & 0xffff;
+    tss_entry.base_mid8 = (tss_addr >> 16) & 0xff;
+    tss_entry.flags1 = 0x89;
+    tss_entry.flags2 = 0;
+    tss_entry.base_high8 = (tss_addr >> 24) & 0xff;
+    tss_entry.base_upper32 = (tss_addr >> 32);
+    tss_entry.reserved = 0;
+}
+
+void set_kernel_stack(u64 stack)
+{
+    tss.rsp[0] = stack;
+    tss.ist[0] = stack;
+}
+
+void gdt_init()
+{
+    // 0x00
+    set_entry(gdt.entries[0], 0, 0, 0, 0);
+    // 0x08
+    set_entry(gdt.entries[1], 0, 0, GDT_LONG_MODE_GRANULARITY, GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE | GDT_EXECUTABLE);
+    // 0x10
+    set_entry(gdt.entries[2], 0, 0, 0, GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE | GDT_EXECUTABLE);
+    // 0x18
+    set_entry(gdt.entries[3], 0, 0, GDT_LONG_MODE_GRANULARITY, GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE | GDT_EXECUTABLE | GDT_USER);
+    // 0x20
+    set_entry(gdt.entries[4], 0, 0, 0, GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE | GDT_USER);
+    // 0x28
+    set_tss_entry(gdt.tss, (u64)&tss);
+
+//    gdt.entries[0] = { 0, 0, 0, 0}; // null descriptor
+//    gdt.entries[1] = {GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE | GDT_EXECUTABLE, GDT_LONG_MODE_GRANULARITY};
+//    gdt.entries[2] = {GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE, 0};
+//
+//    gdt.entries[3] = {GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE | GDT_EXECUTABLE | GDT_USER, GDT_LONG_MODE_GRANULARITY};
+//    gdt.entries[4] = {GDT_PRESENT | GDT_SEGMENT | GDT_READWRITE | GDT_USER, 0};
+//
+    //gdt.tss = {(uintptr_t)&tss};
+    
+    set_kernel_stack((u64)pmm_alloc_block()+0x1000);
+    gdt_flush((u64)&gdt_descriptor);
+}
+
+
+
