@@ -7,6 +7,7 @@
 #include "cpu/idt.h"
 #include "cpu/gdt.h"
 #include "misc/ssfn.h"
+#include "cpu/smp.h"
 
 #include "memory/pmm.h"
 #include "memory/vmm.h"
@@ -95,11 +96,16 @@ void _start(struct stivale_struct * boot_info) {
 
     cli();
 	//multitasking_init();
-    sti();
+    //sti();
 
-    PageTable * pt = vmm_create_user_proc_pml4();
-    load_pagedir(pt);
-    to_userspace(&userspace_func, (void*)&user_stack[4095]);
+    //PageTable * pt = vmm_create_user_proc_pml4();
+    //load_pagedir(pt);
+    //to_userspace(&userspace_func, (void*)&user_stack[4095]);
+
+    RSDPDescriptor * rsdp = (RSDPDescriptor *) boot_info->rsdp; 
+    kprintf("[ACPI] RSDP version : %u\n", rsdp->Revision);
+    kprintf("[ACPI] RSDP signature : %s\n", rsdp->Signature);
+    kprintf("[ACPI] RSDT Address : %x\n", rsdp->RsdtAddress);
 
     // We're done, just hang...
     hang();
