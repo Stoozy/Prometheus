@@ -94,10 +94,12 @@ void _start(struct stivale_struct * boot_info) {
     enable_sce();
 
     cli();
-	multitasking_init();
+	//multitasking_init();
     sti();
 
-    //to_userspace(&userspace_func, (void*)&user_stack[4095]);
+    PageTable * pt = vmm_create_user_proc_pml4();
+    load_pagedir(pt);
+    to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     // We're done, just hang...
     hang();
