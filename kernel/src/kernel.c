@@ -103,10 +103,8 @@ void _start(struct stivale_struct * boot_info) {
     //to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     RSDPDescriptor * rsdp = (RSDPDescriptor *) boot_info->rsdp; 
-    kprintf("[ACPI] RSDP version : %u\n", rsdp->Revision);
-    kprintf("[ACPI] RSDP signature : %s\n", rsdp->Signature);
-    kprintf("[ACPI] RSDT Address : %x\n", rsdp->RsdtAddress);
-
+    smp_init(rsdp);
+    
     // We're done, just hang...
     hang();
 }

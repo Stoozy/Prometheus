@@ -25,4 +25,5 @@ typedef struct  {
     uint8_t reserved[3];
 } __attribute__ ((packed)) RSDPDescriptor20;
 
-void parse_rsdt(void * ptr, u8 version);
+void smp_init(RSDPDescriptor * rsdp);
+void ap_init();
