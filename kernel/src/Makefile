@@ -1,7 +1,7 @@
 KERNEL := dead_kernel.elf
 
-CC =cc 
-NASM= nasm 
+CC=cc 
+NASM=nasm 
 
 CFLAGS = -g -Wall -Wextra -O2 -pipe 
 

@@ -6,6 +6,7 @@
 #include "../drivers/pit.h"
 #include "../string.h"
 
+
 uint8_t lapic_ids[256]={0}; // CPU core Local APIC IDs
 uint8_t numcore=0;          // number of cores detected
 uint64_t lapic_ptr=0;       // pointer to the Local APIC MMIO registers
@@ -63,7 +64,7 @@ void startup_aps(){
 
     bspdone = 1;
 
-    kprintf(
+    kprintf("[SMP] %d Cores have been booted\n", aprunning);
 }
 
 void detect_cores(u8 * rsdt){
