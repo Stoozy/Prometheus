@@ -4,10 +4,7 @@ global ap_entry
 [bits 16]
 ap_entry:
     cli
-    ;cld
-
-    ;mov ax, aprunning
-    ;inc ax
+    jmp loop
 
 loop:
     int 0x10
