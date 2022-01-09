@@ -50,7 +50,8 @@ void gdt_init(){
 
     memset(&tss, 0, sizeof(tss));
 
-    asm volatile (" mov %%rsp, %0" : "=r"(tss.rsp0));
+    tss.rsp0 = (u64)pmm_alloc_block();
+    //asm volatile (" mov %%rsp, %0" : "=r"(tss.rsp0));
 
     gdt_table.tss_low.base15_0 = tss_base & 0xffff;
     gdt_table.tss_low.base23_16 = (tss_base >> 16) & 0xff;

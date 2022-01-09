@@ -20,7 +20,7 @@ void _kill(void){
     // free pcb and allocated memory by elf loader
     // return?
 
-    ProcessControlBlock  * next_to_current = gp_current_process;
+    ProcessControlBlock * next_to_current = gp_current_process;
     ProcessControlBlock * current_pcb = gp_process_queue;
 
     // relink the nodes
@@ -70,6 +70,9 @@ void dump_regs(void * stack){
     kprintf("[SCHEDULER]    RBX: 0x%x\n", regs->rbx);
     kprintf("[SCHEDULER]    RSI: 0x%x\n", regs->rsi);
     kprintf("[SCHEDULER]    RDI: 0x%x\n", regs->rdi);
+    kprintf("[SCHEDULER]    RFLAGS: 0x%x\n", regs->rflags);
+    kprintf("[SCHEDULER]    SS: 0x%x\n", regs->ss);
+    kprintf("[SCHEDULER]    CS: 0x%x\n", regs->cs);
 }
 
 void schedule(Registers * regs){
@@ -87,15 +90,15 @@ void schedule(Registers * regs){
     gp_current_process->p_stack = (void*)regs->rsp;
 
     u64 * stack = gp_current_process->p_stack;
-    *--stack = 0x23; // ss
+    *--stack = regs->ss; // ss
     *--stack = (u64)gp_current_process->p_stack; // rsp
-    *--stack = 0x202 ; // rflags
-    *--stack = 0x2b; // cs
+    *--stack = regs->rflags ; // rflags
+    *--stack = regs->cs; // cs
     *--stack = (u64)regs->rip; // rip
     *--stack = (u64)regs->rbp; // rbp
     *--stack = 0; // rdx
-    *--stack = 0; // rsi
-    *--stack = 0; // rdi
+    *--stack = regs->rsi; // rsi
+    *--stack = regs->rdi; // rdi
 
     gp_current_process->p_stack = stack;
 
@@ -109,31 +112,44 @@ void schedule(Registers * regs){
         kprintf("[SCHEDULER] Switching to head:\n");
         dump_regs(gp_current_process->p_stack);
 #endif
-        if(gp_current_process->cr3 != vmm_get_current_cr3() && 
-                gp_current_process->state == CREATED){
-            load_pagedir(gp_current_process->cr3);
-            Registers * regs = (Registers*)gp_current_process->p_stack;
-            switch_to_user_proc((void*)regs->rip, gp_current_process->p_stack); 
-        }else{
+        //Registers * regs = gp_current_process->p_stack;
+
+        //u64 cs =  0, cr3 = 0;
+        //asm volatile (" mov %%cs, %0" : "=r"(cs));
+        //asm volatile (" mov %%cr3, %0" : "=r"(cr3));
+
+        //if(cr3 != (u64)vmm_get_current_cr3()){
+        //    load_pagedir(cr3);
+        //}        if(cs == 0x2b){
+        //    switch_to_user_proc((void*)regs->rip, (void*)regs->rsp);
+        //}else{
             switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
-        }
+        //}
+
     }else{
 
         // just go to next process 
         gp_current_process = gp_current_process->next;
 
 #ifdef SCHEDULER_DEBUG
-        kprintf("[SCHEDULER] Switching to next:\n");
+        kprintf("[SCHEDULER] Switching to next: \n");
         dump_regs(gp_current_process->p_stack);
 #endif
-        if(gp_current_process->cr3 != vmm_get_current_cr3() && 
-                gp_current_process->state == CREATED){
-            load_pagedir(gp_current_process->cr3);
-            Registers * regs = (Registers*) gp_current_process->p_stack;
-            switch_to_user_proc((void*)regs->rip, gp_current_process->p_stack); 
-        }else{
+        //Registers * regs = gp_current_process->p_stack;
+
+        //u64 cs =  0, cr3 = 0;
+        //asm volatile (" mov %%cs, %0" : "=r"(cs));
+        //asm volatile (" mov %%cr3, %0" : "=r"(cr3));
+
+        //if(cr3 != (u64)vmm_get_current_cr3()){
+        //    load_pagedir(cr3);
+        //}
+
+        //if(cs == 0x2b){
+        //    switch_to_user_proc((void*)regs->rip, (void*)regs->rsp);
+        //}else{
             switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
-        }
+        //}
     }
 
 }
@@ -147,13 +163,12 @@ ProcessControlBlock * create_process(void (*entry)(void)){
 	u64 * stack = (u64 *)(pcb->p_stack);
     PageTable * pml4 = vmm_create_user_proc_pml4(stack);
 
-
+    // user proc
 	*--stack = 0x23; // ss
 	*--stack = (u64)pcb->p_stack; // rsp
 	*--stack = 0x202 ; // rflags
 	*--stack = 0x2b; // cs
 	*--stack = (u64)entry; // rip
-
 	*--stack = (u64)pcb->p_stack; //ebp
 	*--stack = 0; // rdx
 	*--stack = 0; // rsi
@@ -172,6 +187,7 @@ void register_process(ProcessControlBlock * new_pcb){
 #ifdef SCHEDULER_DEBUG
     kprintf("[TASKING]  Registering process at 0x%x\n", new_pcb);
 #endif
+
     volatile ProcessControlBlock * current_pcb = gp_process_queue;  
 
     // first process

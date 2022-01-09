@@ -6,6 +6,8 @@
 #include "../kprintf.h"
 #include "../stivale2.h"
 
+extern u64 k_start;
+extern u64 k_end;
 
 volatile u64     total_blocks = _PMM_MAX_BITMAPS * _PMM_BLOCKS_PER_BYTE; 
 volatile u64     total_bmaps; 

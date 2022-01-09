@@ -25,8 +25,11 @@
 
 #include "fs/tmpfs.h"
 
-extern u64 k_start;
-extern u64 k_end;
+//extern u64 k_start;
+//extern u64 k_end;
+
+u64 k_start;
+u64 k_end;
 
 extern void load_pagedir(PageTable *);
 extern void invalidate_tlb();
@@ -153,6 +156,8 @@ void _start(struct stivale2_struct * boot_info) {
 
     gdt_init();
     serial_init();                      /* init debugging */
+    
+    
 
     //struct stivale_module * module = (struct stivale_module *)boot_info->modules;
     //ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
@@ -169,11 +174,21 @@ void _start(struct stivale2_struct * boot_info) {
     struct stivale2_struct_tag_pmrs * meminfo = 
         stivale2_get_tag(boot_info, 0x2187f79e8612de07);
 
-    pmm_init(meminfo);                /* reads memory map and initializes memory manager */
+    /* reads memory map and initializes memory manager 
+     *
+     * Also sets k_start and k_end globals
+     *
+     * */
+    pmm_init(meminfo);                
     
+
     u64 k_size = ((u64)&k_end - (u64)&k_start);
+    kprintf("[_start]   Kernel start: 0x%x\n", k_start);
+    kprintf("[_start]   Kernel end: 0x%x\n", k_end);
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
+    cli();
+    hang();
 
     //screen_init(boot_info);
     pit_init(1000);
@@ -182,14 +197,14 @@ void _start(struct stivale2_struct * boot_info) {
 
     enable_sce();
 
-    cli();
-	multitasking_init();
-    sti();
+    //cli();
+	//multitasking_init();
+    //sti();
 
-    //PageTable * pt = vmm_create_user_proc_pml4();
-    //load_pagedir(pt);
+    PageTable * pt = vmm_create_user_proc_pml4();
+    load_pagedir(pt);
 
-    //to_userspace(&userspace_func, (void*)&user_stack[4095]);
+    to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     //RSDPDescriptor * rsdp = (RSDPDescriptor *) boot_info->rsdp; 
     //smp_init(rsdp);
