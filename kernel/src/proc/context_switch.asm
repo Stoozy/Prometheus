@@ -4,7 +4,8 @@
 global switch_to_process
 global switch_to_user_proc 
 
-; switch_to_user_proc( void * instruction_ptr, void * stack)
+; switch_to_user_proc( void * instruction_ptr, void * stack, void * cr3)
+
 switch_to_user_proc:
 
     mov ax, 0x23
@@ -12,7 +13,6 @@ switch_to_user_proc:
     mov es, ax
     mov fs, ax
     mov gs, ax
-
 
     ;push 0x23       ; new stack selector
     ;push rsi        ; stack ptr

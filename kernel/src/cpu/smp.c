@@ -14,7 +14,7 @@ uint64_t ioapic_ptr=0;      // pointer to the IO APIC MMIO registers
 
 uint8_t bspid, bspdone = 0;      // BSP id and spinlock flag
 volatile uint8_t aprunning = 0;  // count how many APs have started 
-extern void ap_entry();
+extern void ap_trampoline();
 
 void ap_startup(int apicid){
     kprintf("Booted core #%d\n", apicid);
@@ -25,7 +25,7 @@ void ap_startup(int apicid){
 void startup_aps(){
 
     // copy trampoline code to low address
-    memcpy((void*) 0x8000, &ap_entry, 0x1000);
+    memcpy((void*) 0x8000, &ap_trampoline, 0x1000);
 
     __asm__ __volatile__ ("mov $1, %%eax; cpuid; shrl $24, %%ebx;": "=b"(bspid) : : );
 

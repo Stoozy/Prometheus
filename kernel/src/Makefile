@@ -1,17 +1,18 @@
 KERNEL := dead_kernel.elf
 
-CC=cc 
+CC=clang  -v
 NASM=nasm 
+AS=as
 
 CFLAGS = -g -Wall -Wextra -O2 -pipe 
 
 INTERNALLDFLAGS := \
-	-fno-pic  -fPIE \
 	-Wl,-static,--no-dynamic-linker,-ztext \
-	-static-pie    \
+	-fno-pic  -fPIE \
 	-nostdlib      \
 	-Tlinker.ld    \
-	-z max-page-size=0x1000
+	-z max-page-size=0x1000 \
+	-mcmodel=large -v
 
 INTERNALCFLAGS  :=       \
 	-I.                  \
@@ -26,17 +27,19 @@ INTERNALCFLAGS  :=       \
 	-mno-3dnow           \
 	-mno-sse             \
 	-mno-sse2            \
-	-mno-red-zone
+	-mno-red-zone		\
+	-mcmodel=large
 
 CFILES := $(shell find ./ -type f -name '*.c')
 ASM_FILES := $(shell find ./ -type f -name '*.asm')
+AS_FILES := $(shell find ./ -type f -name '*.S')
 C_OBJ    := $(CFILES:.c=.o)
 NASM_OBJ    := $(ASM_FILES:.asm=.o)
 .PHONY: all clean
 
 all: $(KERNEL)
 
-$(KERNEL): $(NASM_OBJ) $(C_OBJ)
+$(KERNEL): $(NASM_OBJ) $(C_OBJ) $(AS_OBJ)
 	$(CC) $(INTERNALLDFLAGS)  $(NASM_OBJ) $(C_OBJ) -o $@
 
 stivale.h:

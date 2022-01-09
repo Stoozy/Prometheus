@@ -9,8 +9,8 @@ SECTIONS
 
     /* We place the .stivalehdr section containing the header in its own section, */
     /* and we use the KEEP directive on it to make sure it doesn't get discarded. */
-    .stivalehdr : {
-        KEEP(*(.stivalehdr))
+    .stivale2hdr : {
+        KEEP(*(.stivale2hdr))
     }
 
     /* Then let's place all the other traditional executable sections afterwards. */
@@ -30,5 +30,6 @@ SECTIONS
         *(COMMON)
         *(.bss*)
     }
+
     k_end = .;
 }

@@ -34,19 +34,19 @@ void _kill(void){
 
 void task_a(){ 
     for(;;){
-        //kprintf("Running task A...\n");
+        kprintf("Running task A...\n");
     }
 }
 
 void task_b(){ 
     for(;;){
-        //kprintf("Running task B...\n");
+        kprintf("Running task B...\n");
     }
 }
 
 void idle_task(){ 
     for(;;){
-        //kprintf("Idling...\n");
+        kprintf("Idling...\n");
     }
 }
 
@@ -74,7 +74,7 @@ void dump_regs(void * stack){
 
 void schedule(Registers * regs){
 
-#ifdef SMP_DEBUG
+#ifdef SCHEDULER_DEBUG
     dump_regs(regs);
     kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif 
@@ -92,7 +92,6 @@ void schedule(Registers * regs){
     *--stack = 0x202 ; // rflags
     *--stack = 0x2b; // cs
     *--stack = (u64)regs->rip; // rip
-
     *--stack = (u64)regs->rbp; // rbp
     *--stack = 0; // rdx
     *--stack = 0; // rsi
@@ -106,7 +105,7 @@ void schedule(Registers * regs){
         // switch to head
         gp_current_process = gp_process_queue;
 
-#ifdef SMP_DEBUG
+#ifdef SCHEDULER_DEBUG
         kprintf("[SCHEDULER] Switching to head:\n");
         dump_regs(gp_current_process->p_stack);
 #endif
@@ -123,7 +122,7 @@ void schedule(Registers * regs){
         // just go to next process 
         gp_current_process = gp_current_process->next;
 
-#ifdef SMP_DEBUG
+#ifdef SCHEDULER_DEBUG
         kprintf("[SCHEDULER] Switching to next:\n");
         dump_regs(gp_current_process->p_stack);
 #endif
@@ -170,7 +169,7 @@ ProcessControlBlock * create_process(void (*entry)(void)){
 
 void register_process(ProcessControlBlock * new_pcb){
 
-#ifdef SMP_DEBUG
+#ifdef SCHEDULER_DEBUG
     kprintf("[TASKING]  Registering process at 0x%x\n", new_pcb);
 #endif
     volatile ProcessControlBlock * current_pcb = gp_process_queue;  
@@ -186,7 +185,7 @@ void register_process(ProcessControlBlock * new_pcb){
         current_pcb = current_pcb->next;
     current_pcb->next = new_pcb;
 
-#ifdef SMP_DEBUG
+#ifdef SCHEDULER_DEBUG
     kprintf("[TASKING]  PCB at 0x%x is after 0x%x\n", current_pcb->next, current_pcb);
     kprintf("[TASKING]  PCB has next 0x%x\n", current_pcb->next);
 #endif

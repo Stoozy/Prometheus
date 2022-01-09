@@ -1,10 +1,10 @@
+#include <stddef.h>
+
 #include "pmm.h"
 #include "../util.h"
-
 #include "../string/string.h"
-#include <stddef.h>
 #include "../kprintf.h"
-#include "../stivale.h"
+#include "../stivale2.h"
 
 
 volatile u64     total_blocks = _PMM_MAX_BITMAPS * _PMM_BLOCKS_PER_BYTE; 
@@ -221,7 +221,7 @@ void pmm_dump(){
 
 }
 
-void pmm_init(struct stivale_struct * boot_info){
+void pmm_init(struct stivale2_struct_tag_memmap * meminfo){
 
     total_bmaps = total_blocks / _PMM_BLOCKS_PER_BYTE;
     used_blocks = total_blocks;
@@ -232,26 +232,24 @@ void pmm_init(struct stivale_struct * boot_info){
 
 
     /* Initializing different memory regions */
-    struct stivale_mmap_entry * mmap_entries = 
-        (struct stivale_mmap_entry * ) boot_info->memory_map_addr;
 
-    for(u64 i=0; i<boot_info->memory_map_entries;++i){
-        if(mmap_entries[i].type == STIVALE_MMAP_USABLE){
-            pmm_init_region((void*) mmap_entries[i].base, mmap_entries[i].length);
+    for(u64 i=0; i<meminfo->entries;++i){
+        if(meminfo->memmap[i].type == STIVALE2_MMAP_USABLE){
+            pmm_init_region((void*) meminfo->memmap[i].base, meminfo->memmap[i].length);
         }
     }
 
     /* mark kernel and modules as used */
-    for(u64 i=0; i<boot_info->memory_map_entries;++i){
-        if( mmap_entries[i].type == STIVALE_MMAP_KERNEL_AND_MODULES ||
-            mmap_entries[i].type == STIVALE_MMAP_FRAMEBUFFER ||
-            mmap_entries[i].type == STIVALE_MMAP_BOOTLOADER_RECLAIMABLE
+    for(u64 i=0; i<meminfo->entries; ++i){
+        if( meminfo->memmap[i].type == STIVALE2_MMAP_KERNEL_AND_MODULES ||
+            meminfo->memmap[i].type == STIVALE2_MMAP_FRAMEBUFFER ||
+            meminfo->memmap[i].type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE 
           ){
 
             kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",
-                (void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length)
+                (void*)meminfo->memmap[i].base, (void*)(meminfo->memmap[i].base + meminfo->memmap[i].length)
             );
-            pmm_mark_region_used((void*)mmap_entries[i].base, (void*)(mmap_entries[i].base + mmap_entries[i].length));
+            pmm_mark_region_used((void*)meminfo->memmap[i].base, (void*)(meminfo->memmap[i].base + meminfo->memmap[i].length));
         }
     }
 

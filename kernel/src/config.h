@@ -1,4 +1,5 @@
 #undef SMP_DEBUG
+#undef SCHEDULER_DEBUG 
 #undef TMPFS_DEBUG
 #undef PIT_DEBUG 
 
