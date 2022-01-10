@@ -32,7 +32,7 @@ void irq0_handler(Registers regs) {
     tick();
     outb(0x20, 0x20); /* EOI */
 
-    schedule(&regs);
+    //schedule(&regs);
 }
 
 void irq1_handler() {
@@ -199,9 +199,8 @@ void idt_init(){
     irq15_addr = (unsigned long)irq15;
     dummy_irq_addr = (unsigned long)dummy_irq;
 
-    for(int i=0; i<32; i++){
+    for(int i=0; i<32; i++)
         idt_set_descriptor(i, dummy_irq_addr, 0x8e );
-    }
 
     idt_set_descriptor(32, irq0_addr, 0x8e );
     idt_set_descriptor(33, irq1_addr, 0x8e );

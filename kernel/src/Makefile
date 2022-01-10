@@ -1,6 +1,6 @@
 KERNEL := dead_kernel.elf
 
-CC=clang  -v
+CC=gcc
 NASM=nasm 
 AS=as
 

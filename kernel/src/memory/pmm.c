@@ -248,6 +248,11 @@ void pmm_init(struct stivale2_struct_tag_memmap * meminfo){
             meminfo->memmap[i].type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE 
           ){
 
+            if( meminfo->memmap[i].type == STIVALE2_MMAP_KERNEL_AND_MODULES ){
+                k_start = meminfo->memmap[i].base;
+                k_end = k_start + meminfo->memmap[i].length;
+            }
+
             kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",
                 (void*)meminfo->memmap[i].base, (void*)(meminfo->memmap[i].base + meminfo->memmap[i].length)
             );

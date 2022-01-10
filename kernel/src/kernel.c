@@ -25,11 +25,8 @@
 
 #include "fs/tmpfs.h"
 
-//extern u64 k_start;
-//extern u64 k_end;
-
-u64 k_start;
-u64 k_end;
+extern u64 k_start;
+extern u64 k_end;
 
 extern void load_pagedir(PageTable *);
 extern void invalidate_tlb();
@@ -88,6 +85,21 @@ static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
     .framebuffer_bpp    = 0
 };
  
+
+static struct stivale2_struct_tag_smp smp_hdr_tag = {
+    // All tags need to begin with an identifier and a pointer to the next tag.
+    .tag = {
+        // Identification constant defined in stivale2.h and the specification.
+        .identifier = STIVALE2_HEADER_TAG_SMP_ID,
+        // If next is 0, it marks the end of the linked list of header tags.
+        .next = (uint64_t)&framebuffer_hdr_tag
+    },
+    // The terminal header tag possesses a flags field, leave it as 0 for now
+    // as it is unused.
+    
+};
+
+
 // The stivale2 specification says we need to define a "header structure".
 // This structure needs to reside in the .stivale2hdr ELF section in order
 // for the bootloader to find it. We use this __attribute__ directive to
@@ -115,7 +127,7 @@ static struct stivale2_header stivale_hdr = {
     .flags = (1 << 1) | (0 << 2) | (0 << 3) | (1 << 4),
     // This header structure is the root of the linked list of header tags and
     // points to the first one in the linked list.
-    .tags = (uintptr_t)&framebuffer_hdr_tag
+    .tags = (uintptr_t)&smp_hdr_tag
 };
  
 // We will now write a helper function which will allow us to scan for tags
@@ -152,11 +164,11 @@ __attribute__ ((aligned(0x1000))) void userspace_func(){
 void hang(){
     for (;;) { asm ("hlt"); }
 }
+
 void _start(struct stivale2_struct * boot_info) {
 
     gdt_init();
     serial_init();                      /* init debugging */
-    
     
 
     //struct stivale_module * module = (struct stivale_module *)boot_info->modules;
@@ -171,40 +183,38 @@ void _start(struct stivale2_struct * boot_info) {
     //kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
-    struct stivale2_struct_tag_pmrs * meminfo = 
-        stivale2_get_tag(boot_info, 0x2187f79e8612de07);
+    struct stivale2_struct_tag_memmap * meminfo = 
+        stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 
-    /* reads memory map and initializes memory manager 
-     *
-     * Also sets k_start and k_end globals
-     *
-     * */
+
     pmm_init(meminfo);                
-    
 
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[_start]   Kernel start: 0x%x\n", k_start);
     kprintf("[_start]   Kernel end: 0x%x\n", k_end);
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
-    cli();
-    hang();
 
     //screen_init(boot_info);
     pit_init(1000);
 
     idt_init();
-
     enable_sce();
+    
+    struct stivale2_struct_tag_smp * smp_tag = 
+        stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
+
+    smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
+
+    cli();
 
     //cli();
 	//multitasking_init();
     //sti();
 
-    PageTable * pt = vmm_create_user_proc_pml4();
-    load_pagedir(pt);
-
-    to_userspace(&userspace_func, (void*)&user_stack[4095]);
+    //PageTable * pt = vmm_create_user_proc_pml4();
+    //load_pagedir(pt);
+    //to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     //RSDPDescriptor * rsdp = (RSDPDescriptor *) boot_info->rsdp; 
     //smp_init(rsdp);
