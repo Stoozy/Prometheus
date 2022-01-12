@@ -134,18 +134,15 @@ PageTable * vmm_create_user_proc_pml4(void * stack){
     int uflags =  PAGE_READ_WRITE | PAGE_USER | PAGE_PRESENT;
 
     /* map some user pages */
-    for(u64 addr = 0; addr <  1024*PAGE_SIZE; addr+=PAGE_SIZE){
-        //vmm_map(pml4, (void*)addr, (void*)addr, uflags);
+    for(u64 addr = 0; addr <  1024*PAGE_SIZE; addr+=PAGE_SIZE)
         vmm_map(pml4, (void*)addr, (void*)addr, uflags);
-    }
 
     /* map kernel */
     //int kflags = PAGE_READ_WRITE | PAGE_PRESENT;
-    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE){
-        vmm_map(pml4, (void*)addr, (void*)addr, uflags);
-    }
+    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, uflags);
 
-    vmm_map(pml4, stack-0x1000, stack-0x1000, uflags);
+    //vmm_map(pml4, stack-0x1000, stack-0x1000, uflags);
 
     return pml4;
 }

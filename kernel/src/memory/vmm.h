@@ -12,7 +12,6 @@ enum {
     PAGE_USER = 1 << 2, // same as 4, binary 100
 };
 
-
 typedef struct {
     u64 pml4i;
     u64 pml3i;
