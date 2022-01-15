@@ -65,3 +65,9 @@ void gdt_init(){
     load_gdt(&gdt_ptr);
 }
 
+void gdt_reload(){
+    
+    struct table_ptr gdt_ptr = { sizeof(gdt_table)-1, (u64)&gdt_table };
+    load_gdt(&gdt_ptr);
+}
+

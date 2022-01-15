@@ -6,8 +6,8 @@ global load_tss
 load_gdt:
     lgdt [rdi]      ; load GDT, rdi (1st argument) contains the gdt_ptr
 
-    mov ax, 0x30    ; TSS segment is 0x30
-    ltr ax          ; load TSS
+    ;mov ax, 0x30    ; TSS segment is 0x30
+    ;ltr ax          ; load TSS
 
 
     mov ax, 0x10    ; kernel data segment is 0x10

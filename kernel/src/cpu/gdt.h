@@ -9,5 +9,6 @@ struct table_ptr {
 
 
 void gdt_init();
+void gdt_reload();
 
 

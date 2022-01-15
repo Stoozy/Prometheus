@@ -9,6 +9,8 @@
 #include "../drivers/pit.h"
 #include "../string.h"
 #include "../config.h"
+#include "../cpu/gdt.h"
+#include "../cpu/idt.h"
 
 #include "../memory/pmm.h"
 
@@ -51,7 +53,10 @@ static size_t alive_cpus = 1; // BSP already running
 void ap_startup(){
     __asm__ volatile ("cli");
     // increment alive cpus
-    LOCKED_INC(alive_cpus);
+    //LOCKED_INC(alive_cpus);
+    
+    gdt_reload();
+
     for(;;);
 }
 
@@ -72,8 +77,9 @@ kprintf("[SMP]  Booting core with LAPIC ID : #%llu\n", smp_tag->smp_info[i].lapi
         }
     }
 
-    while(LOCKED_READ(alive_cpus) != smp_tag->cpu_count);
+    //while(LOCKED_READ(alive_cpus) != smp_tag->cpu_count);
     // success!
     kprintf("[SMP]  All cpus are alive and running!\n");
 
+    for(;;);
 }

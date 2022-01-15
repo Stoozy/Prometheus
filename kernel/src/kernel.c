@@ -185,7 +185,7 @@ void _start(struct stivale2_struct * boot_info) {
         stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
 
     cli();
-    //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
+    smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
 	multitasking_init();
     //sti();
