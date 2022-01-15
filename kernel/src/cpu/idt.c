@@ -32,7 +32,7 @@ void irq0_handler(Registers regs) {
     tick();
     outb(0x20, 0x20); /* EOI */
 
-    //schedule(&regs);
+    schedule(&regs);
 }
 
 void irq1_handler() {
@@ -231,7 +231,3 @@ void idt_init(){
     kprintf("[IDT]  Initialized IDT!\n");
 
 }
-
-
-
-

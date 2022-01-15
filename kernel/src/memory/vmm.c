@@ -142,7 +142,7 @@ PageTable * vmm_create_user_proc_pml4(void * stack){
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, uflags);
 
-    //vmm_map(pml4, stack-0x1000, stack-0x1000, uflags);
+    vmm_map(pml4, stack-0x1000, stack-0x1000, uflags);
 
     return pml4;
 }

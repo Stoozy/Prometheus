@@ -143,7 +143,7 @@ __attribute__ ((aligned(0x1000))) void userspace_func(){
 }
 
 void hang(){
-    for (;;) { asm ("hlt"); }
+    for (;;);
 }
 
 void _start(struct stivale2_struct * boot_info) {
@@ -187,16 +187,16 @@ void _start(struct stivale2_struct * boot_info) {
     cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-	//multitasking_init();
+	multitasking_init();
     //sti();
 
-    PageTable * pt = vmm_create_user_proc_pml4();
-    load_pagedir(pt);
-    to_userspace(&userspace_func, (void*)&user_stack[4095]);
+    //PageTable * pt = vmm_create_user_proc_pml4();
+    //load_pagedir(pt);
+    //to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     
     // We're done, just hang...
-    hang();
+    //hang();
 }
 
 

@@ -19,12 +19,21 @@ global irq14
 global irq15
 global dummy_irq 
 
-
 %macro pushaq 	0
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
+
     push rbp
     push rbx
     push rsi
     push rdi
+    
 %endmacro
 
 %macro popaq	0
@@ -32,6 +41,15 @@ global dummy_irq
     pop rsi    
     pop rbx    
     pop rbp    
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop r11
+    pop r10
+    pop r9
+    pop r8
 %endmacro
 
 extern irq0_handler
