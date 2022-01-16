@@ -5,9 +5,9 @@
 #include "../memory/vmm.h"
 
 enum TaskState {
-    CREATED,
-	RUNNING,
     READY,
+	RUNNING,
+    ZOMBIE
 };
 
 typedef struct process_control_block {

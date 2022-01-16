@@ -3,10 +3,10 @@
 
 typedef unsigned long long caddr_t;
 
-void sys_exit();
+int sys_exit();
 
 int sys_close(int file);
-char ** environ; /* pointer to array of char * strings that define the current environment variables */
+//char ** environ; /* pointer to array of char * strings that define the current environment variables */
 int sys_execve(char *name, char **argv, char **env);
 int sys_fork();
 int sys_fstat(int file, struct stat *st);
@@ -26,3 +26,5 @@ int sys_wait(int *status);
 int sys_write(int file, char *ptr, int len);
 int sys_gettimeofday(struct timeval *p, struct timezone *z);
 
+void syscall_dispatcher();
+void sys_init();

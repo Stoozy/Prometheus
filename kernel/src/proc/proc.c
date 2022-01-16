@@ -4,10 +4,12 @@
 #include "../kprintf.h"
 #include "../kmalloc.h"
 #include "../string/string.h"
+#include "../sys/syscalls.h"
 
 volatile ProcessControlBlock * gp_process_queue;
 volatile ProcessControlBlock * gp_current_process;
 
+volatile u64 id_counter = 0;
 extern void switch_to_process(void * new_stack, PageTable * cr3);
 extern void switch_to_user_proc( void * instruction_ptr, void * stack);
 extern void load_pagedir();
@@ -16,26 +18,21 @@ extern u64  g_ticks;
 volatile u64 g_procs;
 
 void _kill(void){
-    // remove pcb from list
-    // free pcb and allocated memory by elf loader
-    // return?
+    
+#ifdef SCHEDULER_DEBUG
+    kprintf("[SCHEDULER]    Killing process with PID %d\n", gp_current_process->pid);
+    for(;;);
+#endif
 
-    ProcessControlBlock * next_to_current = gp_current_process;
-    ProcessControlBlock * current_pcb = gp_process_queue;
-
-    // relink the nodes
-    while(current_pcb->next != gp_current_process)
-        current_pcb = current_pcb->next;
-    current_pcb->next = next_to_current;
-
-    kfree(gp_current_process);
+    // scheduler takes care of killing zombies
+    gp_current_process->state = ZOMBIE;
 }
 
 
 void task_a(){ 
-    for(;;){
-        kprintf("Running task A...\n");
-    }
+    __asm__ __volatile__("movq $0, %rax;\n\t\
+            syscall\n\t");
+    for(;;) kprintf("RUNNING TASK A");
 }
 
 void task_b(){ 
@@ -90,13 +87,51 @@ void dump_regs(void * stack){
     kprintf("[SCHEDULER]    CS: 0x%x\n", regs->cs);
 }
 
+void kill_zombies(){
+    // no procs
+    if(g_procs == 0) return;
+
+    ProcessControlBlock * current_pcb = gp_process_queue;
+    while(current_pcb->next != NULL){
+        ProcessControlBlock * next_pcb = current_pcb->next;
+        if(next_pcb->state == ZOMBIE){
+            // first relink
+            
+            if(next_pcb->next != NULL)
+                current_pcb->next = next_pcb->next;
+            else current_pcb->next = NULL;
+
+#ifdef SCHEDULER_DEBUG
+            kprintf("[SCHEDULER]    Proc with PID: %d was killed.\n");
+            cli();
+            for(;;);
+#endif
+            // now free memory
+            pmm_free_block((u64)next_pcb->cr3);
+            pmm_free_block((u64)next_pcb->p_stack);
+
+            --g_procs;
+        }
+
+        current_pcb = current_pcb->next;
+    }
+
+
+}
+
 void schedule(Registers * regs){
 
 #ifdef SCHEDULER_DEBUG
     dump_regs(regs);
     kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif 
-    
+
+    // not enough procs or not time to switch yet
+    if(g_procs == 0 || g_procs == 1 || g_ticks % SMP_TIMESLICE != 0) 
+        return;
+
+    kill_zombies();
+
     // save current proc 
     gp_current_process->p_stack = (void*)regs->rsp;
 
@@ -122,11 +157,7 @@ void schedule(Registers * regs){
     *--stack = regs->rdi; // rdi
 
     gp_current_process->p_stack = stack;
-
     
-    // not enough procs or not time to switch yet
-    if(g_procs == 0 || g_ticks % SMP_TIMESLICE != 0) 
-        return;
 
     if(gp_current_process->next == NULL) {
         gp_current_process = gp_process_queue; // go to head
@@ -148,7 +179,9 @@ void schedule(Registers * regs){
 
     // finally, switch
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+
 }
+
 
 ProcessControlBlock * create_process(void (*entry)(void)){
     // TODO: need allocator
@@ -158,6 +191,7 @@ ProcessControlBlock * create_process(void (*entry)(void)){
     memset(pcb, 0, sizeof(ProcessControlBlock));
 
     pcb->p_stack = pmm_alloc_block()+0x1000;
+    pcb->pid = ++id_counter;
 
 	u64 * stack = (u64 *)(pcb->p_stack);
     PageTable * pml4 = vmm_create_user_proc_pml4(stack);
@@ -185,6 +219,7 @@ ProcessControlBlock * create_process(void (*entry)(void)){
 	*--stack = 0; // rsi
 	*--stack = 0; // rdi
 
+    pcb->state = READY;
     pcb->p_stack = stack;
     pcb->cr3 = pml4; 
     pcb->next = NULL;
@@ -229,7 +264,6 @@ void multitasking_init(){
     register_process(create_process(idle_task));
     register_process(create_process(task_a));
     register_process(create_process(task_b));
-    register_process(create_process(task_c));
     gp_current_process = gp_process_queue;
 
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);

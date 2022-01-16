@@ -24,6 +24,7 @@
 
 #include "fs/tmpfs.h"
 #include "stivale2.h"
+#include "sys/syscalls.h"
 
 extern u64 k_start;
 extern u64 k_end;
@@ -179,14 +180,17 @@ void _start(struct stivale2_struct * boot_info) {
     pit_init(1000);
 
     idt_init();
+
+
     enable_sce();
     
     struct stivale2_struct_tag_smp * smp_tag = 
         stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
 
     cli();
-    smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
+    //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
+    sys_init();
 	multitasking_init();
     //sti();
 
