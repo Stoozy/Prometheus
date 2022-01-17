@@ -1,5 +1,4 @@
-#ifndef _CPU_H
-#define _CPU_H 1
+#pragma once
 
 #include "../typedefs.h"
 
@@ -25,4 +24,14 @@ typedef struct  {
     u64 ss;
 } __attribute__((packed)) Registers;
 
-#endif 
+typedef struct {
+    u64 * syscall_stack;
+    u64 saved_proc_stack;
+    // space for other things in the future
+} __attribute__((packed)) CpuData;
+
+
+void cpu_init(u8);
+CpuData * get_cpu_struct(u8);
+void dump_regs(Registers * );
+

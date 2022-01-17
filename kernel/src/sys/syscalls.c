@@ -3,6 +3,20 @@
 #include "../fs/vfs.h"
 #include <stdint.h>
 #include "../kprintf.h"
+#include "../cpu/cpu.h"
+#include "../kmalloc.h"
+#include "../memory/pmm.h"
+
+static inline uint64_t rdmsr(uint64_t msr)
+{
+	uint32_t low, high;
+	asm volatile (
+		"rdmsr"
+		: "=a"(low), "=d"(high)
+		: "c"(msr)
+	);
+	return ((uint64_t)high << 32) | low;
+}
 
 static inline void wrmsr(uint64_t msr, uint64_t value)
 {
@@ -21,12 +35,9 @@ char * __env = {0};
 /* pointer to array of char * strings that define the current environment variables */
 char **environ = &__env; 
 
-int sys_exit(){
-    asm volatile ("cli");
-    for(;;) kprintf("SYS EXIT WAS CALLED \n");
-    _kill(); 
-    asm volatile ("sti");
-    return 0;
+int sys_exit(int exit_code){
+    //_kill(); 
+    return exit_code;
 }
 
 int sys_close(int file){
@@ -45,25 +56,42 @@ int sys_fork(){
     return -1; 
 }
 
-void * syscalls[] = {
+volatile void * syscalls[] = {
     &sys_exit,
     &sys_close,
     &sys_execve,
     &sys_fork,
 };
 
-void syscall_dispatcher(){
+void syscall_dispatcher(Registers regs){
+    dump_regs(&regs);
+    for(;;);
 
-    register long long syscall_index __asm__ ("rax");
+    u64 syscall = regs.rsi;
 
-    void (*func)() = syscalls[syscall_index];
-    (*func)();
+    //u64 return_addr = regs.rip;
+    //u64 rcx = 0;
 
+    switch(syscall){
+        case 0:
+            sys_exit(regs.r8);
+            break;
+        default:
+            break;
+    }
 }
 
 void sys_init(){
-    void * syscall_entry = &syscall_dispatcher;
-    wrmsr(0xc0000082, (u64)syscall_entry);
+    // only using bsp for now
+    CpuData * data = get_cpu_struct(0);
+
+    wrmsr(EFER, rdmsr(EFER) | 1); // enable syscall
+    wrmsr(GSBASE, (u64)data); //  GSBase
+    wrmsr(KGSBASE, (u64)data); // KernelGSBase
+
+    extern void syscall_entry();     // syscall_entry.asm
+    wrmsr(LSTAR, (u64)&syscall_entry);
+
 }
 
 

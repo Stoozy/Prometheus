@@ -2,12 +2,16 @@
 #include "proc.h"
 #include "../memory/pmm.h"
 #include "../kprintf.h"
+#include "../cpu/cpu.h"
 #include "../kmalloc.h"
 #include "../string/string.h"
 #include "../sys/syscalls.h"
+#include "../cpu/cpu.h"
 
-volatile ProcessControlBlock * gp_process_queue;
-volatile ProcessControlBlock * gp_current_process;
+
+volatile ProcessControlBlock * gp_process_queue = NULL;
+volatile ProcessControlBlock * gp_current_process = NULL;
+volatile u64 g_procs = 0;
 
 volatile u64 id_counter = 0;
 extern void switch_to_process(void * new_stack, PageTable * cr3);
@@ -15,24 +19,30 @@ extern void switch_to_user_proc( void * instruction_ptr, void * stack);
 extern void load_pagedir();
 extern u64  g_ticks;
 
-volatile u64 g_procs;
+
+CpuData * cpu_data;
 
 void _kill(void){
     
 #ifdef SCHEDULER_DEBUG
     kprintf("[SCHEDULER]    Killing process with PID %d\n", gp_current_process->pid);
-    for(;;);
 #endif
-
     // scheduler takes care of killing zombies
     gp_current_process->state = ZOMBIE;
 }
 
-
 void task_a(){ 
-    __asm__ __volatile__("movq $0, %rax;\n\t\
-            syscall\n\t");
-    for(;;) kprintf("RUNNING TASK A");
+    u64 syscall_return = 0;
+
+    asm volatile(
+        "pushq %%r11\n"
+        "pushq %%rcx\n"
+        "syscall\n"
+        "popq %%rcx \n"
+        "popq %%r11 \n"
+        : "=a"(syscall_return)
+        : "a"(0)
+        : "memory");
 }
 
 void task_b(){ 
@@ -46,10 +56,10 @@ void task_c(){
         kprintf("Running task C...\n");
 
 }
-void idle_task(){ 
-    for(;;){
-        kprintf("Idling...\n");
-    }
+void cleaner(){ 
+    for(;;)
+        kprintf("Running cleaner ...\n");
+
 }
 
 void dump_list(){
@@ -64,28 +74,7 @@ void dump_list(){
     kprintf(" NULL\n");
 }
 
-void dump_regs(void * stack){
-    Registers * regs = (Registers*) stack;
-    kprintf("[SCHEDULER]    RIP: 0x%x\n", regs->rip);
-    kprintf("[SCHEDULER]    RSP: 0x%x\n", regs->rsp);
-    kprintf("[SCHEDULER]    RBP: 0x%x\n", regs->rbp);
-    kprintf("[SCHEDULER]    RBX: 0x%x\n", regs->rbx);
-    kprintf("[SCHEDULER]    RSI: 0x%x\n", regs->rsi);
-    kprintf("[SCHEDULER]    RDI: 0x%x\n", regs->rdi);
 
-    kprintf("[SCHEDULER]    R8: 0x%x\n", regs->r8);
-    kprintf("[SCHEDULER]    R9: 0x%x\n", regs->r9);
-    kprintf("[SCHEDULER]    R10: 0x%x\n", regs->r10);
-    kprintf("[SCHEDULER]    R11: 0x%x\n", regs->r11);
-    kprintf("[SCHEDULER]    R12: 0x%x\n", regs->r12);
-    kprintf("[SCHEDULER]    R13: 0x%x\n", regs->r13);
-    kprintf("[SCHEDULER]    R14: 0x%x\n", regs->r14);
-    kprintf("[SCHEDULER]    R15: 0x%x\n", regs->r15);
-
-    kprintf("[SCHEDULER]    RFLAGS: 0x%x\n", regs->rflags);
-    kprintf("[SCHEDULER]    SS: 0x%x\n", regs->ss);
-    kprintf("[SCHEDULER]    CS: 0x%x\n", regs->cs);
-}
 
 void kill_zombies(){
     // no procs
@@ -121,16 +110,19 @@ void kill_zombies(){
 
 void schedule(Registers * regs){
 
+    CpuData * cpu_data = get_cpu_struct(0);
+    cpu_data->saved_proc_stack = regs->rsp;
+
 #ifdef SCHEDULER_DEBUG
     dump_regs(regs);
     kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif 
 
+    kill_zombies();
+
     // not enough procs or not time to switch yet
     if(g_procs == 0 || g_procs == 1 || g_ticks % SMP_TIMESLICE != 0) 
         return;
-
-    kill_zombies();
 
     // save current proc 
     gp_current_process->p_stack = (void*)regs->rsp;
@@ -156,15 +148,16 @@ void schedule(Registers * regs){
     *--stack = regs->rsi; // rsi
     *--stack = regs->rdi; // rdi
 
-    gp_current_process->p_stack = stack;
     
+    cpu_data = get_cpu_struct(0);
+    cpu_data->saved_proc_stack = (u64)stack;
 
     if(gp_current_process->next == NULL) {
         gp_current_process = gp_process_queue; // go to head
 
 #ifdef SCHEDULER_DEBUG
         kprintf("[SCHEDULER] Switching to head:\n");
-        dump_regs(gp_current_process->p_stack);
+        dump_regs((Registers*)gp_current_process->p_stack);
 #endif
 
     } else if (gp_current_process->next != NULL){
@@ -172,7 +165,7 @@ void schedule(Registers * regs){
         gp_current_process = gp_current_process->next;
 #ifdef SCHEDULER_DEBUG
         kprintf("[SCHEDULER] Switching to next: \n");
-        dump_regs(gp_current_process->p_stack);
+        dump_regs((Registers*)gp_current_process->p_stack);
 #endif
 
     }
@@ -183,7 +176,52 @@ void schedule(Registers * regs){
 }
 
 
-ProcessControlBlock * create_process(void (*entry)(void)){
+ProcessControlBlock * create_kernel_process(void (*entry)(void)){
+    // TODO: need allocator
+    ProcessControlBlock * pcb = pmm_alloc_block();
+        /*kmalloc(sizeof(ProcessControlBlock));*/
+
+    memset(pcb, 0, sizeof(ProcessControlBlock));
+
+    pcb->p_stack = pmm_alloc_block()+0x1000;
+    pcb->pid = ++id_counter;
+
+	u64 * stack = (u64 *)(pcb->p_stack);
+    PageTable * pml4 = vmm_create_user_proc_pml4(stack);
+
+    // user proc
+	*--stack = 0x10; // ss
+	*--stack = (u64)pcb->p_stack; // rsp
+	*--stack = 0x202 ; // rflags
+	*--stack = 0x8; // cs
+	*--stack = (u64)entry; // rip
+
+    *--stack = 0; // r8
+    *--stack = 0;
+    *--stack = 0; 
+    *--stack = 0; // ...
+    *--stack = 0; 
+    *--stack = 0;
+    *--stack = 0;
+    *--stack = 0; // r15
+
+
+	*--stack = (u64)pcb->p_stack; // rbp
+
+	*--stack = 0; // rdx
+	*--stack = 0; // rsi
+	*--stack = 0; // rdi
+
+    pcb->state = READY;
+    pcb->p_stack = stack;
+    pcb->cr3 = pml4; 
+    pcb->next = NULL;
+
+    return pcb; 
+
+}
+
+ProcessControlBlock * create_user_process(void (*entry)(void)){
     // TODO: need allocator
     ProcessControlBlock * pcb = pmm_alloc_block();
         /*kmalloc(sizeof(ProcessControlBlock));*/
@@ -256,14 +294,10 @@ void register_process(ProcessControlBlock * new_pcb){
 }
 
 void multitasking_init(){
-    gp_process_queue = NULL;
-    gp_current_process = NULL;
 
-    g_procs = 0;
-
-    register_process(create_process(idle_task));
-    register_process(create_process(task_a));
-    register_process(create_process(task_b));
+    register_process(create_kernel_process(cleaner));
+    register_process(create_user_process(task_a));
+    register_process(create_user_process(task_b));
     gp_current_process = gp_process_queue;
 
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
