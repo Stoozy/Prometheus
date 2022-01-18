@@ -1,8 +1,12 @@
+*.o
+*.elf
 *.iso
 *.img
 *.log
 *.swp
 *.swo
+1
+'~'
 .vscode
 .vscode/*.*
 limine
