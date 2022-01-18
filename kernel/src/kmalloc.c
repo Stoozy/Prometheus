@@ -4,21 +4,28 @@
 #include "memory/pmm.h"
 #include "string/string.h"
 
-int   liballoc_lock(){
-    asm volatile ("cli");
+extern void acquire_lock(volatile u32*);
+extern void release_lock(volatile u32*);
+
+volatile u32 lock = 0;   // initiallly free
+
+int liballoc_lock(){
+    acquire_lock(&lock);
     return 0;
 }
 
-int   liballoc_unlock(){
-    asm volatile ("sti");
+int liballoc_unlock(){
+    release_lock(&lock);
     return 0;
 }
 
-void* liballoc_alloc(int pages){
+void * liballoc_alloc(int pages){
     return pmm_alloc_blocks(pages);
 }
 
-int   liballoc_free(void* addr,int blocks){
-    pmm_free_blocks((u64)addr, blocks);
+int   liballoc_free(void* addr, int blocks){
+    if(blocks == 1)
+        pmm_free_block((u64)addr);
+    else pmm_free_blocks((u64)addr, blocks);
     return 0;
 }

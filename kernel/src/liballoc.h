@@ -81,13 +81,8 @@ extern void* liballoc_alloc(int);
  */
 extern int liballoc_free(void*,int);
 
-       
 
-void     * kmalloc(size_t);				//< The standard function.
-void     * krealloc(void *, size_t);		//< The standard function.
-void     * kcalloc(size_t, size_t);		//< The standard function.
-void      kfree(void *);					//< The standard function.
-
+#include "kmalloc.h" // declarations
 
 #ifdef __cplusplus
 }

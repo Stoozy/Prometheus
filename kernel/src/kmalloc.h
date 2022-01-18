@@ -1,9 +1,9 @@
+
 #include <stddef.h>
-#include "typedefs.h"
 
-#ifndef _KMALLOC_H
-#define _KMALLOC_H 1 
+void     * kmalloc(size_t);				//< The standard function.
+void     * krealloc(void *, size_t);		//< The standard function.
+void     * kcalloc(size_t, size_t);		//< The standard function.
+void      kfree(void *);					//< The standard function.
 
-#include "liballoc.h"
 
-#endif
