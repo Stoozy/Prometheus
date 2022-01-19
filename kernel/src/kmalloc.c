@@ -35,6 +35,7 @@ void * liballoc_alloc(int pages){
     for(u64 page = 0; page<pages; ++page){
         void * current_addr = addr + page * PAGE_SIZE;
         vmm_map(cr3, current_addr, current_addr, PAGE_PRESENT | PAGE_READ_WRITE);
+        kprintf("[ALLCOATOR]    Identity mapping 0x%llx\n", current_addr);
         asm volatile ("invlpg %0" : :"m"(current_addr));
     }
 
