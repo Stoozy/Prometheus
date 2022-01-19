@@ -190,7 +190,7 @@ void _start(struct stivale2_struct * boot_info) {
 
 
     //sys_init();
-	//multitasking_init();
+	multitasking_init();
     //sti();
 
     //PageTable * pt = vmm_create_user_proc_pml4();

@@ -1,5 +1,5 @@
 #include "keyboard.h"
-#include <kprintf.h>
+#include "src/kprintf.h"
 
 u8 kbdus[128] =
 {

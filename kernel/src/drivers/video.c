@@ -1,6 +1,6 @@
 #include "../misc/ssfn.h"
 #include "../typedefs.h"
-#include "../stivale.h"
+#include "../stivale2.h"
 #include "video.h"
 #include "../string/string.h"
 #include "../kmalloc.h"
@@ -12,13 +12,13 @@ static volatile u32 * gp_backbuffer;
 static struct stivale_struct * gp_vbe_info;
 
 
-void screen_init(struct stivale_struct * boot_info){
-    gp_vbe_info =  boot_info;
+void screen_init(struct stivale2_struct * boot_info){
+    //gp_vbe_info =  boot_info;
 
-    g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_height
-        * (gp_vbe_info->framebuffer_bpp/8);
+    //g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_height
+    //    * (gp_vbe_info->framebuffer_bpp/8);
 
-    gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
+    //gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
     //gp_backbuffer  = (u32*) kmalloc(g_fb_size);
 
     //memset((void*)boot_info->framebuffer_addr, 0xff, g_fb_size);
@@ -29,10 +29,10 @@ void screen_init(struct stivale_struct * boot_info){
 
 void draw_pixel(int x, int y, int color){
 
-    if(x < 0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
+    //if(x < 0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
 
-    // invalid input
-    gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
+    //// invalid input
+    //gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
 
 } // draw_pixel
 

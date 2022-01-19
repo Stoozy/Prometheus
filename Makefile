@@ -18,19 +18,17 @@ limine:
 	git clone https://github.com/limine-bootloader/limine.git --branch=v2.0-branch-binary --depth=1
 	make -C limine
 
-kernel/src/dead_kernel.elf:
-	$(MAKE) -C kernel/src
+kernel/dead_kernel.elf:
+	$(MAKE) -C kernel
 
 libc:
 	mkdir $(SYSROOT)
-	#$(MAKE) -C build-newlib/
-	#$(MAKE) -C build-newlib/ DESTDIR=../$(SYSROOT) install
 
 
-$(ISO_IMAGE): limine kernel/src/dead_kernel.elf
+$(ISO_IMAGE): limine kernel/dead_kernel.elf
 	rm -rf iso_root
 	mkdir -p iso_root
-	cp kernel/src/dead_kernel.elf \
+	cp kernel/dead_kernel.elf \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin modules/unscii-16.sfn modules/test-elf/a.out modules/tmpfs.tar iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
@@ -43,5 +41,4 @@ $(ISO_IMAGE): limine kernel/src/dead_kernel.elf
 clean:
 	rm -f $(ISO_IMAGE) 
 	rm -rf $(SYSROOT)
-	$(MAKE) -C kernel/src clean
-	#$(MAKE) -C build-newlib/ clean
+	$(MAKE) -C kernel clean

@@ -32,17 +32,18 @@ void _kill(void){
 }
 
 void task_a(){ 
-    u64 syscall_return = 0;
-
-    asm volatile(
-        "pushq %%r11\n"
-        "pushq %%rcx\n"
-        "syscall\n"
-        "popq %%rcx \n"
-        "popq %%r11 \n"
-        : "=a"(syscall_return)
-        : "a"(0)
-        : "memory");
+    for(;;)
+        kprintf("Running task A...\n");
+    //u64 syscall_return = 0;
+    //asm volatile(
+    //    "pushq %%r11\n"
+    //    "pushq %%rcx\n"
+    //    "syscall\n"
+    //    "popq %%rcx \n"
+    //    "popq %%r11 \n"
+    //    : "=a"(syscall_return)
+    //    : "a"(0)
+    //    : "memory");
 }
 
 void task_b(){ 
@@ -178,8 +179,8 @@ void schedule(Registers * regs){
 
 ProcessControlBlock * create_kernel_process(void (*entry)(void)){
     // TODO: need allocator
-    ProcessControlBlock * pcb = pmm_alloc_block();
-        /*kmalloc(sizeof(ProcessControlBlock));*/
+    ProcessControlBlock * pcb =  (ProcessControlBlock*)kmalloc(sizeof(ProcessControlBlock));
+        //kmalloc(sizeof(ProcessControlBlock));
 
     memset(pcb, 0, sizeof(ProcessControlBlock));
 
@@ -223,12 +224,12 @@ ProcessControlBlock * create_kernel_process(void (*entry)(void)){
 
 ProcessControlBlock * create_user_process(void (*entry)(void)){
     // TODO: need allocator
-    ProcessControlBlock * pcb = pmm_alloc_block();
-        /*kmalloc(sizeof(ProcessControlBlock));*/
+    ProcessControlBlock * pcb = (ProcessControlBlock*)kmalloc(sizeof(ProcessControlBlock));
+        //kmalloc(sizeof(ProcessControlBlock));
 
     memset(pcb, 0, sizeof(ProcessControlBlock));
 
-    pcb->p_stack = pmm_alloc_block()+0x1000;
+    pcb->p_stack = pmm_alloc_block();
     pcb->pid = ++id_counter;
 
 	u64 * stack = (u64 *)(pcb->p_stack);

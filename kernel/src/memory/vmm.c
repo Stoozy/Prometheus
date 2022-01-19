@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include "../string/string.h"
 
-#include "../stivale.h"
+#include "../kmalloc.h"
+#include "../stivale2.h"
 #include "vmm.h"
 #include "pmm.h"
 

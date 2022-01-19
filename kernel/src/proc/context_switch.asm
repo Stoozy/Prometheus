@@ -20,8 +20,6 @@ global switch_to_process
     pop r8
 %endmacro
 
-
-
 switch_to_process:
     ; Load new callee-saved registers
     mov rsp, rdi
