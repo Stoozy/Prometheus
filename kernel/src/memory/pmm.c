@@ -78,7 +78,6 @@ void pmm_init_region(void * addr, u64 size){
 static int pmm_get_first_free(){
     for(; last_checked_block<total_blocks; last_checked_block++){
         // check if frame index is free
-        //if(!(check_bit((u8*)&mmap[last_checked_block/8], (u8)last_checked_block%8))){
         if(!is_block_used(last_checked_block)){
             last_checked_block++;
             return last_checked_block-1;

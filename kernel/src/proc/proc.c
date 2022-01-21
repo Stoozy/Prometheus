@@ -11,6 +11,7 @@
 
 volatile ProcessControlBlock * gp_process_queue = NULL;
 volatile ProcessControlBlock * gp_current_process = NULL;
+volatile PageTable * kernel_cr3 = NULL;
 volatile u64 g_procs = 0;
 
 volatile u64 id_counter = 0;
@@ -20,7 +21,6 @@ extern void load_pagedir();
 extern u64  g_ticks;
 
 
-CpuData * cpu_data;
 
 void _kill(void){
     
@@ -82,6 +82,7 @@ void kill_zombies(){
     if(g_procs == 0) return;
 
     ProcessControlBlock * current_pcb = gp_process_queue;
+
     while(current_pcb->next != NULL){
         ProcessControlBlock * next_pcb = current_pcb->next;
         if(next_pcb->state == ZOMBIE){
@@ -110,6 +111,8 @@ void kill_zombies(){
 }
 
 void schedule(Registers * regs){
+    if(kernel_cr3 != NULL)
+        load_pagedir(kernel_cr3);
 
     CpuData * cpu_data = get_cpu_struct(0);
     cpu_data->saved_proc_stack = regs->rsp;
@@ -119,7 +122,7 @@ void schedule(Registers * regs){
     kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif 
 
-    kill_zombies();
+    //kill_zombies();
 
     // not enough procs or not time to switch yet
     if(g_procs == 0 || g_procs == 1 || g_ticks % SMP_TIMESLICE != 0) 
@@ -190,6 +193,10 @@ ProcessControlBlock * create_kernel_process(void (*entry)(void)){
 	u64 * stack = (u64 *)(pcb->p_stack);
     PageTable * pml4 = vmm_create_user_proc_pml4(stack);
 
+    // map stack
+    vmm_map(pml4, stack, stack, PAGE_READ_WRITE | PAGE_PRESENT);
+    vmm_map(pml4, stack + 0x1000, stack + 0x1000, PAGE_READ_WRITE | PAGE_PRESENT);
+
     // user proc
 	*--stack = 0x10; // ss
 	*--stack = (u64)pcb->p_stack; // rsp
@@ -234,6 +241,10 @@ ProcessControlBlock * create_user_process(void (*entry)(void)){
 
 	u64 * stack = (u64 *)(pcb->p_stack);
     PageTable * pml4 = vmm_create_user_proc_pml4(stack);
+
+    // map stack
+    vmm_map(pml4, stack, stack, PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT);
+    vmm_map(pml4, stack+0x1000, stack+0x1000, PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT);
 
     // user proc
 	*--stack = 0x23; // ss
@@ -296,11 +307,15 @@ void register_process(ProcessControlBlock * new_pcb){
 
 void multitasking_init(){
 
-    register_process(create_kernel_process(cleaner));
     register_process(create_user_process(task_a));
     register_process(create_user_process(task_b));
+    register_process(create_kernel_process(cleaner));
     gp_current_process = gp_process_queue;
 
+    //kernel_cr3 = vmm_create_kernel_proc_pml4();
+
+
+    // finally jump
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
     asm volatile ("sti");
 }

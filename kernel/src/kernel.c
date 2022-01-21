@@ -181,20 +181,23 @@ void _start(struct stivale2_struct * boot_info) {
 
     idt_init();
 
-    struct stivale2_struct_tag_smp * smp_tag = 
-        stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
+    //vmm_map(vmm_get_current_cr3(), 0xdead000, 0xdead000, PAGE_READ_WRITE | PAGE_PRESENT);
 
-    cpu_init(0);
+
+    //struct stivale2_struct_tag_smp * smp_tag = 
+        //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
+
+    //cpu_init(0);
     cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
 
     //sys_init();
-	multitasking_init();
     //sti();
 
-    //PageTable * pt = vmm_create_user_proc_pml4();
-    //load_pagedir(pt);
+	multitasking_init();
+
+
     //to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     

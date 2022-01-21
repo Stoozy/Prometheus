@@ -68,33 +68,5 @@ void gdt_init(){
 
     struct table_ptr gdt_ptr = { sizeof(gdt_table)-1, (u64)&gdt_table };
     load_gdt(&gdt_ptr);
-    load_tss();
-}
-
-void gdt_reload(){
-
-    GdtTable * gdt = (GdtTable*)pmm_alloc_block();
-
-    *gdt = gdt_table;
-
-    Tss * tss =  (Tss*) pmm_alloc_block();
-    u64 tss_base = (u64)tss;
-
-    memset(tss, 0x0, sizeof(Tss));
-    tss->rsp0 = (u64)pmm_alloc_block();
-
-    gdt->tss_low.base15_0 = tss_base & 0xffff;
-    gdt->tss_low.base23_16 = (tss_base >> 16) & 0xff;
-    gdt->tss_low.base31_24 = (tss_base >> 24) & 0xff;
-    gdt->tss_low.limit15_0 = sizeof(Tss);
-
-    gdt->tss_high.limit15_0 = (tss_base >> 32) & 0xffff;
-    gdt->tss_high.base15_0 = (tss_base >> 48) & 0xffff;
-
-
-    struct table_ptr gdt_ptr = {sizeof(GdtTable) -1, (u64)gdt };
-    load_gdt(&gdt_ptr);
-
-    load_tss();
 }
 

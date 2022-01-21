@@ -40,9 +40,10 @@ typedef struct {
 
 void *      vmm_virt_to_phys(PageTable * cr3, void * virt_addr);
 PageIndex   vmm_get_page_index(u64 vaddr);
-i32         vmm_init(struct stivale_struct *);
 i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical, int flags);
 PageTable * vmm_create_user_proc_pml4();
+PageTable * vmm_create_kernel_proc_pml4();
 PageTable * vmm_get_current_cr3();
+void        vmm_init();
 
 #endif 

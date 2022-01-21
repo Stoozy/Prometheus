@@ -127,6 +127,23 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
 } /* vmm_map */
 
 
+PageTable * vmm_create_kernel_proc_pml4(void * stack_top){
+    PageTable * pml4 = pmm_alloc_block();
+
+    memset(pml4, 0x0, PAGE_SIZE);
+
+    int kflags =  PAGE_READ_WRITE | PAGE_PRESENT;
+
+    /* map kernel only */
+    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
+
+    void * stack = stack_top-0x1000;
+    vmm_map(pml4, stack, stack, kflags);
+
+    return pml4;
+}
+
 PageTable * vmm_create_user_proc_pml4(void * stack_top){
     PageTable * pml4 = pmm_alloc_block();
 
@@ -155,4 +172,5 @@ PageTable * vmm_get_current_cr3(){
     asm volatile (" mov %%cr3, %0" : "=r"(current_cr3));
     return current_cr3;
 }
+
 

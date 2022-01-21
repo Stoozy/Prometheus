@@ -1,13 +1,11 @@
-
 #include <stdint.h>
 
 #include "smp.h"
 #include "io.h" 
 
-#include "../string.h"
 #include "../kprintf.h"
 #include "../drivers/pit.h"
-#include "../string.h"
+#include "../string/string.h"
 #include "../config.h"
 #include "../cpu/gdt.h"
 #include "../cpu/idt.h"
@@ -55,7 +53,6 @@ void ap_startup(){
     // increment alive cpus
     LOCKED_INC(alive_cpus);
     
-    gdt_reload();
 
     for(;;);
 }
