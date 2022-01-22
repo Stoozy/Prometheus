@@ -7,8 +7,7 @@
 #include "../kmalloc.h"
 #include "../memory/pmm.h"
 
-static inline uint64_t rdmsr(uint64_t msr)
-{
+static inline uint64_t rdmsr(uint64_t msr){
 	uint32_t low, high;
 	asm volatile (
 		"rdmsr"
@@ -18,8 +17,7 @@ static inline uint64_t rdmsr(uint64_t msr)
 	return ((uint64_t)high << 32) | low;
 }
 
-static inline void wrmsr(uint64_t msr, uint64_t value)
-{
+static inline void wrmsr(uint64_t msr, uint64_t value){
 	uint32_t low = value & 0xFFFFFFFF;
 	uint32_t high = value >> 32;
 	asm volatile (
@@ -36,7 +34,7 @@ char * __env = {0};
 char **environ = &__env; 
 
 int sys_exit(int exit_code){
-    //_kill(); 
+    _kill(); 
     return exit_code;
 }
 
@@ -82,12 +80,12 @@ void syscall_dispatcher(Registers regs){
 }
 
 void sys_init(){
-    // only using bsp for now
-    CpuData * data = get_cpu_struct(0);
+    
+    LocalCpuData * lcd = get_cpu_struct(0);
 
     wrmsr(EFER, rdmsr(EFER) | 1); // enable syscall
-    wrmsr(GSBASE, (u64)data); //  GSBase
-    wrmsr(KGSBASE, (u64)data); // KernelGSBase
+    wrmsr(GSBASE, (u64)lcd); //  GSBase
+    wrmsr(KGSBASE, (u64)lcd); // KernelGSBase
 
     extern void syscall_entry();     // syscall_entry.asm
     wrmsr(LSTAR, (u64)&syscall_entry);

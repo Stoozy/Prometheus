@@ -3,11 +3,12 @@
 #include "../typedefs.h"
 
 typedef struct  {
-	u64 rdi;
-    u64 rsi;   
-    u64 rbx;   
-    u64 rbp;   
-
+    u64 rdi;    
+    u64 rsi;    
+    u64 rax;
+    u64 rbx;    
+    u64 rcx;    
+    u64 rbp;    
     u64 r15;
     u64 r14;
     u64 r13;
@@ -17,6 +18,7 @@ typedef struct  {
     u64 r9;
     u64 r8;
 
+
     u64 rip;
     u64 cs;
     u64 rflags;
@@ -25,13 +27,14 @@ typedef struct  {
 } __attribute__((packed)) Registers;
 
 typedef struct {
-    u64 * syscall_stack;
-    u64 saved_proc_stack;
-    // space for other things in the future
-} __attribute__((packed)) CpuData;
+    u64 * syscall_kernel_stack;
+    u64 * syscall_user_stack;
+
+    Registers regs;
+} __attribute__((packed)) LocalCpuData;
 
 
 void cpu_init(u8);
-CpuData * get_cpu_struct(u8);
+LocalCpuData * get_cpu_struct(u8);
 void dump_regs(Registers * );
 

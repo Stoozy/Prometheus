@@ -171,7 +171,6 @@ void _start(struct stivale2_struct * boot_info) {
 
     pmm_init(meminfo);                
 
-
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[_start]   Kernel start: 0x%x\n", k_start);
     kprintf("[_start]   Kernel end: 0x%x\n", k_end);
@@ -188,18 +187,13 @@ void _start(struct stivale2_struct * boot_info) {
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
 
-    //cpu_init(0);
     cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
 
-    //sys_init();
-    //sti();
-
+    sys_init();
 	multitasking_init();
 
-
-    //to_userspace(&userspace_func, (void*)&user_stack[4095]);
 
     
     // We're done, just hang...

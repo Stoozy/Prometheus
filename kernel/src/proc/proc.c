@@ -33,15 +33,16 @@ void _kill(void){
 
 
 void task_a(){ 
-    for(;;){
+    for(;;)
         kprintf("Running task A...\n");
-    }
 }
 
 void task_b(){ 
-    for(;;){
-        kprintf("Running task B...\n");
-    }
+    for(;;)
+        kprintf("Running task A...\n");
+
+    //asm volatile("mov $0, %rdi\n\t\
+                syscall");
 }
 
 void task_c(){ 
@@ -93,6 +94,14 @@ void save_context(volatile ProcessControlBlock * proc, Registers * regs){
     *--stack = regs->rdi; // rdi
 
     proc->p_stack = stack;
+    
+    // TODO: this should use actual processor ids
+    // update LocalCpuData
+    LocalCpuData * lcd = get_cpu_struct(0); 
+
+    lcd->regs = *regs;
+    lcd->syscall_user_stack = stack;
+
     return;
 }
 
