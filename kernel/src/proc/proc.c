@@ -28,7 +28,7 @@ void _kill(void){
         current_pcb = current_pcb->next;
     current_pcb->next = next_to_current;
 
-    kfree(gp_current_process);
+    //kfree(gp_current_process);
 }
 
 
@@ -67,42 +67,13 @@ void dump_list(){
     kprintf(" NULL\n");
 }
 
-//void dump_regs(Registers * stack){
-//    //Registers * regs = (Registers*) stack;
-//    kprintf("[SCHEDULER]    RIP: 0x%x\n", regs->rip);
-//    kprintf("[SCHEDULER]    RSP: 0x%x\n", regs->rsp);
-//    kprintf("[SCHEDULER]    RBP: 0x%x\n", regs->rbp);
-//    kprintf("[SCHEDULER]    RBX: 0x%x\n", regs->rbx);
-//    kprintf("[SCHEDULER]    RSI: 0x%x\n", regs->rsi);
-//    kprintf("[SCHEDULER]    RDI: 0x%x\n", regs->rdi);
-//
-//    kprintf("[SCHEDULER]    R8: 0x%x\n", regs->r8);
-//    kprintf("[SCHEDULER]    R9: 0x%x\n", regs->r9);
-//    kprintf("[SCHEDULER]    R10: 0x%x\n", regs->r10);
-//    kprintf("[SCHEDULER]    R11: 0x%x\n", regs->r11);
-//    kprintf("[SCHEDULER]    R12: 0x%x\n", regs->r12);
-//    kprintf("[SCHEDULER]    R13: 0x%x\n", regs->r13);
-//    kprintf("[SCHEDULER]    R14: 0x%x\n", regs->r14);
-//    kprintf("[SCHEDULER]    R15: 0x%x\n", regs->r15);
-//
-//    kprintf("[SCHEDULER]    RFLAGS: 0x%x\n", regs->rflags);
-//    kprintf("[SCHEDULER]    SS: 0x%x\n", regs->ss);
-//    kprintf("[SCHEDULER]    CS: 0x%x\n", regs->cs);
-//}
+void save_context(volatile ProcessControlBlock * proc, Registers * regs){
 
-void schedule(Registers * regs){
+    proc->p_stack = (void*)regs->rsp;
 
-#ifdef SCHEDULER_DEBUG
-    dump_regs(regs);
-    kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
-#endif 
-    
-    // save current proc 
-    gp_current_process->p_stack = (void*)regs->rsp;
-
-    u64 * stack = gp_current_process->p_stack;
+    u64 * stack = proc->p_stack;
     *--stack = regs->ss; // ss
-    *--stack = (u64)gp_current_process->p_stack; // rsp
+    *--stack = (u64)proc->p_stack; // rsp
     *--stack = regs->rflags ; // rflags
     *--stack = regs->cs; // cs
     *--stack = (u64)regs->rip; // rip
@@ -121,8 +92,20 @@ void schedule(Registers * regs){
     *--stack = regs->rsi; // rsi
     *--stack = regs->rdi; // rdi
 
-    gp_current_process->p_stack = stack;
+    proc->p_stack = stack;
+    return;
+}
 
+
+void schedule(Registers * regs){
+
+#ifdef SCHEDULER_DEBUG
+    dump_regs(regs);
+    kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
+#endif 
+    
+    // save current proc 
+    save_context(gp_current_process, regs);
     
     // not enough procs or not time to switch yet
     if(g_procs == 0 || g_ticks % SMP_TIMESLICE != 0) 
