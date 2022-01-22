@@ -60,7 +60,7 @@ u8 load_elf_64(u8 * elf){
      */
 
     void (* entrypoint)(void) = (void*)elf64->e_entry;
-    ProcessControlBlock * elf_pcb = create_user_process(entrypoint);
+    ProcessControlBlock * elf_pcb = create_process(entrypoint);
 
     register_process(elf_pcb);
 #ifdef SMP_DEBUG
@@ -102,7 +102,7 @@ u8 load_elf_32(u8 * elf){
      */
 
     void (* entrypoint)(void) = (void*) elf32->e_entry;
-    ProcessControlBlock * elf_pcb = create_user_process(entrypoint);
+    ProcessControlBlock * elf_pcb = create_process(entrypoint);
 
     register_process(elf_pcb);
 #ifdef SMP_DEBUG

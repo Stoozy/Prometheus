@@ -1,7 +1,4 @@
 global load_gdt
-global gdt_flush
-;global load_tss
-
 
 load_gdt:
     lgdt [rdi]      ; load GDT, rdi (1st argument) contains the gdt_ptr
@@ -26,6 +23,5 @@ load_gdt:
     o64 retf        ; do a far return, like a normal return but
                     ; pop an extra argument of the stack
                     ; and load it into CS
-;load_tss:
 
 

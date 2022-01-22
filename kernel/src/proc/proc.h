@@ -27,8 +27,7 @@ void _kill(void);
 void dump_list();
 void schedule();
 
-ProcessControlBlock * create_user_process(void (void));
-ProcessControlBlock * create_kernel_process(void (void));
+ProcessControlBlock * create_process(void (void));
 void register_process(ProcessControlBlock *);
 
 #endif

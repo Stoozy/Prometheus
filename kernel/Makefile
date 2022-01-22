@@ -27,7 +27,7 @@ INTERNALCFLAGS  :=       \
 	-mno-3dnow           \
 	-mno-sse             \
 	-mno-sse2            \
-	-mno-red-zone		\
+	-mno-red-zone		 \
 	-mcmodel=large
 
 CFILES := $(shell find ./ -type f -name '*.c')

@@ -37,6 +37,7 @@ extern void gdt_init();
 volatile u8 stack[4096];
 volatile u8 user_stack[4096];
 
+
 static struct stivale2_header_tag_terminal terminal_hdr_tag = {
     // All tags need to begin with an identifier and a pointer to the next tag.
     .tag = {
