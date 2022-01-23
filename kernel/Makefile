@@ -4,7 +4,7 @@ CC=gcc
 NASM=nasm 
 AS=as
 
-CFLAGS = -g -Wall -Wextra -O2 -pipe 
+CFLAGS = -g -Wall -Wextra -O0 -pipe 
 
 INTERNALLDFLAGS := \
 	-Wl,-static,--no-dynamic-linker,-ztext \

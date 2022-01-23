@@ -39,18 +39,18 @@ volatile u8 user_stack[4096];
 
 
 
-static struct stivale2_header_tag_terminal terminal_hdr_tag = {
-    // All tags need to begin with an identifier and a pointer to the next tag.
-    .tag = {
-        // Identification constant defined in stivale2.h and the specification.
-        .identifier = STIVALE2_HEADER_TAG_TERMINAL_ID,
-        // If next is 0, it marks the end of the linked list of header tags.
-        .next = 0
-    },
-    // The terminal header tag possesses a flags field, leave it as 0 for now
-    // as it is unused.
-    .flags = 0
-};
+//static struct stivale2_header_tag_terminal terminal_hdr_tag = {
+//    // All tags need to begin with an identifier and a pointer to the next tag.
+//    .tag = {
+//        // Identification constant defined in stivale2.h and the specification.
+//        .identifier = STIVALE2_HEADER_TAG_TERMINAL_ID,
+//        // If next is 0, it marks the end of the linked list of header tags.
+//        .next = 0
+//    },
+//    // The terminal header tag possesses a flags field, leave it as 0 for now
+//    // as it is unused.
+//    .flags = 0
+//};
  
 // We are now going to define a framebuffer header tag.
 // This tag tells the bootloader that we want a graphical framebuffer instead
@@ -62,7 +62,7 @@ static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
         .identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
         // Instead of 0, we now point to the previous header tag. The order in
         // which header tags are linked does not matter.
-        .next = (uint64_t)&terminal_hdr_tag
+        .next = (uint64_t)0
     },
     // We set all the framebuffer specifics to 0 as we want the bootloader
     // to pick the best it can.
@@ -184,14 +184,25 @@ void _start(struct stivale2_struct * boot_info) {
             kprintf("[_start]   Module end: %llx\n", module.end);
             kprintf("\n");
         }
-
     }
 
-    //screen_init(boot_info);
     pit_init(1000);
     idt_init();
-
     
+    struct stivale2_struct_tag_framebuffer * framebuffer_tag = 
+        stivale2_get_tag(boot_info,  STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
+
+    if(framebuffer_tag == NULL){
+        kprintf("[_start]   No framebuffer found. Exiting.\n");
+        hang();
+    }else{
+        kprintf("[_start]   Framebuffer found!\n");
+        kprintf("[_start]   Framebuffer addr: 0x%llx\n", framebuffer_tag->framebuffer_addr);
+        kprintf("[_start]   Framebuffer bpp: %d\n", framebuffer_tag->framebuffer_bpp);
+        kprintf("[_start]   Framebuffer height: %d\n", framebuffer_tag->framebuffer_height);
+        kprintf("[_start]   Framebuffer width: %d\n", framebuffer_tag->framebuffer_width);
+        screen_init(framebuffer_tag);
+    }
 
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
@@ -199,9 +210,8 @@ void _start(struct stivale2_struct * boot_info) {
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-
-    //sys_init();
-	//multitasking_init();
+    sys_init();
+	multitasking_init();
 
     // We're done, just hang...
     hang();

@@ -7,6 +7,7 @@
 #include "../stivale2.h"
 #include "vmm.h"
 #include "pmm.h"
+#include "../drivers/video.h"
 
 #define PAGING_KERNEL_OFFSET        0xffffffff80000000
 #define PAGING_VIRTUAL_OFFSET       0xffff800000000000
@@ -155,8 +156,15 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
     for(u64 addr = 0; addr <  1024*PAGE_SIZE; addr+=PAGE_SIZE)
         vmm_map(pml4, (void*)addr, (void*)addr, uflags);
 
-    /* map kernel as user accessible*/
-    //int kflags = PAGE_READ_WRITE | PAGE_PRESENT;
+
+    /* map framebuffer */
+    for(u64 addr = (u64)get_framebuffer_addr(); 
+        addr < ((u64)get_framebuffer_addr()+get_framebuffer_size()); addr+=0x1000){
+        //kprintf("[VMM] Mapping framebuffer physical address: %llx to virtual address: %llx\n", addr, addr+PAGING_VIRTUAL_OFFSET);
+        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
+    }
+
+    /* map kernel as user accessible for now*/
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, uflags);
 

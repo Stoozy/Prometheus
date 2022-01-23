@@ -1,9 +1,10 @@
-ISO_IMAGE = disk.iso
+ISO_IMAGE=disk.iso
 SYSROOT=sysroot
+TMPFS_MODULE=modules/tmpfs.tar
 
 .PHONY: clean all run
 
-all: $(ISO_IMAGE)
+all: $(ISO_IMAGE) $(TMPFS_MODULE)
 
 monitor: $(ISO_IMAGE)
 	qemu-system-x86_64  -smp cores=2 -monitor stdio -vga std -machine q35 -no-reboot -d int -M smm=off -no-shutdown -m 8G -cdrom $(ISO_IMAGE)
@@ -24,12 +25,16 @@ kernel/dead_kernel.elf:
 libc:
 	mkdir $(SYSROOT)
 
+tmpfs: 
+	tar -cvf tmpfs.tar modules/tmpfs
+	mv tmpfs.tar $(TMPFS_MODULE)
 
-$(ISO_IMAGE): limine kernel/dead_kernel.elf
+
+$(ISO_IMAGE): limine kernel/dead_kernel.elf tmpfs
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp kernel/dead_kernel.elf \
-		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin modules/unscii-16.sfn modules/test-elf/a.out modules/tmpfs.tar iso_root/
+		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin modules/tmpfs.tar iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		--efi-boot limine-eltorito-efi.bin \
@@ -41,4 +46,5 @@ $(ISO_IMAGE): limine kernel/dead_kernel.elf
 clean:
 	rm -f $(ISO_IMAGE) 
 	rm -rf $(SYSROOT)
+	rm -rf $(TMPFS_MODULE) 
 	$(MAKE) -C kernel clean

@@ -5,23 +5,23 @@
 #include "../string/string.h"
 #include "../kmalloc.h"
 
-static volatile u64 g_fb_size = 0;
-static volatile u32 * gp_framebuffer;
-static volatile u32 * gp_backbuffer;
 
-static struct stivale_struct * gp_vbe_info;
+static u64 g_fb_size = 0;
+static u32 * gp_framebuffer;
+static u32 * gp_backbuffer; 
+
+static struct stivale2_struct_tag_framebuffer * gp_fb_info;
 
 
-void screen_init(struct stivale2_struct * boot_info){
-    //gp_vbe_info =  boot_info;
+void screen_init(struct stivale2_struct_tag_framebuffer * fb_info){
+    gp_fb_info = fb_info;
 
-    //g_fb_size = gp_vbe_info->framebuffer_width * gp_vbe_info->framebuffer_height
-    //    * (gp_vbe_info->framebuffer_bpp/8);
+    g_fb_size = fb_info->framebuffer_width * fb_info->framebuffer_height
+        * (fb_info->framebuffer_bpp/8);
 
-    //gp_framebuffer = (u32*) gp_vbe_info->framebuffer_addr;
-    //gp_backbuffer  = (u32*) kmalloc(g_fb_size);
 
-    //memset((void*)boot_info->framebuffer_addr, 0xff, g_fb_size);
+    gp_framebuffer = (u32*) fb_info->framebuffer_addr;
+    //gp_backbuffer = (u32*) kmalloc(g_fb_size);
 
 } // screen_init
 
@@ -29,13 +29,12 @@ void screen_init(struct stivale2_struct * boot_info){
 
 void draw_pixel(int x, int y, int color){
 
-    //if(x < 0 || x > gp_vbe_info->framebuffer_width  || y > gp_vbe_info->framebuffer_height || y < 0) return;
+    if(x < 0 || x > gp_fb_info->framebuffer_width  || y > gp_fb_info->framebuffer_height || y < 0) return;
 
     //// invalid input
-    //gp_framebuffer[x+y*gp_vbe_info->framebuffer_width] = color & 0xffffff;
+    //gp_framebuffer[x+y*gp_fb_info->framebuffer_width] = color & 0xffffff;
 
 } // draw_pixel
-
 
 
 void draw_line(int x1, int y1, int x2, int y2, int color){
@@ -116,10 +115,20 @@ void draw_rect(int x, int y, int w, int h, int color){
 
 }// draw_rect
 
+
 void refresh_screen_proc(){
     while(1){
-        // Refresh screen here
+        memset(gp_framebuffer, 0xff, g_fb_size);
     }
 } // refresh_screen_proc
+
+
+u32 * get_framebuffer_addr(){
+    return gp_framebuffer;
+}
+
+u64 get_framebuffer_size(){
+    return g_fb_size;
+}
 
 

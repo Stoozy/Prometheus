@@ -4,6 +4,7 @@
 #include "../kprintf.h"
 #include "../kmalloc.h"
 #include "../string/string.h"
+#include "../drivers//video.h"
 
 volatile ProcessControlBlock * gp_process_queue;
 volatile ProcessControlBlock * gp_current_process;
@@ -235,9 +236,9 @@ void multitasking_init(){
     g_procs = 0;
 
     register_process(create_process(idle_task));
-    //register_process(create_process(task_a));
     register_process(create_process(task_b));
-    //register_process(create_process(task_c));
+
+    register_process(create_process(refresh_screen_proc));
     gp_current_process = gp_process_queue;
 
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
