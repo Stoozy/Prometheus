@@ -28,4 +28,4 @@ typedef struct {
     u8      filename_prefix[155];
 } UstarNode;
 
-Mount * init_tmpfs(u8*);
+Mount * tmpfs_init(u8*);

@@ -41,3 +41,4 @@ int     vfs_close(int fd);
 int     vfs_read();
 int     vfs_write();
 
+void vfs_set_root_mount(Mount *);

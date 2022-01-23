@@ -29,10 +29,10 @@ void screen_init(struct stivale2_struct_tag_framebuffer * fb_info){
 
 void draw_pixel(int x, int y, int color){
 
+    //// invalid input
     if(x < 0 || x > gp_fb_info->framebuffer_width  || y > gp_fb_info->framebuffer_height || y < 0) return;
 
-    //// invalid input
-    //gp_framebuffer[x+y*gp_fb_info->framebuffer_width] = color & 0xffffff;
+    gp_framebuffer[x+y*gp_fb_info->framebuffer_width] = color & 0xffffff;
 
 } // draw_pixel
 
@@ -115,10 +115,22 @@ void draw_rect(int x, int y, int w, int h, int color){
 
 }// draw_rect
 
+void draw_fill_rect(int x, int y, int w, int h, int color){
+    for(int cy=y; cy<y+h; ++cy)
+        for(int cx=x; cx<cx+w; ++cx)
+            draw_pixel(cx, cy, color);
+}
+
 
 void refresh_screen_proc(){
+    //draw_fill_rect(100, 100, 100, 100, 0xff0000);
+    //draw_fill_rect(200, 100, 100, 100, 0x00ff00);
+    //draw_fill_rect(300, 100, 100, 100, 0x0000ff);
+    //draw_line(0, 384, 1024, 384, 0xffffff);
+    //draw_line(512, 0, 512, 1024, 0xffffff);
+
+    memset(gp_framebuffer, 0xff, g_fb_size);
     while(1){
-        memset(gp_framebuffer, 0xff, g_fb_size);
     }
 } // refresh_screen_proc
 

@@ -165,6 +165,10 @@ void _start(struct stivale2_struct * boot_info) {
 
     pmm_init(meminfo);                
 
+    pit_init(1000);
+    idt_init();
+    
+
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[_start]   Kernel start: 0x%x\n", k_start);
     kprintf("[_start]   Kernel end: 0x%x\n", k_end);
@@ -183,12 +187,16 @@ void _start(struct stivale2_struct * boot_info) {
             kprintf("[_start]   Module start: %llx\n", module.begin);
             kprintf("[_start]   Module end: %llx\n", module.end);
             kprintf("\n");
+            if(strcmp(module.string, "INITRAMFS") == 0){
+                kprintf("[_start]   Found INITRAMFS, initializing!\n");
+                Mount * tmpfs = tmpfs_init((u8*)module.begin);
+                u8 * ptr = (u8*)pmm_alloc_block(); 
+                tmpfs->read(2, module.begin, "modules/tmpfs/testfile", ptr);
+                //vfs_set_root_mount(tmpfs);
+            }
         }
     }
 
-    pit_init(1000);
-    idt_init();
-    
     struct stivale2_struct_tag_framebuffer * framebuffer_tag = 
         stivale2_get_tag(boot_info,  STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
@@ -201,8 +209,9 @@ void _start(struct stivale2_struct * boot_info) {
         kprintf("[_start]   Framebuffer bpp: %d\n", framebuffer_tag->framebuffer_bpp);
         kprintf("[_start]   Framebuffer height: %d\n", framebuffer_tag->framebuffer_height);
         kprintf("[_start]   Framebuffer width: %d\n", framebuffer_tag->framebuffer_width);
-        screen_init(framebuffer_tag);
+        //screen_init(framebuffer_tag);
     }
+
 
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
@@ -210,8 +219,8 @@ void _start(struct stivale2_struct * boot_info) {
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    sys_init();
-	multitasking_init();
+    //sys_init();
+	//multitasking_init();
 
     // We're done, just hang...
     hang();

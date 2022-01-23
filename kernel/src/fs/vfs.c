@@ -1,5 +1,6 @@
 #include "vfs.h"
 
+static Mount * root;
 
 VfsNode * vfs_node_from_path(const char * path, ...){
     // TODO
@@ -45,3 +46,6 @@ int vfs_write(VfsNode * node, char * buffer)
     else return 0;
 }
 
+void vfs_set_root_mount(Mount * m){
+    root = m;
+}

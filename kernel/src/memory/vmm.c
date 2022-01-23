@@ -159,10 +159,8 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
 
     /* map framebuffer */
     for(u64 addr = (u64)get_framebuffer_addr(); 
-        addr < ((u64)get_framebuffer_addr()+get_framebuffer_size()); addr+=0x1000){
-        //kprintf("[VMM] Mapping framebuffer physical address: %llx to virtual address: %llx\n", addr, addr+PAGING_VIRTUAL_OFFSET);
+        addr < ((u64)get_framebuffer_addr()+get_framebuffer_size()); addr+=0x1000)
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
-    }
 
     /* map kernel as user accessible for now*/
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)

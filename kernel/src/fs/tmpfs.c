@@ -56,10 +56,11 @@ int ustar_read(int argc,  ...){
 #ifdef TMPFS_DEBUG
     if(filesize == 0)
         kprintf("%s doesn't exist\n", path);
-
-    kprintf("Read file %s; Contents:\n", path);
-    kprintf("%s\n", *data_ptr);
-#endif
+    else{
+        kprintf("Read file %s; Contents:\n", path);
+        kprintf("%s\n", *data_ptr);
+    }
+    #endif
 
     //memcpy(buffer, *data_ptr, filesize);
 
@@ -103,7 +104,7 @@ int ustar_open(int argc, ...){
 
 
 
-Mount * init_tmpfs(u8 * tmpfs){
+Mount * tmpfs_init(u8 * tmpfs){
     gp_ustar_fs->read = &ustar_read;
 
     /*
