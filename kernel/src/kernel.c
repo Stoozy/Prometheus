@@ -38,6 +38,7 @@ volatile u8 stack[4096];
 volatile u8 user_stack[4096];
 
 
+
 static struct stivale2_header_tag_terminal terminal_hdr_tag = {
     // All tags need to begin with an identifier and a pointer to the next tag.
     .tag = {
@@ -153,17 +154,10 @@ void _start(struct stivale2_struct * boot_info) {
     gdt_init();
     serial_init();                      /* init debugging */
     
-
-    //struct stivale_module * module = (struct stivale_module *)boot_info->modules;
-    //ssfn_src = (ssfn_font_t*)module->begin;                    /* the bitmap font to use */
     
     kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
     kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
 
-    //u64 module_size =  module->end - module->begin;
-    //kprintf("[_start]   Modules begin at 0x%x\n", module->begin);
-    //kprintf("[_start]   Module name : %s\n", module->string);
-    //kprintf("[_start]   Module size: %lu bytes\n", module_size);
     kprintf("\n");
 
     struct stivale2_struct_tag_memmap * meminfo = 
@@ -176,13 +170,28 @@ void _start(struct stivale2_struct * boot_info) {
     kprintf("[_start]   Kernel end: 0x%x\n", k_end);
     kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
+    struct stivale2_struct_tag_modules * modules_tag = stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
+    if(modules_tag == NULL){
+        kprintf("[_start]   No modules found. Exiting.\n");
+        hang();
+    }else{
+        u64 num_modules = modules_tag->module_count;
+        kprintf("[_start]   Found %d modules\n", num_modules);
+        for(u64 m = 0; m< num_modules; ++m){
+            struct stivale2_module module = modules_tag->modules[m];
+            kprintf("[_start]   Module name: %s\n", module.string);
+            kprintf("[_start]   Module start: %llx\n", module.begin);
+            kprintf("[_start]   Module end: %llx\n", module.end);
+            kprintf("\n");
+        }
+
+    }
+
     //screen_init(boot_info);
     pit_init(1000);
-
     idt_init();
 
-    //vmm_map(vmm_get_current_cr3(), 0xdead000, 0xdead000, PAGE_READ_WRITE | PAGE_PRESENT);
-
+    
 
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
@@ -191,8 +200,8 @@ void _start(struct stivale2_struct * boot_info) {
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
 
-    sys_init();
-	multitasking_init();
+    //sys_init();
+	//multitasking_init();
 
     // We're done, just hang...
     hang();
