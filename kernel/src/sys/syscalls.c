@@ -1,7 +1,8 @@
+#include <stdint.h>
+
 #include "syscalls.h"
 #include "../proc/proc.h"
 #include "../fs/vfs.h"
-#include <stdint.h>
 #include "../kprintf.h"
 #include "../cpu/cpu.h"
 #include "../kmalloc.h"
@@ -34,7 +35,7 @@ char * __env = {0};
 char **environ = &__env; 
 
 int sys_exit(int exit_code){
-    _kill(); 
+    kill_current_proc();
     return exit_code;
 }
 
@@ -63,14 +64,10 @@ volatile void * syscalls[] = {
 
 void syscall_dispatcher(Registers regs){
     dump_regs(&regs);
-    for(;;);
 
     u64 syscall = regs.rsi;
 
-    //u64 return_addr = regs.rip;
-    //u64 rcx = 0;
-
-    switch(syscall){
+     switch(syscall){
         case 0:
             sys_exit(regs.r8);
             break;
@@ -80,13 +77,18 @@ void syscall_dispatcher(Registers regs){
 }
 
 void sys_init(){
-    
+    cpu_init(0);
     LocalCpuData * lcd = get_cpu_struct(0);
 
     wrmsr(EFER, rdmsr(EFER) | 1); // enable syscall
+
+    extern void enable_sce();
+    enable_sce();
+
     wrmsr(GSBASE, (u64)lcd); //  GSBase
     wrmsr(KGSBASE, (u64)lcd); // KernelGSBase
-
+    wrmsr(SFMASK, (u64)0); // KernelGSBase
+    
     extern void syscall_entry();     // syscall_entry.asm
     wrmsr(LSTAR, (u64)&syscall_entry);
 

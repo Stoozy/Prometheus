@@ -15,7 +15,6 @@ typedef struct process_control_block {
     char name[256];
     void * p_stack;
 	PageTable * cr3;	
-
     enum TaskState state;
 
 	struct process_control_block * next;	
@@ -23,7 +22,7 @@ typedef struct process_control_block {
 
 
 void multitasking_init();
-void _kill(void);
+void kill_current_proc(void);
 void dump_list();
 void schedule();
 

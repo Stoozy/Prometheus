@@ -15,22 +15,31 @@ extern u64  g_ticks;
 
 volatile u64 g_procs;
 
-void _kill(void){
-    // remove pcb from list
-    // free pcb and allocated memory by elf loader
-    // return?
 
-    ProcessControlBlock * next_to_current = gp_current_process;
-    ProcessControlBlock * current_pcb = gp_process_queue;
+void kill_proc(ProcessControlBlock * proc){
+    ProcessControlBlock * pcb = gp_process_queue;
 
-    // relink the nodes
-    while(current_pcb->next != gp_current_process)
-        current_pcb = current_pcb->next;
-    current_pcb->next = next_to_current;
+    while(pcb->next != gp_current_process)
+        pcb = pcb->next;
 
-    //kfree(gp_current_process);
+    // pcb->next now points to gp_current_process
+    
+    ProcessControlBlock * node_to_remove = pcb->next;
+
+    // skip a node, and relink
+    pcb->next = gp_current_process->next;
+
+    // free memory
+    pmm_free_block((u64)node_to_remove->p_stack); 
+    pmm_free_block((u64)node_to_remove);
+
+    // decrease global number of procs
+    --g_procs;
 }
 
+void kill_current_proc(void){
+    kill_proc(gp_current_process);
+}
 
 void task_a(){ 
     for(;;)
@@ -38,11 +47,14 @@ void task_a(){
 }
 
 void task_b(){ 
-    for(;;)
-        kprintf("Running task A...\n");
+    //for(;;)
+        //kprintf("Running task B...\n");
 
-    //asm volatile("mov $0, %rdi\n\t\
+    asm volatile("mov $0, %rdi\n\t\
                 syscall");
+    
+    for(;;) kprintf("Running task B...\n");
+
 }
 
 void task_c(){ 
@@ -137,9 +149,13 @@ void schedule(Registers * regs){
 #endif
 
     }
+    if(gp_current_process->state == ZOMBIE){
+        
+    }
 
     // finally, switch
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+
 }
 
 ProcessControlBlock * create_process(void (*entry)(void)){
@@ -219,9 +235,9 @@ void multitasking_init(){
     g_procs = 0;
 
     register_process(create_process(idle_task));
-    register_process(create_process(task_a));
+    //register_process(create_process(task_a));
     register_process(create_process(task_b));
-    register_process(create_process(task_c));
+    //register_process(create_process(task_c));
     gp_current_process = gp_process_queue;
 
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);

@@ -126,6 +126,7 @@ void dummy_handler(){
     outb(0x20, 0x20); /* EOI */
 }
 
+
 void idt_init(){
 
     //kprintf("Initializing IDT\n");
@@ -226,8 +227,9 @@ void idt_init(){
     kprintf("[IDT]  IDT address: 0x%x\n", &idt[0]);
 
     __asm__ volatile ("lidt %0" :: "memory"(idt_ptr));
-    __asm__ volatile ("sti");
+    //__asm__ volatile ("sti");
 
     kprintf("[IDT]  Initialized IDT!\n");
 
+    return;
 }
