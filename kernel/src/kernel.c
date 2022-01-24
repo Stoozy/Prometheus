@@ -191,7 +191,7 @@ void _start(struct stivale2_struct * boot_info) {
                 kprintf("[_start]   Found INITRAMFS, initializing!\n");
                 Mount * tmpfs = tmpfs_init((u8*)module.begin);
                 u8 * ptr = (u8*)pmm_alloc_block(); 
-                tmpfs->read(2, module.begin, "modules/tmpfs/testfile", ptr);
+                //tmpfs->read(2, module.begin, "modules/tmpfs/testfile", ptr);
                 //vfs_set_root_mount(tmpfs);
             }
         }
@@ -200,8 +200,7 @@ void _start(struct stivale2_struct * boot_info) {
     struct stivale2_struct_tag_framebuffer * framebuffer_tag = 
         stivale2_get_tag(boot_info,  STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
-    if(framebuffer_tag == NULL){
-        kprintf("[_start]   No framebuffer found. Exiting.\n");
+    if(framebuffer_tag == NULL){ kprintf("[_start]   No framebuffer found. Exiting.\n");
         hang();
     }else{
         kprintf("[_start]   Framebuffer found!\n");
@@ -219,8 +218,8 @@ void _start(struct stivale2_struct * boot_info) {
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    //sys_init();
-	//multitasking_init();
+    sys_init();
+	multitasking_init();
 
     // We're done, just hang...
     hang();

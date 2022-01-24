@@ -16,8 +16,10 @@ extern u64  g_ticks;
 
 volatile u64 g_procs;
 
+static PageTable * kernel_cr3;
 
 void kill_proc(ProcessControlBlock * proc){
+    load_pagedir(kernel_cr3);
     ProcessControlBlock * pcb = gp_process_queue;
 
     while(pcb->next != gp_current_process)
@@ -81,6 +83,7 @@ void dump_list(){
     kprintf(" NULL\n");
 }
 
+
 void save_context(volatile ProcessControlBlock * proc, Registers * regs){
 
     proc->p_stack = (void*)regs->rsp;
@@ -115,6 +118,7 @@ void save_context(volatile ProcessControlBlock * proc, Registers * regs){
     lcd->regs = *regs;
     lcd->syscall_user_stack = stack;
 
+
     return;
 }
 
@@ -126,12 +130,18 @@ void schedule(Registers * regs){
     kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif 
     
+
+    load_pagedir(kernel_cr3);
     // save current proc 
     save_context(gp_current_process, regs);
-    
+
     // not enough procs or not time to switch yet
-    if(g_procs == 0 || g_ticks % SMP_TIMESLICE != 0) 
+    if(g_procs == 0){
         return;
+    }else if( g_ticks % SMP_TIMESLICE != 0) {
+        load_pagedir(gp_current_process->cr3);
+        return;
+    }
 
     if(gp_current_process->next == NULL) {
         gp_current_process = gp_process_queue; // go to head
@@ -150,10 +160,10 @@ void schedule(Registers * regs){
 #endif
 
     }
-    if(gp_current_process->state == ZOMBIE){
-        
-    }
 
+
+    //load_pagedir(gp_current_process->cr3);
+    kprintf("[SCHEDULER]    Switching to proc with %llx as cr3\n", gp_current_process->cr3);
     // finally, switch
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
 
@@ -161,8 +171,7 @@ void schedule(Registers * regs){
 
 ProcessControlBlock * create_process(void (*entry)(void)){
     // TODO: need allocator
-    ProcessControlBlock * pcb = pmm_alloc_block();
-        /*kmalloc(sizeof(ProcessControlBlock));*/
+    ProcessControlBlock * pcb = kmalloc(sizeof(ProcessControlBlock));
 
     memset(pcb, 0, sizeof(ProcessControlBlock));
 
@@ -230,17 +239,22 @@ void register_process(ProcessControlBlock * new_pcb){
 }
 
 void multitasking_init(){
+    // save kernel page tables
+    kernel_cr3 = vmm_get_current_cr3();
+
     gp_process_queue = NULL;
     gp_current_process = NULL;
 
     g_procs = 0;
 
     register_process(create_process(idle_task));
+    register_process(create_process(task_a));
     register_process(create_process(task_b));
+    register_process(create_process(task_c));
 
     register_process(create_process(refresh_screen_proc));
     gp_current_process = gp_process_queue;
 
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
-    asm volatile ("sti");
+    //asm volatile ("sti");
 }

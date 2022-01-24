@@ -4,6 +4,7 @@ static Mount * root;
 
 VfsNode * vfs_node_from_path(const char * path, ...){
     // TODO
+
 }
 
 VfsNode * vfs_node_from_fd(int fd){

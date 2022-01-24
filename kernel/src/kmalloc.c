@@ -5,10 +5,14 @@
 #include "memory/vmm.h"
 #include "string/string.h"
 
+#define PAGING_VIRTUAL_OFFSET       0xffff800000000000
+
 extern void acquire_lock(volatile u32*);
 extern void release_lock(volatile u32*);
 
 volatile u32 lock = 0;   // initiallly free
+
+
 
 extern void invalidate_tlb();
 extern void load_pagedir(PageTable *);
@@ -36,7 +40,7 @@ void * liballoc_alloc(int pages){
         void * current_addr = addr + page * PAGE_SIZE;
 
         kprintf("[ALLCOATOR]    Identity mapping 0x%llx\n", current_addr);
-        vmm_map(cr3, current_addr, current_addr,  PAGE_READ_WRITE | PAGE_PRESENT);
+        vmm_map(cr3, current_addr, current_addr-PAGING_VIRTUAL_OFFSET,  PAGE_READ_WRITE | PAGE_PRESENT);
     }
 
     //invalidate_tlb();
