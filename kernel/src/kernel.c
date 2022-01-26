@@ -22,9 +22,10 @@
 #include "proc/proc.h"
 #include "proc/elf.h"
 
-#include "fs/tmpfs.h"
+#include "fs/tarfs.h"
 #include "stivale2.h"
 #include "sys/syscalls.h"
+#include "string/string.h"
 
 extern u64 k_start;
 extern u64 k_end;
@@ -189,8 +190,9 @@ void _start(struct stivale2_struct * boot_info) {
             kprintf("\n");
             if(strcmp(module.string, "INITRAMFS") == 0){
                 kprintf("[_start]   Found INITRAMFS, initializing!\n");
-                Mount * tmpfs = tmpfs_init((u8*)module.begin);
+                VfsNode * tmpfs_mnt = tmpfs_init((u8*)module.begin);
                 u8 * ptr = (u8*)pmm_alloc_block(); 
+    
                 //tmpfs->read(2, module.begin, "modules/tmpfs/testfile", ptr);
                 //vfs_set_root_mount(tmpfs);
             }

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../typedefs.h"
 #include "vfs.h"
 
@@ -28,4 +30,4 @@ typedef struct {
     u8      filename_prefix[155];
 } UstarNode;
 
-Mount * tmpfs_init(u8*);
+VfsNode * tmpfs_init(u8*);

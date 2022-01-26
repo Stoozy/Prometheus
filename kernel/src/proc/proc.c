@@ -1,13 +1,14 @@
 #include "../config.h"
 #include "proc.h"
+#include "../fs/vfs.h"
 #include "../memory/pmm.h"
 #include "../kprintf.h"
 #include "../kmalloc.h"
 #include "../string/string.h"
 #include "../drivers//video.h"
 
-volatile ProcessControlBlock * gp_process_queue;
-volatile ProcessControlBlock * gp_current_process;
+ProcessControlBlock * gp_process_queue;
+ProcessControlBlock * gp_current_process;
 
 extern void switch_to_process(void * new_stack, PageTable * cr3);
 extern void switch_to_user_proc( void * instruction_ptr, void * stack);
@@ -17,6 +18,10 @@ extern u64  g_ticks;
 volatile u64 g_procs;
 
 static PageTable * kernel_cr3;
+
+void map_fd_to_proc(ProcessControlBlock * proc, VfsNode *node){
+
+}
 
 void kill_proc(ProcessControlBlock * proc){
     load_pagedir(kernel_cr3);
@@ -170,7 +175,6 @@ void schedule(Registers * regs){
 }
 
 ProcessControlBlock * create_process(void (*entry)(void)){
-    // TODO: need allocator
     ProcessControlBlock * pcb = kmalloc(sizeof(ProcessControlBlock));
 
     memset(pcb, 0, sizeof(ProcessControlBlock));

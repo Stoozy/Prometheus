@@ -1,8 +1,10 @@
-#ifndef _TASKING_H
-#define _TASKING_H 1
+#pragma once
+
+#include <stdint.h>
 
 #include "../cpu/cpu.h"
 #include "../memory/vmm.h"
+#include "../fs/vfs.h"
 
 enum TaskState {
     READY,
@@ -10,12 +12,18 @@ enum TaskState {
     ZOMBIE
 };
 
+typedef struct fd_table{
+    VfsNode * entries;
+    int length;
+} FdTable;
+
 typedef struct process_control_block {
-    u64 pid;
+    uint64_t pid;
     char name[256];
     void * p_stack;
 	PageTable * cr3;	
     enum TaskState state;
+    FdTable fd_table;
 
 	struct process_control_block * next;	
 } ProcessControlBlock;
@@ -29,4 +37,3 @@ void schedule();
 ProcessControlBlock * create_process(void (void));
 void register_process(ProcessControlBlock *);
 
-#endif
