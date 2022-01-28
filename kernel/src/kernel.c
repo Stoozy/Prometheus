@@ -171,27 +171,26 @@ void _start(struct stivale2_struct * boot_info) {
     
 
     u64 k_size = ((u64)&k_end - (u64)&k_start);
-    kprintf("[_start]   Kernel start: 0x%x\n", k_start);
-    kprintf("[_start]   Kernel end: 0x%x\n", k_end);
-    kprintf("[_start]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
+    kprintf("[MAIN]   Kernel start: 0x%x\n", k_start);
+    kprintf("[MAIN]   Kernel end: 0x%x\n", k_end);
+    kprintf("[MAIN]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
     struct stivale2_struct_tag_modules * modules_tag = stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
     if(modules_tag == NULL){
-        kprintf("[_start]   No modules found. Exiting.\n");
+        kprintf("[MAIN]   No modules found. Exiting.\n");
         hang();
     }else{
         u64 num_modules = modules_tag->module_count;
-        kprintf("[_start]   Found %d modules\n", num_modules);
+        kprintf("[MAIN]   Found %d modules\n", num_modules);
         for(u64 m = 0; m< num_modules; ++m){
             struct stivale2_module module = modules_tag->modules[m];
-            kprintf("[_start]   Module name: %s\n", module.string);
-            kprintf("[_start]   Module start: %llx\n", module.begin);
-            kprintf("[_start]   Module end: %llx\n", module.end);
+            kprintf("[MAIN]   Module name: %s\n", module.string);
+            kprintf("[MAIN]   Module start: %llx\n", module.begin);
+            kprintf("[MAIN]   Module end: %llx\n", module.end);
             kprintf("\n");
             if(strcmp(module.string, "INITRAMFS") == 0){
-                kprintf("[_start]   Found INITRAMFS, initializing!\n");
-                VfsNode * tmpfs_mnt = tmpfs_init((u8*)module.begin);
-                u8 * ptr = (u8*)pmm_alloc_block(); 
+                kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
+                VfsNode * tmpfs_mnt = tarfs_init((u8*)module.begin);
     
                 //tmpfs->read(2, module.begin, "modules/tmpfs/testfile", ptr);
                 //vfs_set_root_mount(tmpfs);
@@ -202,14 +201,14 @@ void _start(struct stivale2_struct * boot_info) {
     struct stivale2_struct_tag_framebuffer * framebuffer_tag = 
         stivale2_get_tag(boot_info,  STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
-    if(framebuffer_tag == NULL){ kprintf("[_start]   No framebuffer found. Exiting.\n");
+    if(framebuffer_tag == NULL){ kprintf("[MAIN]   No framebuffer found. Exiting.\n");
         hang();
     }else{
-        kprintf("[_start]   Framebuffer found!\n");
-        kprintf("[_start]   Framebuffer addr: 0x%llx\n", framebuffer_tag->framebuffer_addr);
-        kprintf("[_start]   Framebuffer bpp: %d\n", framebuffer_tag->framebuffer_bpp);
-        kprintf("[_start]   Framebuffer height: %d\n", framebuffer_tag->framebuffer_height);
-        kprintf("[_start]   Framebuffer width: %d\n", framebuffer_tag->framebuffer_width);
+        kprintf("[MAIN]   Framebuffer found!\n");
+        kprintf("[MAIN]   Framebuffer addr: 0x%llx\n", framebuffer_tag->framebuffer_addr);
+        kprintf("[MAIN]   Framebuffer bpp: %d\n", framebuffer_tag->framebuffer_bpp);
+        kprintf("[MAIN]   Framebuffer height: %d\n", framebuffer_tag->framebuffer_height);
+        kprintf("[MAIN]   Framebuffer width: %d\n", framebuffer_tag->framebuffer_width);
         //screen_init(framebuffer_tag);
     }
 
@@ -220,8 +219,8 @@ void _start(struct stivale2_struct * boot_info) {
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    sys_init();
-	multitasking_init();
+    //sys_init();
+	//multitasking_init();
 
     // We're done, just hang...
     hang();

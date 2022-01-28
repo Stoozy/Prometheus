@@ -28,6 +28,6 @@ typedef struct {
     u64     dev_major_number;
     u64     dev_minor_number;
     u8      filename_prefix[155];
-} UstarNode;
+} __attribute__((packed)) UstarFile;
 
-VfsNode * tmpfs_init(u8*);
+VfsNode * tarfs_init(u8*);

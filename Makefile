@@ -26,7 +26,7 @@ libc:
 	mkdir $(SYSROOT)
 
 tmpfs: 
-	tar -cvf tmpfs.tar modules/tmpfs
+	tar -C modules/ -cvf tmpfs.tar tmpfs 
 	mv tmpfs.tar $(TMPFS_MODULE)
 
 
