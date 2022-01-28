@@ -1,5 +1,6 @@
 #include "vfs.h"
 #include "../kmalloc.h"
+#include "../kprintf.h"
 
 static FdCacheNode * gp_fd_cache;
 
@@ -14,7 +15,7 @@ int vfs_open(VfsNode * node, int flags){
         return -1;
 
     // TODO: search cache first
-    int fd =  node->open(node); 
+    int fd =  node->open(node, flags); 
 
     FdCacheNode * fcn_node = (FdCacheNode*)kmalloc(sizeof(FdCacheNode));
 
@@ -28,7 +29,6 @@ int vfs_open(VfsNode * node, int flags){
         current_node->next = NULL;
         return fd;
     }
-
 
     while(current_node->next != NULL)
         current_node = current_node->next;
@@ -64,8 +64,10 @@ int vfs_close(struct vnode * node){
 }
 
 int vfs_read(VfsNode * node, uint64_t offset, size_t size, uint8_t * buffer){
-    if(!node)
+    if(!node){
+        kprintf("[VFS]  Trying to read nonexistent node\n");
         return -1; // non-existent node
+    }
 
     if(node->read)
         return node->read(node, offset, size, buffer);
@@ -80,11 +82,6 @@ int vfs_write(VfsNode * node, uint64_t offset, size_t size, uint8_t * buffer){
     if(node->write)
         return node->write(node, offset, size, buffer);
     else return -1; // invalid node
-}
-
-
-void vfs_init(){
-    
 }
 
 

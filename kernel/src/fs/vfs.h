@@ -16,8 +16,8 @@ struct vnode;
 
 typedef int (*read_func_t)(struct vnode *, u64, u64, u8 *);
 typedef int (*write_func_t)(struct vnode *, u64, u64, u8 *);
-typedef int (*open_func_t)(struct vnode *);
-typedef int (*close_func_t)(struct vnode *);
+typedef int (*open_func_t)(struct vnode *, int);
+typedef int (*close_func_t)(struct vnode *, int);
 
 typedef struct dirent (*readdir_func_t)(struct vnode *, u64);
 typedef struct vnode * (*finddir_func_t)(struct vnode *, char *);
@@ -43,6 +43,8 @@ typedef struct vnode {
 
     struct dirent   readdir;
     struct vnode *  finddir;
+
+    void * device;
 
     struct vnode ** children; // array of children
     uint64_t num_children;

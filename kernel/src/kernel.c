@@ -191,10 +191,21 @@ void _start(struct stivale2_struct * boot_info) {
             if(strcmp(module.string, "INITRAMFS") == 0){
                 kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
                 VfsNode * tmpfs_mnt = tarfs_init((u8*)module.begin);
+                UstarFile * testfile = ustar_search((void*)tmpfs_mnt, "tmpfs/testfile");
+
+                VfsNode * dummy_node = kmalloc(sizeof(VfsNode));
+                u8 * buffer = kmalloc(256);
+
+                dummy_node->read = &ustar_read;
+                dummy_node->device = tmpfs_mnt->device;
+                dummy_node->name = "tmpfs/testfile";
+
+                int e = vfs_read(dummy_node, 0, 256, buffer);
+                if(e>0)
+                    kprintf("[VFS]  Read %s; Contents:\n%s\n", dummy_node->name, buffer);
     
-                //tmpfs->read(2, module.begin, "modules/tmpfs/testfile", ptr);
-                //vfs_set_root_mount(tmpfs);
             }
+
         }
     }
 
@@ -212,6 +223,8 @@ void _start(struct stivale2_struct * boot_info) {
         //screen_init(framebuffer_tag);
     }
 
+
+    
 
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
