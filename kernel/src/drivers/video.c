@@ -2,9 +2,12 @@
 #include "../typedefs.h"
 #include "../stivale2.h"
 #include "video.h"
+#include "../fs/vfs.h"
 #include "../string/string.h"
 #include "../kmalloc.h"
+#include "../misc/ssfn.h"
 
+#define SSFN_CONSOLEBITMAP_TRUECOLOR
 
 static u64 g_fb_size = 0;
 static u32 * gp_framebuffer;
@@ -21,7 +24,15 @@ void screen_init(struct stivale2_struct_tag_framebuffer * fb_info){
 
 
     gp_framebuffer = (u32*) fb_info->framebuffer_addr;
-    //gp_backbuffer = (u32*) kmalloc(g_fb_size);
+    gp_backbuffer = (u32*) kmalloc(g_fb_size);
+
+    
+    draw_fill_rect(100, 100, 100,  100, 0xff0000);
+    draw_fill_rect(200, 100, 100,  100, 0x00ff00);
+    draw_fill_rect(300, 100, 100,  100, 0x0000ff);
+
+    draw_line(fb_info->framebuffer_width/2, 0, fb_info->framebuffer_width/2, fb_info->framebuffer_height, 0xffffff);
+    draw_line(0, fb_info->framebuffer_height/2, fb_info->framebuffer_width, fb_info->framebuffer_height/2, 0xffffff);
 
 } // screen_init
 
@@ -115,10 +126,18 @@ void draw_rect(int x, int y, int w, int h, int color){
 
 }// draw_rect
 
+// /////////////////
+// @param x         x-coordinate
+// @param y         y-coordinate
+// @param w         width 
+// @param h         height 
+// @param color     32-bit hex value
+// /////////////////
 void draw_fill_rect(int x, int y, int w, int h, int color){
-    for(int cy=y; cy<y+h; ++cy)
-        for(int cx=x; cx<cx+w; ++cx)
-            draw_pixel(cx, cy, color);
+    draw_rect(x, y, w, h , color);
+
+    for(u64 cy=y; cy<y+h; ++cy)
+        draw_line(x, cy, x+w, cy, color);
 }
 
 

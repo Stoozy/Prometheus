@@ -51,7 +51,7 @@ static size_t alive_cpus = 1; // BSP already running
 void ap_startup(){
     __asm__ volatile ("cli");
     // increment alive cpus
-    LOCKED_INC(alive_cpus);
+    //LOCKED_INC(alive_cpus);
     
 
     for(;;);

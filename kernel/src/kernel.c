@@ -156,8 +156,8 @@ void _start(struct stivale2_struct * boot_info) {
     serial_init();                      /* init debugging */
     
     
-    kprintf("[_start]   Kernel starts at 0x%x\n", &k_start);
-    kprintf("[_start]   Kernel ends at 0x%x\n", &k_end);
+    kprintf("[MAIN]   Kernel starts at 0x%x\n", &k_start);
+    kprintf("[MAIN]   Kernel ends at 0x%x\n", &k_end);
 
     kprintf("\n");
 
@@ -191,19 +191,21 @@ void _start(struct stivale2_struct * boot_info) {
             if(strcmp(module.string, "INITRAMFS") == 0){
                 kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
                 VfsNode * tmpfs_mnt = tarfs_init((u8*)module.begin);
-                UstarFile * testfile = ustar_search((void*)tmpfs_mnt, "tmpfs/testfile");
+                UstarFile * testfile = ustar_search((void*)tmpfs_mnt, "tmpfs/unscii-16.sfn");
 
-                VfsNode * dummy_node = kmalloc(sizeof(VfsNode));
-                u8 * buffer = kmalloc(256);
+                VfsNode * font_node = kmalloc(sizeof(VfsNode));
+                // font file size
+                u8 * buffer = kmalloc(53901);
 
-                dummy_node->read = &ustar_read;
-                dummy_node->device = tmpfs_mnt->device;
-                dummy_node->name = "tmpfs/testfile";
+                font_node->read = &ustar_read;
+                font_node->device = tmpfs_mnt->device;
+                font_node->name = "tmpfs/unscii-16.sfn";
 
-                int e = vfs_read(dummy_node, 0, 256, buffer);
+                int e = vfs_read(font_node, 0, 53901, buffer);
                 if(e>0)
-                    kprintf("[VFS]  Read %s; Contents:\n%s\n", dummy_node->name, buffer);
+                    kprintf("[VFS]  Read %s; Contents:\n%s\n", font_node->name, buffer);
     
+                ssfn_src = (ssfn_font_t*)buffer;
             }
 
         }
@@ -220,7 +222,24 @@ void _start(struct stivale2_struct * boot_info) {
         kprintf("[MAIN]   Framebuffer bpp: %d\n", framebuffer_tag->framebuffer_bpp);
         kprintf("[MAIN]   Framebuffer height: %d\n", framebuffer_tag->framebuffer_height);
         kprintf("[MAIN]   Framebuffer width: %d\n", framebuffer_tag->framebuffer_width);
-        //screen_init(framebuffer_tag);
+
+#define SSFN_CONSOLEBITMAP_TRUECOLOR
+        ssfn_dst.ptr = (u8*)framebuffer_tag->framebuffer_addr;
+        ssfn_dst.w = framebuffer_tag->framebuffer_width;
+        ssfn_dst.h = framebuffer_tag->framebuffer_height;
+        ssfn_dst.p = 4096;
+        ssfn_dst.x =  100;
+        ssfn_dst.y =  205;
+        ssfn_dst.fg = 0xffffff;
+        
+        ssfn_putc('D');
+        ssfn_putc('e');
+        ssfn_putc('a');
+        ssfn_putc('d');
+        ssfn_putc('O');
+        ssfn_putc('S');
+
+        screen_init(framebuffer_tag);
     }
 
 
