@@ -12,8 +12,6 @@ extern void release_lock(volatile u32*);
 
 volatile u32 lock = 0;   // initiallly free
 
-
-
 extern void invalidate_tlb();
 extern void load_pagedir(PageTable *);
 
@@ -39,7 +37,9 @@ void * liballoc_alloc(int pages){
     for(u64 page = 0; page<pages; ++page){
         void * current_addr = addr + page * PAGE_SIZE;
 
+#ifdef ALLOCATOR_DEBUG
         kprintf("[ALLCOATOR]    Identity mapping 0x%llx\n", current_addr);
+#endif
         vmm_map(cr3, current_addr, current_addr-PAGING_VIRTUAL_OFFSET,  PAGE_READ_WRITE | PAGE_PRESENT);
     }
 

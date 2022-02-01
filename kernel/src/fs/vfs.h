@@ -22,6 +22,13 @@ typedef int (*close_func_t)(struct vnode *, int);
 typedef struct dirent (*readdir_func_t)(struct vnode *, u64);
 typedef struct vnode * (*finddir_func_t)(struct vnode *, char *);
 
+struct file {
+    void * device;
+    u64 size;
+    u64 position;
+    u64 mode;
+};
+
 struct dirent {
     uint64_t d_ino; /* File serial number */
     char * d_name;
@@ -34,7 +41,7 @@ typedef struct vnode {
     u64 size;
     u64 position;
     u64 mode;       
-    u64 flags;
+    u64 type;
     
     read_func_t     read;
     write_func_t    write;
@@ -51,14 +58,15 @@ typedef struct vnode {
 
 } VfsNode;
 
+
+
 typedef struct fd_cache{
     VfsNode * node;
     struct fd_cache * next;
 } FdCacheNode;
 
 
-
-VfsNode * vfs_node_from_path(const char * path, struct dirent cwd); 
+VfsNode * vfs_node_from_path(const char * path); 
 VfsNode * vfs_node_from_fd(int fd);
 
 int vfs_open(VfsNode * node, int flags);

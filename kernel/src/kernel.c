@@ -194,6 +194,7 @@ void _start(struct stivale2_struct * boot_info) {
                 UstarFile * testfile = ustar_search((void*)tmpfs_mnt, "tmpfs/unscii-16.sfn");
 
                 VfsNode * font_node = kmalloc(sizeof(VfsNode));
+                
                 // font file size
                 u8 * buffer = kmalloc(53901);
 
@@ -231,19 +232,10 @@ void _start(struct stivale2_struct * boot_info) {
         ssfn_dst.x =  100;
         ssfn_dst.y =  205;
         ssfn_dst.fg = 0xffffff;
-        
-        ssfn_putc('D');
-        ssfn_putc('e');
-        ssfn_putc('a');
-        ssfn_putc('d');
-        ssfn_putc('O');
-        ssfn_putc('S');
 
         screen_init(framebuffer_tag);
     }
 
-
-    
 
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
@@ -251,8 +243,8 @@ void _start(struct stivale2_struct * boot_info) {
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    //sys_init();
-	//multitasking_init();
+    sys_init();
+	multitasking_init();
 
     // We're done, just hang...
     hang();

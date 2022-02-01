@@ -1,12 +1,35 @@
 #include "vfs.h"
 #include "../kmalloc.h"
 #include "../kprintf.h"
+#include "../string/string.h"
+#include "../proc/proc.h"
 
 static FdCacheNode * gp_fd_cache;
+static FdCacheNode * gp_fd_cache_last;
 
-VfsNode * vfs_node_from_path(const char * path, struct dirent cwd);
+static VfsNode * root;
+
+VfsNode * vfs_node_from_path(const char * path){
+    VfsNode * current_node = root;
+
+    while(  strcmp(current_node->name, path) == 0
+            && strlen(path) != strlen(current_node->name)){
+        for(u64 i=0; i<current_node->num_children; ++i){
+            if(strcmp(current_node->children[i]->name, path) == 0){
+                current_node = current_node->children[i];
+                // both length and content are same, found the
+                // node
+                if(strlen(current_node->name) == strlen(path)){
+                    return current_node;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
 VfsNode * vfs_node_from_fd(int fd);
-
 
 int vfs_open(VfsNode * node, int flags){
 
@@ -17,46 +40,14 @@ int vfs_open(VfsNode * node, int flags){
     // TODO: search cache first
     int fd =  node->open(node, flags); 
 
-    FdCacheNode * fcn_node = (FdCacheNode*)kmalloc(sizeof(FdCacheNode));
-
-    fcn_node->node = node;
-    fcn_node->next = NULL;
-
-    FdCacheNode * current_node = gp_fd_cache;
-
-    if(current_node == NULL){
-        current_node->node = node;
-        current_node->next = NULL;
-        return fd;
-    }
-
-    while(current_node->next != NULL)
-        current_node = current_node->next;
-    current_node->next = fcn_node;
+    extern ProcessControlBlock * gp_current_process;
+    map_fd_to_proc(gp_current_process, node);
 
     return fd;
 }
 
 int vfs_close(struct vnode * node){
     // TODO: write all changes to file here
-
-
-    // remove from open file list
-    FdCacheNode * current_node = gp_fd_cache;
-
-    while(current_node->next != NULL ){
-        // found fd
-        if(current_node->next->node == node){
-            FdCacheNode * fcn_ptr_to_remove = current_node->next;
-
-            // relink
-            current_node->next = current_node->next->next;
-
-            kfree(fcn_ptr_to_remove);
-            return 1;
-        }
-        current_node = current_node->next;
-    }
 
     // non existent fd
     return -1;
@@ -82,6 +73,13 @@ int vfs_write(VfsNode * node, uint64_t offset, size_t size, uint8_t * buffer){
     if(node->write)
         return node->write(node, offset, size, buffer);
     else return -1; // invalid node
+}
+
+void vfs_init(){
+    VfsNode * root = kmalloc(sizeof(VfsNode));
+    memset(root, 0, sizeof(VfsNode));
+    root->name = "";
+    root->type = VFS_MOUNTPOINT;
 }
 
 

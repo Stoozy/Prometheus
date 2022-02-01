@@ -30,6 +30,15 @@ typedef struct {
     u8      filename_prefix[155];
 } __attribute__((packed)) UstarFile;
 
+
+typedef struct {
+    UstarFile * file_header;
+    int inode;
+
+    u64 data_offset;
+    size_t filesize;
+} __attribute__((packed)) UstarEntry;
+
 int ustar_read(struct vnode * node, u64 offset, u64 size, u8 * buffer);
 UstarFile * ustar_search(unsigned char * archive, const char * filename);
 VfsNode * tarfs_init(u8*);

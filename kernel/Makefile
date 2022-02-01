@@ -1,4 +1,4 @@
-KERNEL := dead_kernel.elf
+KERNEL := kernel.elf
 
 CC=gcc
 NASM=nasm 

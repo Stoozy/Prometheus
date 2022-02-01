@@ -19,7 +19,7 @@ limine:
 	git clone https://github.com/limine-bootloader/limine.git --branch=v2.0-branch-binary --depth=1
 	make -C limine
 
-kernel/dead_kernel.elf:
+kernel/kernel.elf:
 	$(MAKE) -C kernel
 
 libc:
@@ -30,10 +30,10 @@ tmpfs:
 	mv tmpfs.tar $(TMPFS_MODULE)
 
 
-$(ISO_IMAGE): limine kernel/dead_kernel.elf tmpfs
+$(ISO_IMAGE): limine kernel/kernel.elf tmpfs
 	rm -rf iso_root
 	mkdir -p iso_root
-	cp kernel/dead_kernel.elf \
+	cp kernel/kernel.elf \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin modules/tmpfs.tar iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \

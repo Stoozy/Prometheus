@@ -20,7 +20,7 @@ volatile u64 g_procs;
 PageTable * kernel_cr3;
 
 void map_fd_to_proc(ProcessControlBlock * proc, VfsNode *node){
-    // TODO
+    proc->fd_table[++proc->fd_length] = node;
     return;
 }
 
@@ -62,6 +62,7 @@ void task_b(){
     asm volatile("mov $0, %rdi\n\t\
                 syscall");
     
+    // this should never happen
     for(;;) kprintf("Running task B...\n");
 
 }
