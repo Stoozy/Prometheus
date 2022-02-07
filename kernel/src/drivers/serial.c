@@ -38,11 +38,10 @@ void write_serial(char a) {
 void turn_color_on(){
     write_serial('\033');
     write_serial('[');
-    write_serial('3');
-    write_serial('3');
+    write_serial('0');
     write_serial(';');
     write_serial('3');
-    write_serial('5');
+    write_serial('3');
     write_serial('m');
 }
 

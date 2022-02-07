@@ -190,23 +190,7 @@ void _start(struct stivale2_struct * boot_info) {
             kprintf("\n");
             if(strcmp(module.string, "INITRAMFS") == 0){
                 kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
-                VfsNode * tmpfs_mnt = tarfs_init((u8*)module.begin);
-                UstarFile * testfile = ustar_search((void*)tmpfs_mnt, "tmpfs/unscii-16.sfn");
-
-                VfsNode * font_node = kmalloc(sizeof(VfsNode));
-                
-                // font file size
-                u8 * buffer = kmalloc(53901);
-
-                font_node->read = &ustar_read;
-                font_node->device = tmpfs_mnt->device;
-                font_node->name = "tmpfs/unscii-16.sfn";
-
-                int e = vfs_read(font_node, 0, 53901, buffer);
-                if(e>0)
-                    kprintf("[VFS]  Read %s; Contents:\n%s\n", font_node->name, buffer);
-    
-                ssfn_src = (ssfn_font_t*)buffer;
+                // TODO:
             }
 
         }
@@ -233,18 +217,20 @@ void _start(struct stivale2_struct * boot_info) {
         ssfn_dst.y =  205;
         ssfn_dst.fg = 0xffffff;
 
-        screen_init(framebuffer_tag);
+
+        //screen_init(framebuffer_tag);
     }
 
 
+    vfs_init();
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
 
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    sys_init();
-	multitasking_init();
+    //sys_init();
+	//multitasking_init();
 
     // We're done, just hang...
     hang();

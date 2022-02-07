@@ -39,6 +39,3 @@ typedef struct {
     size_t filesize;
 } __attribute__((packed)) UstarEntry;
 
-int ustar_read(struct vnode * node, u64 offset, u64 size, u8 * buffer);
-UstarFile * ustar_search(unsigned char * archive, const char * filename);
-VfsNode * tarfs_init(u8*);

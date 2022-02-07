@@ -11,66 +11,87 @@
 #define VFS_PIPE            0x05
 #define VFS_SYMLINK         0x06
 #define VFS_MOUNTPOINT      0x08
+#define VFS_INVALID_FS      0x09
 
-struct vnode;
+#define VFS_MAX_DEVICES     260
 
-typedef int (*read_func_t)(struct vnode *, u64, u64, u8 *);
-typedef int (*write_func_t)(struct vnode *, u64, u64, u8 *);
-typedef int (*open_func_t)(struct vnode *, int);
-typedef int (*close_func_t)(struct vnode *, int);
+//struct vnode;
+//
+//typedef int (*read_func_t)(struct vnode *, u64, u64, u8 *);
+//typedef int (*write_func_t)(struct vnode *, u64, u64, u8 *);
+//typedef int (*open_func_t)(struct vnode *, int);
+//typedef int (*close_func_t)(struct vnode *, int);
 
-typedef struct dirent (*readdir_func_t)(struct vnode *, u64);
-typedef struct vnode * (*finddir_func_t)(struct vnode *, char *);
+struct file;
 
-struct file {
-    void * device;
-    u64 size;
-    u64 position;
-    u64 mode;
-};
-
-struct dirent {
-    uint64_t d_ino; /* File serial number */
-    char * d_name;
-};
+typedef void (*mount)();
+typedef struct file (*open_func_t)(const char * filename, int flags);
+typedef void (*close_func_t)(struct file *);
+typedef uint64_t (*read_func_t)(struct file *, u64, u8 *);
+typedef uint64_t (*write_func_t)(struct file *, u64, u8 *);
+typedef struct file (*finddir_func_t)(const char * dirname);
 
 
-typedef struct vnode {
+typedef struct file {
     char * name;
+    u8  * device;
     u64 inode;
     u64 size;
     u64 position;
-    u64 mode;       
-    u64 type;
-    
-    read_func_t     read;
-    write_func_t    write;
+    u64 mode;
+    u64 eof;
+    u64 sector;
+} FILE;
+
+typedef struct fs {
+    char * name;
     open_func_t     open;
     close_func_t    close;
+    read_func_t     read;
+    write_func_t    write;
+    finddir_func_t  finddir; 
+} FileSystem;
 
-    struct dirent   readdir;
-    struct vnode *  finddir;
+//typedef struct vnode {
+//    char * name;
+//    u64 inode;
+//    u64 size;
+//    u64 position;
+//    u64 mode;       
+//    u64 type;
+//    
+//    read_func_t     read;
+//    write_func_t    write;
+//    open_func_t     open;
+//    close_func_t    close;
+//
+//    struct vnode *  finddir;
+//
+//    void * device;
+//
+//    struct vnode ** children; // array of children
+//    uint64_t num_children;
+//
+//} VfsNode;
 
-    void * device;
 
-    struct vnode ** children; // array of children
-    uint64_t num_children;
-
-} VfsNode;
-
+//typedef struct fd_cache{
+//    VfsNode * node;
+//    struct fd_cache * next;
+//} FdCacheNode;
 
 
-typedef struct fd_cache{
-    VfsNode * node;
-    struct fd_cache * next;
-} FdCacheNode;
+//VfsNode * vfs_node_from_path(const char * path); 
+//VfsNode * vfs_node_from_fd(int fd);
 
 
-VfsNode * vfs_node_from_path(const char * path); 
-VfsNode * vfs_node_from_fd(int fd);
+FILE vfs_open(const char * filename , int flags);
+void vfs_close(FILE file);
+u64 vfs_read(FILE * file, u64 size, u8 * buffer);
+u64 vfs_write(FILE * file, u64 size, u8 * buffer);
 
-int vfs_open(VfsNode * node, int flags);
-int vfs_close(VfsNode * node);
-int vfs_read(VfsNode * node, uint64_t offset, size_t size, uint8_t * buffer);
-int vfs_write(VfsNode * node, uint64_t offset, size_t size, uint8_t * buffer);
+void vfs_register_fs(FileSystem *, u16 device_id);
+void vfs_unregister_fs(FileSystem * fs);
+
 void vfs_init();
+

@@ -170,5 +170,5 @@ int kprintf(const char* restrict format, ...) {
 
     va_end(parameters);
     return written;
-    }
+}
 

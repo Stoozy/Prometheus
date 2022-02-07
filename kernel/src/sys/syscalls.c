@@ -46,7 +46,6 @@ int sys_close(int file){
 
 int sys_execve(char *name, char **argv, char **env){
     // TODO 
-    int f = vfs_open(name, 0);
     return -1;
 }
 

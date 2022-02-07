@@ -19,8 +19,8 @@ volatile u64 g_procs;
 
 PageTable * kernel_cr3;
 
-void map_fd_to_proc(ProcessControlBlock * proc, VfsNode *node){
-    proc->fd_table[++proc->fd_length] = node;
+void map_fd_to_proc(ProcessControlBlock * proc, struct file * file_desc){
+    proc->fd_table[++proc->fd_length] = file_desc;
     return;
 }
 
@@ -56,10 +56,9 @@ void task_a(){
 }
 
 void task_b(){ 
-    //for(;;)
-        //kprintf("Running task B...\n");
 
-    asm volatile("mov $0, %rdi\n\t\
+    /* exit syscall */
+    asm volatile("mov $0, %rdi\n\t\ 
                 syscall");
     
     // this should never happen
@@ -171,10 +170,10 @@ void multitasking_init(){
     register_process(create_process(task_b));
     register_process(create_process(task_c));
 
-    register_process(create_process(refresh_screen_proc));
+    //register_process(create_process(refresh_screen_proc));
     gp_current_process = gp_process_queue;
 
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
-    //asm volatile ("sti");
+    //  asm volatile ("sti");
 }
 

@@ -1,85 +1,117 @@
 #include "vfs.h"
 #include "../kmalloc.h"
 #include "../kprintf.h"
-#include "../string/string.h"
-#include "../proc/proc.h"
 
-static FdCacheNode * gp_fd_cache;
-static FdCacheNode * gp_fd_cache_last;
+static FileSystem * _filesystems[VFS_MAX_DEVICES] = {0}; 
 
-static VfsNode * root;
+static u16 get_device_index_from_id(u8 * device){
+    u64 index =  (((device[0] - 'a') * 10) + (device[1] - 48));
+    return (u16)index;
+}
 
-VfsNode * vfs_node_from_path(const char * path){
-    VfsNode * current_node = root;
+static void vfs_test_get_device_from_index(){
+    u8 * dev = kmalloc(sizeof(u8) * 4);
+    dev[0] = 'a';
+    dev[1] = '0';
+    dev[2] = '\0';
 
-    while(  strcmp(current_node->name, path) == 0
-            && strlen(path) != strlen(current_node->name)){
-        for(u64 i=0; i<current_node->num_children; ++i){
-            if(strcmp(current_node->children[i]->name, path) == 0){
-                current_node = current_node->children[i];
-                // both length and content are same, found the
-                // node
-                if(strlen(current_node->name) == strlen(path)){
-                    return current_node;
-                }
+    u16 index = get_device_index_from_id(dev);
+    kprintf("Testing a0 index : %d\n", index);
+
+    dev[0] = 'b';
+    dev[1] = '8';
+    dev[2] = '\0';
+    index = get_device_index_from_id(dev);
+    kprintf("Testing b8 index : %d\n", index);
+}
+
+static u8 * get_device_from_global_path(const char * path ){
+    u8 * device = kmalloc(sizeof(char) * 4); 
+    device[0] = path[0];
+    device[1] = path[1];
+    device[2] = '\0';
+
+    return device;
+}
+
+
+
+void vfs_register_fs(FileSystem  * new_fs, u16 device_id){
+    if(device_id < VFS_MAX_DEVICES && new_fs)
+        _filesystems[device_id] = new_fs;
+
+    return;
+}
+
+void vfs_unregister_fs(FileSystem * fs){
+    for(u16 fs_idx=0; fs_idx < VFS_MAX_DEVICES; ++fs_idx){
+        if(_filesystems[fs_idx] == fs){
+            // free some memory
+            kfree(fs->name);
+            kfree(fs);
+
+            // empty fs entry
+            _filesystems[fs_idx] = 0;
+        }
+    }
+}
+
+
+u64 vfs_read(FILE * file, u64 size, u8 * buffer){
+    u16 fs_idx = get_device_index_from_id(file->device);
+    if(_filesystems[fs_idx]){
+
+        u64 bytes_read  = _filesystems[fs_idx]->read(file, size, buffer);
+        return bytes_read;
+    }
+
+    // zero bytes read
+    return 0;
+
+}
+
+
+u64 vfs_write(FILE * file, u64 size, u8 * buffer){
+    u16 fs_idx = get_device_index_from_id(file->device);
+
+    if(_filesystems[fs_idx]){
+        u64 bytes_written  = _filesystems[fs_idx]->write(file, size, buffer);
+        return bytes_written;
+    }
+
+    // zero bytes written
+    return 0;
+
+}
+
+
+FILE vfs_open(const char *filename, int flags){
+    if(filename){
+
+        if(filename[2] == ':'){
+            u8 * device_id = get_device_from_global_path(filename);
+            u16 fs_idx = get_device_index_from_id(device_id); 
+
+            // skip device identifier 
+            // e.g. a0:/foo/bar => /foo/bar
+            filename += 3;
+            if(_filesystems[fs_idx]){
+                FILE file = _filesystems[fs_idx]->open(filename, flags);
+                file.device = (u8*)device_id;
+                return file;
             }
         }
     }
 
-    return NULL;
+    FILE f;
+    f.mode = VFS_INVALID_FS;
+    return f;
 }
 
-VfsNode * vfs_node_from_fd(int fd);
+void vfs_close(FILE file){
 
-int vfs_open(VfsNode * node, int flags){
-
-    // no such node
-    if(!node)
-        return -1;
-
-    // TODO: search cache first
-    int fd =  node->open(node, flags); 
-
-    extern ProcessControlBlock * gp_current_process;
-    map_fd_to_proc(gp_current_process, node);
-
-    return fd;
-}
-
-int vfs_close(struct vnode * node){
-    // TODO: write all changes to file here
-
-    // non existent fd
-    return -1;
-    
-}
-
-int vfs_read(VfsNode * node, uint64_t offset, size_t size, uint8_t * buffer){
-    if(!node){
-        kprintf("[VFS]  Trying to read nonexistent node\n");
-        return -1; // non-existent node
-    }
-
-    if(node->read)
-        return node->read(node, offset, size, buffer);
-    else return -1; // invalid node
-
-}
-
-int vfs_write(VfsNode * node, uint64_t offset, size_t size, uint8_t * buffer){
-     if(!node)
-        return -1; // non-existent node
-
-    if(node->write)
-        return node->write(node, offset, size, buffer);
-    else return -1; // invalid node
 }
 
 void vfs_init(){
-    VfsNode * root = kmalloc(sizeof(VfsNode));
-    memset(root, 0, sizeof(VfsNode));
-    root->name = "";
-    root->type = VFS_MOUNTPOINT;
+    vfs_test_get_device_from_index();
 }
-
-
