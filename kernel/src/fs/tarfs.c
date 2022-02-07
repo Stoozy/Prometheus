@@ -49,5 +49,52 @@ static u64 round_to_512_bytes(u64 bytes){
     return bytes + (512 - padding);
 }
 
+FILE ustar_open(const char *filename, int flags){
+    // TODO
+    FILE  * f = kmalloc(sizeof(FILE));
+
+
+    return *f;
+
+}
+
+void ustar_close(struct file * f){
+    // TODO
+}
+
+u64 ustar_read(struct file *file, u64 size, u8 *buffer){
+    // TODO:
+    // return bytes read
+    
+    return 0;
+}
+
+u64 ustar_write(struct file *file, u64 size, u8 *buffer){
+    // TODO:
+    // return bytes written
+    
+    return 0;
+}
+
+
+FILE ustar_finddir(const char * dirname){
+    // TODO
+    FILE  * f = kmalloc(sizeof(FILE));
+
+
+    return *f;
+}
+
+FileSystem * tarfs_init(){
+    FileSystem * tarfs = kmalloc(sizeof(FileSystem)); 
+
+    tarfs->open = &ustar_open;
+    tarfs->close = &ustar_close;
+    tarfs->read = &ustar_read;
+    tarfs->write = &ustar_write;
+    tarfs->finddir = &ustar_finddir;
+
+    return tarfs;
+}
 
 

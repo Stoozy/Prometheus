@@ -223,6 +223,7 @@ void _start(struct stivale2_struct * boot_info) {
 
 
     vfs_init();
+
     //struct stivale2_struct_tag_smp * smp_tag = 
         //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
 

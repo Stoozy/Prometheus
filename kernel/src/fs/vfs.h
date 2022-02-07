@@ -27,8 +27,8 @@ struct file;
 typedef void (*mount)();
 typedef struct file (*open_func_t)(const char * filename, int flags);
 typedef void (*close_func_t)(struct file *);
-typedef uint64_t (*read_func_t)(struct file *, u64, u8 *);
-typedef uint64_t (*write_func_t)(struct file *, u64, u8 *);
+typedef u64 (*read_func_t)(struct file *, u64, u8 *);
+typedef u64 (*write_func_t)(struct file *, u64, u8 *);
 typedef struct file (*finddir_func_t)(const char * dirname);
 
 
