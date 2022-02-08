@@ -176,6 +176,8 @@ void _start(struct stivale2_struct * boot_info) {
     kprintf("[MAIN]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
     struct stivale2_struct_tag_modules * modules_tag = stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
+
+    FileSystem * tarfs = NULL;
     if(modules_tag == NULL){
         kprintf("[MAIN]   No modules found. Exiting.\n");
         hang();
@@ -190,7 +192,7 @@ void _start(struct stivale2_struct * boot_info) {
             kprintf("\n");
             if(strcmp(module.string, "INITRAMFS") == 0){
                 kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
-                // TODO:
+                tarfs = tarfs_init((u8*)module.begin);
             }
 
         }
@@ -222,10 +224,13 @@ void _start(struct stivale2_struct * boot_info) {
     }
 
 
-    vfs_init();
+    if(tarfs != NULL)
+        vfs_register_fs(tarfs, 0);
+    else; // do somethine else;
 
-    //struct stivale2_struct_tag_smp * smp_tag = 
-        //stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_SMP_ID); 
+    FILE * testfile = vfs_open("a0:tmpfs/testfile", 0);
+    kprintf("[MAIN] VFS OPEN TEST : %s\n", testfile->name); 
+
 
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);

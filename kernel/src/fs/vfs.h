@@ -15,26 +15,19 @@
 
 #define VFS_MAX_DEVICES     260
 
-//struct vnode;
-//
-//typedef int (*read_func_t)(struct vnode *, u64, u64, u8 *);
-//typedef int (*write_func_t)(struct vnode *, u64, u64, u8 *);
-//typedef int (*open_func_t)(struct vnode *, int);
-//typedef int (*close_func_t)(struct vnode *, int);
-
 struct file;
 
 typedef void (*mount)();
-typedef struct file (*open_func_t)(const char * filename, int flags);
+typedef struct file * (*open_func_t)(const char * filename, int flags);
 typedef void (*close_func_t)(struct file *);
 typedef u64 (*read_func_t)(struct file *, u64, u8 *);
 typedef u64 (*write_func_t)(struct file *, u64, u8 *);
-typedef struct file (*finddir_func_t)(const char * dirname);
+typedef struct file * (*finddir_func_t)(const char * dirname);
 
 
 typedef struct file {
     char * name;
-    u8  * device;
+    u64 device;
     u64 inode;
     u64 size;
     u64 position;
@@ -52,40 +45,8 @@ typedef struct fs {
     finddir_func_t  finddir; 
 } FileSystem;
 
-//typedef struct vnode {
-//    char * name;
-//    u64 inode;
-//    u64 size;
-//    u64 position;
-//    u64 mode;       
-//    u64 type;
-//    
-//    read_func_t     read;
-//    write_func_t    write;
-//    open_func_t     open;
-//    close_func_t    close;
-//
-//    struct vnode *  finddir;
-//
-//    void * device;
-//
-//    struct vnode ** children; // array of children
-//    uint64_t num_children;
-//
-//} VfsNode;
 
-
-//typedef struct fd_cache{
-//    VfsNode * node;
-//    struct fd_cache * next;
-//} FdCacheNode;
-
-
-//VfsNode * vfs_node_from_path(const char * path); 
-//VfsNode * vfs_node_from_fd(int fd);
-
-
-FILE vfs_open(const char * filename , int flags);
+FILE * vfs_open(const char * filename , int flags);
 void vfs_close(FILE file);
 u64 vfs_read(FILE * file, u64 size, u8 * buffer);
 u64 vfs_write(FILE * file, u64 size, u8 * buffer);

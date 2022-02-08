@@ -8,6 +8,8 @@
 #include "../config.h"
 
 
+static u8 * g_archive;
+
 static u32 oct2bin(unsigned char *str, int size) {
     int n = 0;
     unsigned char *c = str;
@@ -19,9 +21,10 @@ static u32 oct2bin(unsigned char *str, int size) {
     return n;
 }
 
-static u32 ustar_decode_filesize(UstarFile*file){
+static u32 ustar_decode_filesize(UstarFile * file){
     return oct2bin(file->size, 11);
 }
+
 
 
 UstarFile * ustar_search(unsigned char * archive, const char * filename){
@@ -30,6 +33,7 @@ UstarFile * ustar_search(unsigned char * archive, const char * filename){
     while (!memcmp(ptr + 257, "ustar", 5)) {
         int filesize = oct2bin(ptr + 0x7c, 11);
 
+        kprintf("[TARFS]    Discovered %s\n", ptr);
         if (!memcmp(ptr, filename, strlen(filename) + 1)) {
             UstarFile * file = (UstarFile*)ptr;
             return file;
@@ -37,7 +41,7 @@ UstarFile * ustar_search(unsigned char * archive, const char * filename){
         ptr += (((filesize + 511) / 512) + 1) * 512;
     }
 
-    return NULL;
+    return 0;
 }
 
 static u64 round_to_512_bytes(u64 bytes){
@@ -49,23 +53,42 @@ static u64 round_to_512_bytes(u64 bytes){
     return bytes + (512 - padding);
 }
 
-FILE ustar_open(const char *filename, int flags){
-    // TODO
-    FILE  * f = kmalloc(sizeof(FILE));
+FILE * ustar_open(const char *filename, int flags){
 
+    UstarFile * tar_file = ustar_search(g_archive, filename);
 
-    return *f;
+    if(tar_file){
+        FILE  * f = kmalloc(sizeof(FILE));
+        f->size = ustar_decode_filesize(tar_file);
+        f->name = (char*)filename;
+        f->inode = (u64)tar_file;
+        return f;
+    }
 
+    return 0;
 }
 
 void ustar_close(struct file * f){
     // TODO
+
+
 }
 
 u64 ustar_read(struct file *file, u64 size, u8 *buffer){
     // TODO:
     // return bytes read
     
+    kprintf("[TARFS] Called read\n");
+
+    UstarFile * file_ptr = (UstarFile*) file->inode;
+    u8 * sof = ((u8*)(file_ptr))+sizeof(UstarFile);
+    kprintf("File data: %s\n", sof);
+    if(file_ptr){
+        kprintf("[TARFS] Valid file\n");
+        memcpy(buffer, sof, size);
+        return size;
+    }
+
     return 0;
 }
 
@@ -73,11 +96,12 @@ u64 ustar_write(struct file *file, u64 size, u8 *buffer){
     // TODO:
     // return bytes written
     
+
     return 0;
 }
 
 
-FILE ustar_finddir(const char * dirname){
+struct file ustar_finddir(const char * dirname){
     // TODO
     FILE  * f = kmalloc(sizeof(FILE));
 
@@ -85,7 +109,9 @@ FILE ustar_finddir(const char * dirname){
     return *f;
 }
 
-FileSystem * tarfs_init(){
+FileSystem * tarfs_init(u8 * archive){
+    g_archive = archive;
+
     FileSystem * tarfs = kmalloc(sizeof(FileSystem)); 
 
     tarfs->open = &ustar_open;

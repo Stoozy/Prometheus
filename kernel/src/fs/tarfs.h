@@ -39,3 +39,5 @@ typedef struct {
     size_t filesize;
 } __attribute__((packed)) UstarEntry;
 
+FileSystem * tarfs_init(u8*archive);
+
