@@ -231,6 +231,11 @@ void _start(struct stivale2_struct * boot_info) {
     FILE * testfile = vfs_open("a0:tmpfs/testfile", 0);
     kprintf("[MAIN] VFS OPEN TEST : %s\n", testfile->name); 
 
+    u8 *buffer = kmalloc(sizeof(char)*256);
+    u64 bytes_read = vfs_read(testfile, 256, buffer);
+    if(bytes_read)
+        kprintf("Read %llu bytes from file. Contents: %s\n", bytes_read, buffer); 
+
 
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);

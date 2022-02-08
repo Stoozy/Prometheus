@@ -79,7 +79,7 @@ u64 vfs_read(FILE * file, u64 size, u8 * buffer){
 
 
 u64 vfs_write(FILE * file, u64 size, u8 * buffer){
-    u16 fs_idx = get_device_index_from_id(file->device);
+    u16 fs_idx = file->device;
 
     if(g_filesystems[fs_idx]){
         u64 bytes_written  = g_filesystems[fs_idx]->write(file, size, buffer);

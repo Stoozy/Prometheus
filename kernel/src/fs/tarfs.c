@@ -61,7 +61,7 @@ FILE * ustar_open(const char *filename, int flags){
         FILE  * f = kmalloc(sizeof(FILE));
         f->size = ustar_decode_filesize(tar_file);
         f->name = (char*)filename;
-        f->inode = (u64)tar_file;
+        f->inode = (u64)((void*)tar_file);
         return f;
     }
 
@@ -80,10 +80,10 @@ u64 ustar_read(struct file *file, u64 size, u8 *buffer){
     
     kprintf("[TARFS] Called read\n");
 
-    UstarFile * file_ptr = (UstarFile*) file->inode;
-    u8 * sof = ((u8*)(file_ptr))+sizeof(UstarFile);
-    kprintf("File data: %s\n", sof);
-    if(file_ptr){
+    UstarFile * tar_fp = (UstarFile*) file->inode;
+    u8 * sof = ((u8*)(tar_fp))+512;
+    kprintf("[TARFS] File data: %s\n", sof);
+    if(tar_fp){
         kprintf("[TARFS] Valid file\n");
         memcpy(buffer, sof, size);
         return size;
