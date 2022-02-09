@@ -19,13 +19,24 @@ volatile u64 g_procs;
 
 PageTable * kernel_cr3;
 
+void unmap_fd_to_proc(ProcessControlBlock * proc, int file){
+    proc->fd_table[file] = NULL;
+    --proc->fd_length;
+}
+
 void map_fd_to_proc(ProcessControlBlock * proc, struct file * file_desc){
-    proc->fd_table[++proc->fd_length] = file_desc;
+    for(u8 fd_idx = 0; fd_idx < MAX_PROC_FDS; ++fd_idx){
+        if(proc->fd_table[fd_idx] == NULL)
+            proc->fd_table[fd_idx] = file_desc;
+    }
     return;
 }
 
 void kill_proc(ProcessControlBlock * proc){
+
+    // Need kernel cr3 for kernel data structures...
     load_pagedir(kernel_cr3);
+
     ProcessControlBlock * pcb = gp_process_queue;
 
     while(pcb->next != gp_current_process)
@@ -44,6 +55,7 @@ void kill_proc(ProcessControlBlock * proc){
 
     // decrease global number of procs
     --g_procs;
+
 }
 
 void kill_current_proc(void){

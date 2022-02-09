@@ -29,7 +29,7 @@ u8 load_elf_bin(u8 * elf) {
     }
 }
 
-u8 load_elf_64(u8 * elf){
+u8 load_elf_64(uint8_t * elf){
     Elf64_Ehdr * elf64 = (Elf64_Ehdr *) elf;
 
     for(u64 segment=0; segment<elf64->e_phnum; ++segment){

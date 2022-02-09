@@ -240,8 +240,8 @@ void _start(struct stivale2_struct * boot_info) {
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    //sys_init();
-	//multitasking_init();
+    sys_init();
+	multitasking_init();
 
     // We're done, just hang...
     hang();

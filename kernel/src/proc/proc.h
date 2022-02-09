@@ -27,7 +27,8 @@ typedef struct process_control_block {
 } ProcessControlBlock;
 
 
-void map_fd_to_proc(ProcessControlBlock * proc, struct file  *node);
+void unmap_fd_to_proc(ProcessControlBlock * proc, int file);
+void map_fd_to_proc(ProcessControlBlock * proc, struct file * file_desc);
 void multitasking_init();
 void kill_current_proc(void);
 void dump_list();

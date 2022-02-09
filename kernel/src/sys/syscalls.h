@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../typedefs.h"
 #include "../memory/vmm.h"
 
@@ -15,7 +17,6 @@ typedef unsigned long long caddr_t;
 #define KGSBASE     0xC0000102
 
 int sys_exit();
-
 int sys_close(int file);
 //char ** environ; /* pointer to array of char * strings that define the current environment variables */
 int sys_execve(char *name, char **argv, char **env);
