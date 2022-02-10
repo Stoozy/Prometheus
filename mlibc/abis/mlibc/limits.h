@@ -1,6 +1,0 @@
-#ifndef _ABIBITS_LIMITS_H
-#define _ABIBITS_LIMITS_H
-
-#define IOV_MAX 1024
-
-#endif //_ABIBITS_LIMITS_H
