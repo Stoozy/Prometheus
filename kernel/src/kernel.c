@@ -24,7 +24,7 @@
 
 #include "fs/tarfs.h"
 #include "stivale2.h"
-#include "sys/syscalls.h"
+#include "syscall/syscalls.h"
 #include "string/string.h"
 
 extern u64 k_start;
@@ -228,7 +228,7 @@ void _start(struct stivale2_struct * boot_info) {
         vfs_register_fs(tarfs, 0);
     else; // do somethine else;
 
-    FILE * testfile = vfs_open("a0:tmpfs/testfile", 0);
+    FILE * testfile = vfs_open("a0:testfile", 0);
     kprintf("[MAIN] VFS OPEN TEST : %s\n", testfile->name); 
 
     u8 *buffer = kmalloc(sizeof(char)*256);
@@ -240,8 +240,8 @@ void _start(struct stivale2_struct * boot_info) {
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    sys_init();
-	multitasking_init();
+    //sys_init();
+	//multitasking_init();
 
     // We're done, just hang...
     hang();

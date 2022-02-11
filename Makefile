@@ -1,10 +1,9 @@
 ISO_IMAGE=disk.iso
-SYSROOT=sysroot
-TMPFS_MODULE=modules/tmpfs.tar
+SYSROOT=$(shell pwd)/sysroot
 
 .PHONY: clean all run
 
-all: $(ISO_IMAGE) $(TMPFS_MODULE)
+all: $(ISO_IMAGE) 
 
 monitor: $(ISO_IMAGE)
 	qemu-system-x86_64  -smp cores=2 -monitor stdio -vga std -machine q35 -no-reboot -d int -M smm=off -no-shutdown -m 8G -cdrom $(ISO_IMAGE)
@@ -23,18 +22,17 @@ kernel/kernel.elf:
 	$(MAKE) -C kernel
 
 libc:
-	mkdir $(SYSROOT)
+	cd build-newlib && make && make DESTDIR=$(SYSROOT) install
 
-tmpfs: 
-	tar -C modules/ -cvf tmpfs.tar tmpfs 
-	mv tmpfs.tar $(TMPFS_MODULE)
+initrd: 
+	tar -C $(SYSROOT) -cvf initrd.tar fonts testfile
 
 
-$(ISO_IMAGE): limine kernel/kernel.elf tmpfs
+$(ISO_IMAGE): limine kernel/kernel.elf initrd
 	rm -rf iso_root
 	mkdir -p iso_root
-	cp kernel/kernel.elf \
-		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin modules/tmpfs.tar iso_root/
+	cp kernel/kernel.elf initrd.tar \
+		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		--efi-boot limine-eltorito-efi.bin \
@@ -45,6 +43,5 @@ $(ISO_IMAGE): limine kernel/kernel.elf tmpfs
 
 clean:
 	rm -f $(ISO_IMAGE) 
-	rm -rf $(SYSROOT)
-	rm -rf $(TMPFS_MODULE) 
+	rm -rf initrd.tar
 	$(MAKE) -C kernel clean

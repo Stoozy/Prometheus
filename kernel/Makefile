@@ -1,6 +1,6 @@
 KERNEL := kernel.elf
 
-CC=gcc
+CC=x86_64-atlas-gcc
 NASM=nasm 
 AS=as
 
