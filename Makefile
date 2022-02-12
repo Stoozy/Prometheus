@@ -25,7 +25,7 @@ libc:
 	cd build-newlib && make && make DESTDIR=$(SYSROOT) install
 
 initrd: 
-	tar -C $(SYSROOT) -cvf initrd.tar fonts testfile
+	tar -C $(SYSROOT) -cvf initrd.tar fonts testfile hello
 
 
 $(ISO_IMAGE): limine kernel/kernel.elf initrd

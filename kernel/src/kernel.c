@@ -228,20 +228,21 @@ void _start(struct stivale2_struct * boot_info) {
         vfs_register_fs(tarfs, 0);
     else; // do somethine else;
 
-    FILE * testfile = vfs_open("a0:testfile", 0);
-    kprintf("[MAIN] VFS OPEN TEST : %s\n", testfile->name); 
+    FILE * execfile = vfs_open("a0:hello", 0);
+    kprintf("[MAIN] VFS OPEN TEST : %s\n", execfile->name); 
 
-    u8 *buffer = kmalloc(sizeof(char)*256);
-    u64 bytes_read = vfs_read(testfile, 256, buffer);
+    u64 filesize = execfile->size;
+    u8 *buffer = kmalloc(sizeof(char)*filesize);
+    u64 bytes_read = vfs_read(execfile, filesize, buffer);
     if(bytes_read)
         kprintf("Read %llu bytes from file. Contents: %s\n", bytes_read, buffer); 
-
 
     //cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
     //sys_init();
-	//multitasking_init();
+	multitasking_init();
+    load_elf_bin(buffer);
 
     // We're done, just hang...
     hang();

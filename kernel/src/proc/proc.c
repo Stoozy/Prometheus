@@ -84,9 +84,7 @@ void task_c(){
 
 }
 void idle_task(){ 
-    for(;;){
-        kprintf("Idling...\n");
-    }
+    for(;;);
 }
 
 void dump_list(){
@@ -178,9 +176,9 @@ void multitasking_init(){
     g_procs = 0;
 
     register_process(create_process(idle_task));
-    register_process(create_process(task_a));
-    register_process(create_process(task_b));
-    register_process(create_process(task_c));
+    //register_process(create_process(task_a));
+    //register_process(create_process(task_b));
+    //register_process(create_process(task_c));
 
     //register_process(create_process(refresh_screen_proc));
     gp_current_process = gp_process_queue;

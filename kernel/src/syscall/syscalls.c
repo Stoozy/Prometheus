@@ -68,11 +68,25 @@ int sys_read(int file, char *ptr, int len){
 }
 
 int sys_write(int file, char *ptr, int len){
-    extern ProcessControlBlock * gp_current_process;
-    FILE * f = gp_current_process->fd_table[file];
-    int bytes_written = vfs_write(f, (u64)len, (u8*)ptr);
+    cli();
+    for(;;);
+    //if(file == 1){
+        // trying to print out to stdout
+        // output to serial for now...
+   
+        // FIXME: should probably start
+        // at the file position instead
+        for(u64 i=0;i<len; i++)
+            kprintf("%c", ptr[i]);
+        return len;
+    //}
 
-    return bytes_written;
+
+    //extern ProcessControlBlock * gp_current_process;
+    //FILE * f = gp_current_process->fd_table[file];
+    //int bytes_written = vfs_write(f, (u64)len, (u8*)ptr);
+
+    //return bytes_written;
 }
 
 int sys_execve(char *name, char **argv, char **env){
@@ -86,6 +100,7 @@ int sys_fork(){
 }
 
 void syscall_dispatcher(Registers regs){
+    for(;;);
     dump_regs(&regs);
 
     u64 syscall = regs.rsi;
@@ -132,7 +147,6 @@ void sys_init(){
     
     extern void syscall_entry();     // syscall_entry.asm
     wrmsr(LSTAR, (u64)&syscall_entry);
-
 }
 
 

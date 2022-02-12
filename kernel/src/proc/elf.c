@@ -63,7 +63,7 @@ u8 load_elf_64(uint8_t * elf){
     ProcessControlBlock * elf_pcb = create_process(entrypoint);
 
     register_process(elf_pcb);
-#ifdef SMP_DEBUG
+#ifdef SCHEDULER_DEBUG
     dump_list();
 #endif
 
