@@ -7,15 +7,15 @@
 #include "../string/string.h"
 #include "../drivers//video.h"
 
-ProcessControlBlock * gp_process_queue;
-ProcessControlBlock * gp_current_process;
+ProcessControlBlock * gp_process_queue = NULL;
+ProcessControlBlock * gp_current_process = NULL;
 
 extern void switch_to_process(void * new_stack, PageTable * cr3);
 
 extern void load_pagedir();
 extern u64  g_ticks;
 
-volatile u64 g_procs;
+u64 g_procs = 0;
 
 PageTable * kernel_cr3;
 
@@ -63,8 +63,9 @@ void kill_current_proc(void){
 }
 
 void task_a(){ 
-    for(;;)
-        kprintf("Running task A...\n");
+    // test syscall
+    asm volatile("mov $0, %rsi\n\t\ 
+        syscall");
 }
 
 void task_b(){ 
@@ -99,16 +100,16 @@ void dump_list(){
     kprintf(" NULL\n");
 }
 
+
 ProcessControlBlock * create_process(void (*entry)(void)){
     ProcessControlBlock * pcb = kmalloc(sizeof(ProcessControlBlock));
 
     memset(pcb, 0, sizeof(ProcessControlBlock));
 
-    pcb->p_stack = pmm_alloc_block()+0x1000;
+    pcb->p_stack = kmalloc(0x1000)+0x1000;
 
 	u64 * stack = (u64 *)(pcb->p_stack);
     PageTable * pml4 = vmm_create_user_proc_pml4(stack);
-
     // user proc
 	*--stack = 0x23; // ss
 	*--stack = (u64)pcb->p_stack; // rsp
@@ -168,22 +169,14 @@ void register_process(ProcessControlBlock * new_pcb){
 
 void multitasking_init(){
     // save kernel page tables
+
     kernel_cr3 = vmm_get_current_cr3();
-
-    gp_process_queue = NULL;
-    gp_current_process = NULL;
-
-    g_procs = 0;
-
     register_process(create_process(idle_task));
-    //register_process(create_process(task_a));
-    //register_process(create_process(task_b));
-    //register_process(create_process(task_c));
 
     //register_process(create_process(refresh_screen_proc));
     gp_current_process = gp_process_queue;
 
-    switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
-    //  asm volatile ("sti");
-}
 
+    kprintf("Switching to process with 0x%llx cr3\n", gp_current_process->cr3);
+    switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+}

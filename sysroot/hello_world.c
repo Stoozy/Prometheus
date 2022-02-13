@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 int main(){
-    while(1)
-        printf("Hello userspace\n");
+    int id = getpid();
+    printf("Hello userspace!\n");
+    exit(0);
 }

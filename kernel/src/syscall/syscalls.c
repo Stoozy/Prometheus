@@ -100,8 +100,8 @@ int sys_fork(){
 }
 
 void syscall_dispatcher(Registers regs){
-    for(;;);
     dump_regs(&regs);
+    for(;;) kprintf("syscall was invoked");
 
     u64 syscall = regs.rsi;
     u64 ret = 0;

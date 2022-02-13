@@ -52,7 +52,7 @@ volatile u8 user_stack[4096];
 //    // as it is unused.
 //    .flags = 0
 //};
- 
+
 // We are now going to define a framebuffer header tag.
 // This tag tells the bootloader that we want a graphical framebuffer instead
 // of a CGA-compatible text mode. Omitting this tag will make the bootloader
@@ -71,7 +71,7 @@ static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
     .framebuffer_height = 0,
     .framebuffer_bpp    = 0
 };
- 
+
 
 static struct stivale2_struct_tag_smp smp_hdr_tag = {
     // All tags need to begin with an identifier and a pointer to the next tag.
@@ -81,7 +81,7 @@ static struct stivale2_struct_tag_smp smp_hdr_tag = {
         // If next is 0, it marks the end of the linked list of header tags.
         .next = (uint64_t)&framebuffer_hdr_tag
     },
-    
+
 };
 
 
@@ -114,7 +114,7 @@ static struct stivale2_header stivale_hdr = {
     // points to the first one in the linked list.
     .tags = (uintptr_t)&smp_hdr_tag
 };
- 
+
 // We will now write a helper function which will allow us to scan for tags
 // that we want FROM the bootloader (structure tags).
 void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
@@ -125,13 +125,13 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
         if (current_tag == NULL) {
             return NULL;
         }
- 
+
         // Check whether the identifier matches. If it does, return a pointer
         // to the matching tag.
         if (current_tag->identifier == id) {
             return current_tag;
         }
- 
+
         // Get a pointer to the next tag in the linked list and repeat.
         current_tag = (void *)current_tag->next;
     }
@@ -154,28 +154,29 @@ void _start(struct stivale2_struct * boot_info) {
 
     gdt_init();
     serial_init();                      /* init debugging */
-    
-    
+
+
     kprintf("[MAIN]   Kernel starts at 0x%x\n", &k_start);
     kprintf("[MAIN]   Kernel ends at 0x%x\n", &k_end);
 
     kprintf("\n");
 
-    struct stivale2_struct_tag_memmap * meminfo = 
+    struct stivale2_struct_tag_memmap * meminfo =
         stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 
-    pmm_init(meminfo);                
+    pmm_init(meminfo);
 
     pit_init(1000);
     idt_init();
-    
+
 
     u64 k_size = ((u64)&k_end - (u64)&k_start);
     kprintf("[MAIN]   Kernel start: 0x%x\n", k_start);
     kprintf("[MAIN]   Kernel end: 0x%x\n", k_end);
     kprintf("[MAIN]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
 
-    struct stivale2_struct_tag_modules * modules_tag = stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
+    struct stivale2_struct_tag_modules * modules_tag =
+      stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
 
     FileSystem * tarfs = NULL;
     if(modules_tag == NULL){
@@ -198,7 +199,7 @@ void _start(struct stivale2_struct * boot_info) {
         }
     }
 
-    struct stivale2_struct_tag_framebuffer * framebuffer_tag = 
+    struct stivale2_struct_tag_framebuffer * framebuffer_tag =
         stivale2_get_tag(boot_info,  STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
     if(framebuffer_tag == NULL){ kprintf("[MAIN]   No framebuffer found. Exiting.\n");
@@ -229,24 +230,21 @@ void _start(struct stivale2_struct * boot_info) {
     else; // do somethine else;
 
     FILE * execfile = vfs_open("a0:hello", 0);
-    kprintf("[MAIN] VFS OPEN TEST : %s\n", execfile->name); 
+    kprintf("[MAIN] VFS OPEN TEST : %s\n", execfile->name);
 
     u64 filesize = execfile->size;
     u8 *buffer = kmalloc(sizeof(char)*filesize);
     u64 bytes_read = vfs_read(execfile, filesize, buffer);
     if(bytes_read)
-        kprintf("Read %llu bytes from file. Contents: %s\n", bytes_read, buffer); 
+        kprintf("Read %llu bytes from file. Contents: %s\n", bytes_read, buffer);
 
-    //cli();
+    cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
-    //sys_init();
-	multitasking_init();
+    sys_init();
     load_elf_bin(buffer);
+    multitasking_init();
 
     // We're done, just hang...
     hang();
 }
-
-
-

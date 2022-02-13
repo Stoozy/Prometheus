@@ -40,7 +40,13 @@ int fstat(int file, struct stat *st){
 }
 
 int getpid(){
-    return -1;
+    asm volatile("mov $0, %rsi\n\t\ 
+            syscall");
+
+    u64 r15;
+    asm volatile("mov %%r15, %0": : "r"(r15));
+
+    return (int)r15;
 }
 
 int isatty(int file){
