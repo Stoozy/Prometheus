@@ -1,0 +1,22 @@
+--- Makefile.am.old	2022-02-13 15:31:54.958956686 -0500
++++ Makefile.am	2022-02-13 15:34:38.322295682 -0500
+@@ -1268,6 +1268,9 @@
+ eelf_i386.c: $(srcdir)/emulparams/elf_i386.sh \
+   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} elf_i386 "$(tdir_elf_i386)"
++eelf_i386_atlas.c: $(srcdir)/emulparams/elf_i386_atlas.sh \
++  $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} elf_i386_atlas "$(tdir_elf_i386_atlas)"
+ eelf_i386_be.c: $(srcdir)/emulparams/elf_i386_be.sh \
+   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} elf_i386_be "$(tdir_elf_i386_be)"
+@@ -2138,6 +2141,9 @@
+ eelf_x86_64.c: $(srcdir)/emulparams/elf_x86_64.sh \
+   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} elf_x86_64 "$(tdir_elf_x86_64)"
++eelf_x86_64_atlas.c: $(srcdir)/emulparams/elf_x86_64_atlas.sh \
++  $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} elf_x86_64_atlas "$(tdir_elf_x86_64_atlas)"
+ eelf_x86_64_fbsd.c: $(srcdir)/emulparams/elf_x86_64_fbsd.sh \
+   $(srcdir)/emulparams/elf_x86_64.sh \
+   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}

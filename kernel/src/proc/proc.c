@@ -85,7 +85,7 @@ void task_c(){
 
 }
 void idle_task(){ 
-    for(;;);
+    for(;;) kprintf("Idling...\n");
 }
 
 void dump_list(){
@@ -101,6 +101,10 @@ void dump_list(){
 }
 
 
+
+// Creates a process with given entrypoint
+// this entails allocating a stack, setting the stack
+// and creating page tables
 ProcessControlBlock * create_process(void (*entry)(void)){
     ProcessControlBlock * pcb = kmalloc(sizeof(ProcessControlBlock));
 
@@ -165,6 +169,7 @@ void register_process(ProcessControlBlock * new_pcb){
 #endif
 
     ++g_procs;
+    return;
 }
 
 void multitasking_init(){

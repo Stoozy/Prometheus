@@ -168,6 +168,11 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
 
     void * stack = stack_top;
     vmm_map(pml4, stack-0x1000, stack-0x1000, uflags);
+    vmm_map(pml4, stack-0x2000, stack-0x2000, uflags);
+    vmm_map(pml4, stack-0x3000, stack-0x3000, uflags);
+    vmm_map(pml4, stack-0x4000, stack-0x4000, uflags);
+    vmm_map(pml4, stack-0x5000, stack-0x5000, uflags);
+    vmm_map(pml4, stack-0x6000, stack-0x6000, uflags);
     vmm_map(pml4, stack, stack, uflags);
 
     return pml4;

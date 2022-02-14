@@ -1,4 +1,6 @@
 #include "elf.h"
+#include "proc.h"
+
 #include "../typedefs.h"
 #include "../memory/pmm.h"
 #include "../memory/vmm.h"
@@ -9,10 +11,12 @@
 #include "../kprintf.h"
 #include "../config.h"
 
-u8 load_elf_64(u8 * elf);
-u8 load_elf_32(u8 * elf);
 
-u8 load_elf_bin(u8 * elf) {
+extern void load_pagedir(PageTable*);
+
+u8 load_elf_64(  u8 * elf);
+
+u8 load_elf_bin( u8 * elf) {
     if(elf[0] != 0x7f 
         || elf[1] != 'E'
         || elf[2] != 'L'
@@ -30,14 +34,10 @@ u8 load_elf_bin(u8 * elf) {
     //}
 }
 
-u8 load_elf_64(uint8_t * elf){
+u8 load_elf_64( u8 * elf){
     Elf64_Ehdr * elf64 = (Elf64_Ehdr *) elf;
 
-    ProcessControlBlock * elf_pcb = kmalloc(sizeof(ProcessControlBlock));
-
-    elf_pcb->p_stack = kmalloc(0x1000) +  0x1000;
-    PageTable * elf_cr3 = vmm_create_user_proc_pml4(elf_pcb->p_stack);
-
+    ProcessControlBlock * proc = create_process((void*)elf64->e_entry);
 
     for(u64 segment=0; segment<elf64->e_phnum; ++segment){
         Elf64_Phdr * p_header = (Elf64_Phdr *) 
@@ -47,18 +47,24 @@ u8 load_elf_64(uint8_t * elf){
             /* load segment here */
 
             /* "Allocate Memory" */
-            for(u64 page=p_header->p_vaddr/PAGE_SIZE; 
-                    page<(p_header->p_vaddr+p_header->p_memsz)/PAGE_SIZE+20; ++page)
-            {
-                void * phys_addr = pmm_alloc_block();
-                int flags = PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT;
-                vmm_map(elf_cr3, (void*)(page*PAGE_SIZE), phys_addr, flags);
+            
+            int flags = PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT;
+
+            u64 blocks = ((p_header->p_vaddr+p_header->p_filesz)/PAGE_SIZE - p_header->p_vaddr/PAGE_SIZE)+1;
+            void * phys_addr = pmm_alloc_blocks(blocks);
+
+            kprintf("Found loadable segment at offset 0x%x\n", p_header->p_offset);
+            memset(phys_addr, 0, p_header->p_memsz);
+            memcpy(phys_addr, 
+                    (void*)elf+(p_header->p_offset), p_header->p_memsz);
+
+            // now map those pages 
+            void* virt_addr =  (void*)p_header->p_vaddr;
+
+            for(u64 page = 0; page<blocks; ++page){
+                vmm_map(proc->cr3, virt_addr, phys_addr+(page*PAGE_SIZE), flags);
+                virt_addr += PAGE_SIZE;
             }
-
-            memset((void*)p_header->p_vaddr, 0, p_header->p_memsz);
-
-            memcpy((void*)p_header->p_vaddr, 
-                    (void*)elf+p_header->p_offset, p_header->p_memsz);
         }
     }
 
@@ -66,41 +72,10 @@ u8 load_elf_64(uint8_t * elf){
      * Now just create a process with the entry point and register it... 
      */
 
+    kprintf("ELF entrypoint %x\n", elf64->e_entry);
+    kprintf("ELF cr3 %x\n", proc->cr3);
 
-    void (* entrypoint)(void) = (void*)elf64->e_entry;
-
-	u64 * stack = (u64 *)(elf_pcb->p_stack);
-    // user proc
-	*--stack = 0x23; // ss
-	*--stack = (u64)elf_pcb->p_stack; // rsp
-	*--stack = 0x202 ; // rflags
-	*--stack = 0x2b; // cs
-	*--stack = (u64)entrypoint; // rip
-
-    *--stack = 0; // r8
-    *--stack = 0;
-    *--stack = 0; 
-    *--stack = 0; // ...
-    *--stack = 0; 
-    *--stack = 0;
-    *--stack = 0;
-    *--stack = 0; // r15
-
-
-	*--stack = (u64)elf_pcb->p_stack; // rbp
-
-	*--stack = 0; // rdx
-	*--stack = 0; // rsi
-	*--stack = 0; // rdi
-
-    elf_pcb->p_stack = stack;
-    elf_pcb->cr3 = elf_cr3;
-    elf_pcb->next = NULL;
-
-    kprintf("ELF entrypoint %x\n", entrypoint );
-    kprintf("ELF cr3 %x\n", elf_cr3);
-
-    register_process(elf_pcb);
+    register_process(proc);
 
 #ifdef SCHEDULER_DEBUG
     dump_list();

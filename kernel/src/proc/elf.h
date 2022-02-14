@@ -2,6 +2,7 @@
 #define _ELF_H
 
 #include <stdint.h>
+#include "proc.h"
 
 // TODO: Convert the enums to #defines so that they work with #ifdef.
 
@@ -350,6 +351,6 @@ typedef struct {
 #define ELFDATANUM	3
 
 
-uint8_t load_elf_bin(uint8_t *);
+uint8_t load_elf_bin( uint8_t *);
 
 #endif // _ELF_H

@@ -227,7 +227,7 @@ void _start(struct stivale2_struct * boot_info) {
 
     if(tarfs != NULL)
         vfs_register_fs(tarfs, 0);
-    else; // do somethine else;
+    else; // do something else;
 
     FILE * execfile = vfs_open("a0:hello", 0);
     kprintf("[MAIN] VFS OPEN TEST : %s\n", execfile->name);

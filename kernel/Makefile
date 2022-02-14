@@ -12,7 +12,7 @@ INTERNALLDFLAGS := \
 	-nostdlib      \
 	-Tlinker.ld    \
 	-z max-page-size=0x1000 \
-	-mcmodel=large -v
+	-mcmodel=large -v 
 
 INTERNALCFLAGS  :=       \
 	-I.       			 \
@@ -28,7 +28,8 @@ INTERNALCFLAGS  :=       \
 	-mno-sse             \
 	-mno-sse2            \
 	-mno-red-zone		 \
-	-mcmodel=large
+	-mcmodel=large		\
+	
 
 CFILES := $(shell find ./ -type f -name '*.c')
 ASM_FILES := $(shell find ./ -type f -name '*.asm')
@@ -40,7 +41,7 @@ NASM_OBJ    := $(ASM_FILES:.asm=.o)
 all: $(KERNEL)
 
 $(KERNEL): $(NASM_OBJ) $(C_OBJ) $(AS_OBJ)
-	$(CC) $(INTERNALLDFLAGS)  $(NASM_OBJ) $(C_OBJ) -o $@
+	$(CC) $(INTERNALLDFLAGS) $(NASM_OBJ) $(C_OBJ) -Xlinker -Map=output.map -o $@
 
 stivale2.h:
 	wget https://github.com/stivale/stivale/raw/master/stivale2.h
