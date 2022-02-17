@@ -54,7 +54,7 @@ u8 load_elf_64( u8 * elf){
             kprintf("Found loadable segment at offset 0x%x\n", p_header->p_offset);
             memset(phys_addr, 0, p_header->p_memsz);
             memcpy(phys_addr, 
-                    (void*)elf+(p_header->p_offset), p_header->p_filesz);
+                    (void*)elf+(p_header->p_offset), p_header->p_memsz);
 
             // now map those pages 
             void* virt_addr =  (void*)p_header->p_vaddr;

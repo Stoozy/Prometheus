@@ -159,79 +159,79 @@ LOAD ./src/fs/tarfs.o
  .text          0xffffffff802036b2      0x1e6 ./src/cpu/smp.o
                 0xffffffff802036b2                ap_startup
                 0xffffffff802036cd                smp_init
- .text          0xffffffff80203898      0x9ff ./src/memory/vmm.o
+ .text          0xffffffff80203898      0x9f7 ./src/memory/vmm.o
                 0xffffffff80203898                vmm_get_page_index
                 0xffffffff80203929                vmm_virt_to_phys
                 0xffffffff80203b7a                vmm_map
                 0xffffffff80203f46                vmm_create_kernel_proc_pml4
                 0xffffffff80204053                vmm_create_user_proc_pml4
-                0xffffffff8020426e                vmm_get_current_cr3
- .text          0xffffffff80204297      0xf2b ./src/memory/pmm.o
-                0xffffffff802043e4                pmm_is_block_free
-                0xffffffff8020442e                pmm_mark_region_used
-                0xffffffff80204529                pmm_init_region
-                0xffffffff80204903                pmm_alloc_blocks
-                0xffffffff80204a11                pmm_alloc_block
-                0xffffffff80204af1                pmm_free_blocks
-                0xffffffff80204ba5                pmm_free_block
-                0xffffffff80204c30                pmm_get_free_block_count
-                0xffffffff80204c58                pmm_get_block_count
-                0xffffffff80204c80                pmm_dump
-                0xffffffff80204e38                pmm_init
- .text          0xffffffff802051c2      0x556 ./src/syscall/syscalls.o
-                0xffffffff80205248                sys_exit
-                0xffffffff80205283                sys_open
-                0xffffffff8020534d                sys_close
-                0xffffffff802053a4                sys_read
-                0xffffffff8020541e                sys_write
-                0xffffffff802054cd                sys_execve
-                0xffffffff802054fc                sys_fork
-                0xffffffff8020551b                syscall_dispatcher
-                0xffffffff802055eb                sys_init
- .text          0xffffffff80205718      0x307 ./src/proc/elf.o
-                0xffffffff80205718                load_elf_bin
-                0xffffffff80205794                load_elf_64
- .text          0xffffffff80205a1f      0x808 ./src/proc/proc.o
-                0xffffffff80205a1f                unmap_fd_to_proc
-                0xffffffff80205a72                map_fd_to_proc
-                0xffffffff80205ad8                kill_proc
-                0xffffffff80205bf6                kill_current_proc
-                0xffffffff80205c32                task_a
-                0xffffffff80205c56                task_b
-                0xffffffff80205ca4                task_c
-                0xffffffff80205ce9                idle_task
-                0xffffffff80205d2e                dump_list
-                0xffffffff80205e38                create_process
-                0xffffffff80206051                register_process
-                0xffffffff8020610f                multitasking_init
- .text          0xffffffff80206227      0x464 ./src/proc/scheduler.o
-                0xffffffff80206227                save_context
-                0xffffffff80206465                schedule
- .text          0xffffffff8020668b      0xccc ./src/liballoc.o
-                0xffffffff80206cbc                kmalloc
-                0xffffffff80206f32                kfree
-                0xffffffff802071ad                kcalloc
-                0xffffffff8020722a                krealloc
- .text          0xffffffff80207357      0x23c ./src/kmalloc.o
-                0xffffffff80207357                print_spin_wait
-                0xffffffff802073a4                liballoc_lock
-                0xffffffff802073f0                liballoc_unlock
-                0xffffffff8020743c                liballoc_alloc
-                0xffffffff80207520                liballoc_free
- .text          0xffffffff80207593      0x5f2 ./src/util.o
-                0xffffffff80207593                cli
-                0xffffffff802075af                sti
-                0xffffffff802075cb                abs
-                0xffffffff802075fc                ll_abs
-                0xffffffff80207632                swap
-                0xffffffff8020767a                reverse
-                0xffffffff802076f1                ulltoa
-                0xffffffff80207808                lltoa
-                0xffffffff80207954                itoa
-                0xffffffff80207aa8                set_bit
-                0xffffffff80207af2                clear_bit
-                0xffffffff80207b3e                check_bit
- *fill*         0xffffffff80207b85      0x47b 
+                0xffffffff80204266                vmm_get_current_cr3
+ .text          0xffffffff8020428f      0xf2b ./src/memory/pmm.o
+                0xffffffff802043dc                pmm_is_block_free
+                0xffffffff80204426                pmm_mark_region_used
+                0xffffffff80204521                pmm_init_region
+                0xffffffff802048fb                pmm_alloc_blocks
+                0xffffffff80204a09                pmm_alloc_block
+                0xffffffff80204ae9                pmm_free_blocks
+                0xffffffff80204b9d                pmm_free_block
+                0xffffffff80204c28                pmm_get_free_block_count
+                0xffffffff80204c50                pmm_get_block_count
+                0xffffffff80204c78                pmm_dump
+                0xffffffff80204e30                pmm_init
+ .text          0xffffffff802051ba      0x556 ./src/syscall/syscalls.o
+                0xffffffff80205240                sys_exit
+                0xffffffff8020527b                sys_open
+                0xffffffff80205345                sys_close
+                0xffffffff8020539c                sys_read
+                0xffffffff80205416                sys_write
+                0xffffffff802054c5                sys_execve
+                0xffffffff802054f4                sys_fork
+                0xffffffff80205513                syscall_dispatcher
+                0xffffffff802055e3                sys_init
+ .text          0xffffffff80205710      0x307 ./src/proc/elf.o
+                0xffffffff80205710                load_elf_bin
+                0xffffffff8020578c                load_elf_64
+ .text          0xffffffff80205a17      0x7fe ./src/proc/proc.o
+                0xffffffff80205a17                unmap_fd_to_proc
+                0xffffffff80205a6a                map_fd_to_proc
+                0xffffffff80205ad0                kill_proc
+                0xffffffff80205bee                kill_current_proc
+                0xffffffff80205c2a                task_a
+                0xffffffff80205c4e                task_b
+                0xffffffff80205c9c                task_c
+                0xffffffff80205ce1                idle_task
+                0xffffffff80205d26                dump_list
+                0xffffffff80205e30                create_process
+                0xffffffff8020603f                register_process
+                0xffffffff802060fd                multitasking_init
+ .text          0xffffffff80206215      0x464 ./src/proc/scheduler.o
+                0xffffffff80206215                save_context
+                0xffffffff80206453                schedule
+ .text          0xffffffff80206679      0xccc ./src/liballoc.o
+                0xffffffff80206caa                kmalloc
+                0xffffffff80206f20                kfree
+                0xffffffff8020719b                kcalloc
+                0xffffffff80207218                krealloc
+ .text          0xffffffff80207345      0x23c ./src/kmalloc.o
+                0xffffffff80207345                print_spin_wait
+                0xffffffff80207392                liballoc_lock
+                0xffffffff802073de                liballoc_unlock
+                0xffffffff8020742a                liballoc_alloc
+                0xffffffff8020750e                liballoc_free
+ .text          0xffffffff80207581      0x5f2 ./src/util.o
+                0xffffffff80207581                cli
+                0xffffffff8020759d                sti
+                0xffffffff802075b9                abs
+                0xffffffff802075ea                ll_abs
+                0xffffffff80207620                swap
+                0xffffffff80207668                reverse
+                0xffffffff802076df                ulltoa
+                0xffffffff802077f6                lltoa
+                0xffffffff80207942                itoa
+                0xffffffff80207a96                set_bit
+                0xffffffff80207ae0                clear_bit
+                0xffffffff80207b2c                check_bit
+ *fill*         0xffffffff80207b73      0x48d 
  .text          0xffffffff80208000     0x1876 ./src/kernel.o
                 0xffffffff80208000                ssfn_utf8
                 0xffffffff802081bb                ssfn_putc
@@ -455,7 +455,7 @@ LOAD ./src/fs/tarfs.o
                 0xffffffff8025d408                k_end = .
 OUTPUT(kernel.elf elf64-x86-64)
 
-.debug_info     0x0000000000000000     0x8c8c
+.debug_info     0x0000000000000000     0x8c7d
  .debug_info    0x0000000000000000      0x1cf ./src/drivers/pit.o
  .debug_info    0x00000000000001cf       0xf1 ./src/drivers/keyboard.o
  .debug_info    0x00000000000002c0      0x2e0 ./src/drivers/serial.o
@@ -472,19 +472,19 @@ OUTPUT(kernel.elf elf64-x86-64)
  .debug_info    0x000000000000183d      0xc25 ./src/cpu/idt.o
  .debug_info    0x0000000000002462      0x360 ./src/cpu/gdt.o
  .debug_info    0x00000000000027c2      0x305 ./src/cpu/smp.o
- .debug_info    0x0000000000002ac7      0x70b ./src/memory/vmm.o
- .debug_info    0x00000000000031d2      0x8af ./src/memory/pmm.o
- .debug_info    0x0000000000003a81      0x9b1 ./src/syscall/syscalls.o
- .debug_info    0x0000000000004432      0x7b0 ./src/proc/elf.o
- .debug_info    0x0000000000004be2      0x744 ./src/proc/proc.o
- .debug_info    0x0000000000005326      0x59e ./src/proc/scheduler.o
- .debug_info    0x00000000000058c4      0x816 ./src/liballoc.o
- .debug_info    0x00000000000060da      0x42f ./src/kmalloc.o
- .debug_info    0x0000000000006509      0x44a ./src/util.o
- .debug_info    0x0000000000006953      0xec2 ./src/kernel.o
- .debug_info    0x0000000000007815      0x5d7 ./src/kprintf.o
- .debug_info    0x0000000000007dec      0x67a ./src/fs/vfs.o
- .debug_info    0x0000000000008466      0x826 ./src/fs/tarfs.o
+ .debug_info    0x0000000000002ac7      0x6fc ./src/memory/vmm.o
+ .debug_info    0x00000000000031c3      0x8af ./src/memory/pmm.o
+ .debug_info    0x0000000000003a72      0x9b1 ./src/syscall/syscalls.o
+ .debug_info    0x0000000000004423      0x7b0 ./src/proc/elf.o
+ .debug_info    0x0000000000004bd3      0x744 ./src/proc/proc.o
+ .debug_info    0x0000000000005317      0x59e ./src/proc/scheduler.o
+ .debug_info    0x00000000000058b5      0x816 ./src/liballoc.o
+ .debug_info    0x00000000000060cb      0x42f ./src/kmalloc.o
+ .debug_info    0x00000000000064fa      0x44a ./src/util.o
+ .debug_info    0x0000000000006944      0xec2 ./src/kernel.o
+ .debug_info    0x0000000000007806      0x5d7 ./src/kprintf.o
+ .debug_info    0x0000000000007ddd      0x67a ./src/fs/vfs.o
+ .debug_info    0x0000000000008457      0x826 ./src/fs/tarfs.o
 
 .debug_abbrev   0x0000000000000000     0x2aeb
  .debug_abbrev  0x0000000000000000      0x125 ./src/drivers/pit.o
@@ -577,7 +577,7 @@ OUTPUT(kernel.elf elf64-x86-64)
  .debug_aranges
                 0x0000000000000540       0x30 ./src/fs/tarfs.o
 
-.debug_line     0x0000000000000000     0x3e23
+.debug_line     0x0000000000000000     0x3e17
  .debug_line    0x0000000000000000      0x122 ./src/drivers/pit.o
  .debug_line    0x0000000000000122       0x90 ./src/drivers/keyboard.o
  .debug_line    0x00000000000001b2      0x134 ./src/drivers/serial.o
@@ -594,19 +594,19 @@ OUTPUT(kernel.elf elf64-x86-64)
  .debug_line    0x0000000000000cfe      0x2e4 ./src/cpu/idt.o
  .debug_line    0x0000000000000fe2      0x132 ./src/cpu/gdt.o
  .debug_line    0x0000000000001114      0x166 ./src/cpu/smp.o
- .debug_line    0x000000000000127a      0x3ed ./src/memory/vmm.o
- .debug_line    0x0000000000001667      0x4af ./src/memory/pmm.o
- .debug_line    0x0000000000001b16      0x271 ./src/syscall/syscalls.o
- .debug_line    0x0000000000001d87      0x21f ./src/proc/elf.o
- .debug_line    0x0000000000001fa6      0x2dc ./src/proc/proc.o
- .debug_line    0x0000000000002282      0x262 ./src/proc/scheduler.o
- .debug_line    0x00000000000024e4      0x4b0 ./src/liballoc.o
- .debug_line    0x0000000000002994       0xff ./src/kmalloc.o
- .debug_line    0x0000000000002a93      0x253 ./src/util.o
- .debug_line    0x0000000000002ce6      0x9ad ./src/kernel.o
- .debug_line    0x0000000000003693      0x327 ./src/kprintf.o
- .debug_line    0x00000000000039ba      0x244 ./src/fs/vfs.o
- .debug_line    0x0000000000003bfe      0x225 ./src/fs/tarfs.o
+ .debug_line    0x000000000000127a      0x3ea ./src/memory/vmm.o
+ .debug_line    0x0000000000001664      0x4af ./src/memory/pmm.o
+ .debug_line    0x0000000000001b13      0x271 ./src/syscall/syscalls.o
+ .debug_line    0x0000000000001d84      0x21f ./src/proc/elf.o
+ .debug_line    0x0000000000001fa3      0x2d3 ./src/proc/proc.o
+ .debug_line    0x0000000000002276      0x262 ./src/proc/scheduler.o
+ .debug_line    0x00000000000024d8      0x4b0 ./src/liballoc.o
+ .debug_line    0x0000000000002988       0xff ./src/kmalloc.o
+ .debug_line    0x0000000000002a87      0x253 ./src/util.o
+ .debug_line    0x0000000000002cda      0x9ad ./src/kernel.o
+ .debug_line    0x0000000000003687      0x327 ./src/kprintf.o
+ .debug_line    0x00000000000039ae      0x244 ./src/fs/vfs.o
+ .debug_line    0x0000000000003bf2      0x225 ./src/fs/tarfs.o
 
 .debug_str      0x0000000000000000     0x194c
  .debug_str     0x0000000000000000      0x17e ./src/drivers/pit.o

@@ -114,6 +114,7 @@ ProcessControlBlock * create_process(void (*entry)(void)){
 
 	u64 * stack = (u64 *)(pcb->p_stack);
     PageTable * pml4 = vmm_create_user_proc_pml4(stack);
+
     // user proc
 	*--stack = 0x23; // ss
 	*--stack = (u64)pcb->p_stack; // rsp
@@ -131,7 +132,7 @@ ProcessControlBlock * create_process(void (*entry)(void)){
     *--stack = 0; // r15
 
 
-	*--stack = (u64)pcb->p_stack; // rbp
+	*--stack = 0; // rbp
 
 	*--stack = 0; // rdx
 	*--stack = 0; // rsi
