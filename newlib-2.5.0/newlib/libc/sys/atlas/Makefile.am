@@ -12,7 +12,7 @@ endif
  
 lib_a_SOURCES =
 lib_a_LIBADD = $(extra_objs)
-EXTRA_lib_a_SOURCES = syscalls.c crt0.c # add more source files here if you split up
+EXTRA_lib_a_SOURCES = syscalls.c crt0.as # add more source files here if you split up
 lib_a_DEPENDENCIES = $(extra_objs)      # syscalls.c into multiple files
 lib_a_CCASFLAGS = $(AM_CCASFLAGS)
 lib_a_CFLAGS = $(AM_CFLAGS)

@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "syscalls.h"
+#include "../config.h"
 #include "../typedefs.h"
 #include "../proc/proc.h"
 #include "../fs/vfs.h"
@@ -68,16 +69,19 @@ int sys_read(int file, char *ptr, int len){
 }
 
 int sys_write(int file, char *ptr, int len){
-    cli();
-    for(;;);
     //if(file == 1){
         // trying to print out to stdout
         // output to serial for now...
    
         // FIXME: should probably start
         // at the file position instead
-        for(u64 i=0;i<len; i++)
+        
+#ifdef SYSCALL_DEBUG
+    kprintf("Called SYS_WRITE File: %d Buffer addr: 0x%x Length: %d\n", file, ptr, len);
+#endif 
+        for(int i=0; i<len; ++i)
             kprintf("%c", ptr[i]);
+        kprintf("\n");
         return len;
     //}
 
@@ -100,36 +104,53 @@ int sys_fork(){
 }
 
 void syscall_dispatcher(Registers regs){
+#ifdef SYSCALL_DEBUG
     dump_regs(&regs);
-    for(;;) kprintf("syscall was invoked");
+#endif
 
     u64 syscall = regs.rsi;
     u64 ret = 0;
 
     switch(syscall){
-        case 0:
+        case 0:{
             ret = (u64)sys_exit();
             break;
-        case 1:
+        }
+        case 1:{
             ret = (u64)sys_open((const char *)regs.r8, (int)regs.r9);
             break;
-        case 2:
-            ret = (u64)sys_close((int)regs.r8);
+        }
+        case 2:{
+            //ret = (u64)sys_close((int)regs.r8);
             break;
-        case 3:
-            ret = (u64)sys_read((int)regs.r8, (char*)regs.r9, (int)regs.r10);
+        }
+        case 3:{
+            //ret = (u64)sys_read((int)regs.r8, (char*)regs.r9, (int)regs.r10);
             break;
-        case 4:
-            ret = (u64)sys_write((int)regs.r8, (char*)regs.r9, (int)regs.r10);
+
+        }
+        case 4:{
+            register int file asm("r8");
+            register char * ptr asm("r9");
+            register int len asm("r10");
+
+#ifdef SYSCALL_DEBUG
+            kprintf("SYS_WRITE called with %d file 0x%x char ptr and %d len", 
+                    file, ptr, len);
+#endif 
+
+            register int ret asm("r15") = sys_write(file, ptr, len);
             break;
-        case 5:
-            ret = (u64)sys_execve((char*)regs.r8, (char **)regs.r9, (char **)regs.r10);
+        }
+        case 5:{
+
+            //ret = (u64)sys_execve((char*)regs.r8, (char **)regs.r9, (char **)regs.r10);
+            break;
+        }
         default:
             break;
     }
 
-    // set return value
-    regs.r15 = (u64)ret;
 }
 
 void sys_init(){

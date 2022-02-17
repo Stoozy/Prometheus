@@ -64,14 +64,14 @@ void kill_current_proc(void){
 
 void task_a(){ 
     // test syscall
-    asm volatile("mov $0, %rsi\n\t\ 
+    asm volatile("mov $0, %rsi\n\t\
         syscall");
 }
 
 void task_b(){ 
 
     /* exit syscall */
-    asm volatile("mov $0, %rdi\n\t\ 
+    asm volatile("mov $0, %rdi\n\t\
                 syscall");
     
     // this should never happen

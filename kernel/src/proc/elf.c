@@ -44,19 +44,17 @@ u8 load_elf_64( u8 * elf){
             (elf + elf64->e_phoff + (elf64->e_phentsize * segment));
 
         if(p_header->p_type == PT_LOAD){
-            /* load segment here */
+            /* found loadable segment */
 
-            /* "Allocate Memory" */
-            
             int flags = PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT;
 
-            u64 blocks = ((p_header->p_vaddr+p_header->p_filesz)/PAGE_SIZE - p_header->p_vaddr/PAGE_SIZE)+1;
+            u64 blocks = ((p_header->p_vaddr+p_header->p_filesz)/PAGE_SIZE - p_header->p_vaddr/PAGE_SIZE) +1;
             void * phys_addr = pmm_alloc_blocks(blocks);
 
             kprintf("Found loadable segment at offset 0x%x\n", p_header->p_offset);
             memset(phys_addr, 0, p_header->p_memsz);
             memcpy(phys_addr, 
-                    (void*)elf+(p_header->p_offset), p_header->p_memsz);
+                    (void*)elf+(p_header->p_offset), p_header->p_filesz);
 
             // now map those pages 
             void* virt_addr =  (void*)p_header->p_vaddr;
