@@ -43,6 +43,7 @@ u8 load_elf_64( u8 * elf){
         Elf64_Phdr * p_header = (Elf64_Phdr *) 
             (elf + elf64->e_phoff + (elf64->e_phentsize * segment));
 
+
         if(p_header->p_type == PT_LOAD){
             /* found loadable segment */
 

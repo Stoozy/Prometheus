@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include "../typedefs.h"
 #include "../memory/vmm.h"
 
@@ -16,6 +17,16 @@ typedef unsigned long long caddr_t;
 #define GSBASE      0xC0000101
 #define KGSBASE     0xC0000102
 
+
+/* syscalls */
+#define SYS_EXIT        0
+#define SYS_OPEN        1
+#define SYS_CLOSE       2
+#define SYS_READ        3
+#define SYS_WRITE       4
+#define SYS_LOG_LIBC    5
+#define SYS_MMAP        6
+
 int sys_exit();
 int sys_close(int file);
 //char ** environ; /* pointer to array of char * strings that define the current environment variables */
@@ -28,7 +39,7 @@ int sys_kill(int pid, int sig);
 int sys_link(char *old, char * _new);
 int sys_lseek(int file, int ptr, int dir);
 int sys_open(const char *name, int flags, ...);
-int sys_read(int file, char *ptr, int len);
+int sys_read(int file, char *ptr, size_t len);
 
 caddr_t sys_sbrk(int incr);
 int sys_stat(const char *file, struct stat *st);

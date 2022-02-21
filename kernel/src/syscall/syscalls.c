@@ -10,6 +10,8 @@
 #include "../kmalloc.h"
 #include "../memory/pmm.h"
 
+typedef long int off_t;
+
 static inline uint64_t rdmsr(uint64_t msr){
 	uint32_t low, high;
 	asm volatile (
@@ -36,6 +38,10 @@ char * __env = {0};
 /* pointer to array of char * strings that define the current environment variables */
 char **environ = &__env; 
 
+void sys_log_libc(const char * message){
+    kprintf(message);
+}
+
 int sys_exit(){
     kill_current_proc();
     return 0;
@@ -60,7 +66,7 @@ int sys_close(int file){
     return 0;
 }
 
-int sys_read(int file, char *ptr, int len){
+int sys_read(int file, char *ptr, size_t len){
     extern ProcessControlBlock * gp_current_process;
     FILE * f = gp_current_process->fd_table[file];
     int bytes_read = vfs_read(f, (u64)len, (u8*)ptr);
@@ -93,6 +99,19 @@ int sys_write(int file, char *ptr, int len){
     //return bytes_written;
 }
 
+
+void * sys_vm_map(
+    void * addr, 
+    size_t size, 
+    int prot, 
+    int flags,
+    int fd, 
+    off_t offset )
+{
+
+
+}
+
 int sys_execve(char *name, char **argv, char **env){
 
     return -1;
@@ -112,43 +131,48 @@ void syscall_dispatcher(Registers regs){
     u64 ret = 0;
 
     switch(syscall){
-        case 0:{
-            ret = (u64)sys_exit();
+        case SYS_EXIT:{
+            register int status asm("r9");
+            // TODO: maybe use status code somehow?
+            sys_exit();
             break;
         }
-        case 1:{
-            ret = (u64)sys_open((const char *)regs.r8, (int)regs.r9);
+        case SYS_OPEN:{
+            register const char * fp asm("r8");
+            register int flags asm("r9");
+            register int * fd asm("r10");
+            register int ret asm("r15") = sys_open(fp, flags);
+            
             break;
         }
-        case 2:{
-            //ret = (u64)sys_close((int)regs.r8);
+        case SYS_CLOSE:{
             break;
         }
-        case 3:{
-            //ret = (u64)sys_read((int)regs.r8, (char*)regs.r9, (int)regs.r10);
+        case SYS_READ:{
+            register int fd asm("r8");
+            register char * buf asm("r9");
+            register size_t count asm("r10");
+            register int ret asm("r15") = sys_read(fd, buf, count);
             break;
 
         }
-        case 4:{
+        case SYS_WRITE:{
             register int file asm("r8");
             register char * ptr asm("r9");
             register int len asm("r10");
-
-#ifdef SYSCALL_DEBUG
-            kprintf("SYS_WRITE called with %d file 0x%x char ptr and %d len", 
-                    file, ptr, len);
-#endif 
-
             register int ret asm("r15") = sys_write(file, ptr, len);
             break;
         }
-        case 5:{
-
-            //ret = (u64)sys_execve((char*)regs.r8, (char **)regs.r9, (char **)regs.r10);
+        case SYS_LOG_LIBC: {
+            register const char * msg asm("r8");  
+            sys_log_libc(msg);
             break;
         }
-        default:
+        case SYS_MMAP:{
+        }
+        default:{
             break;
+        }
     }
 
 }
