@@ -25,7 +25,7 @@ typedef unsigned long long caddr_t;
 #define SYS_READ        3
 #define SYS_WRITE       4
 #define SYS_LOG_LIBC    5
-#define SYS_MMAP        6
+#define SYS_VM_MAP      6
 
 int sys_exit();
 int sys_close(int file);

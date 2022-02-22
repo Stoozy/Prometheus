@@ -102,9 +102,12 @@ FILE * vfs_open(const char *filename, int flags){
             // e.g. a0:/foo/bar => /foo/bar
             filename += 3;
             if(g_filesystems[fs_idx]){
+                kprintf("Got fs_idx %d\n", fs_idx);
                 FILE * file = g_filesystems[fs_idx]->open(filename, flags);
+                if(file == NULL)
+                    return NULL;
 
-                kprintf("Opened: %s\n", file->name);
+                kprintf("[VFS]  Opened: %s\n", file->name);
                 kprintf("File inode %llx\n", file->inode);
                 file->device = fs_idx;
                 return file;

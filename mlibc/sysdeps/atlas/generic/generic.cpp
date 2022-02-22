@@ -14,6 +14,7 @@ const int SYS_CLOSE     = 2;
 const int SYS_READ      = 3;
 const int SYS_WRITE     = 4;
 const int SYS_LOG_LIBC  = 5;
+const int SYS_VM_MAP    = 6;
 
 
 void sys_libc_log(const char *message) {
@@ -176,7 +177,20 @@ int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
 int sys_vm_map(void *hint, size_t size, int prot, int flags,
 		int fd, off_t offset, void **window) {
     __ensure(flags & MAP_ANONYMOUS);
+    register int syscall asm("rsi") = SYS_VM_MAP;
+    register void* addr asm("r8") = addr;
+    register size_t sz asm("r9") = size;
+    register int _prot asm("r10") = prot;
+    register int _flags asm("r10") = flags;
+    register int _fd asm("r12") = fd;
+    register off_t off asm("r13") = offset;
 
+    asm("syscall");
+
+    register void * ret asm("r15");
+    *window = ret;
+
+    return 0;
     // TODO
     //void *ret;
     //int sys_errno;
@@ -193,7 +207,7 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags,
 
 	//*window = ret;
 
-    return 0;
+    //return 0;
 }
 
 int sys_vm_unmap(void *pointer, size_t size) {

@@ -7,7 +7,7 @@
 #include "../string/string.h"
 #include "../proc/proc.h"
 #include "../kmalloc.h"
-
+#include "../fs/vfs.h"
 #include "../kprintf.h"
 #include "../config.h"
 
@@ -34,6 +34,56 @@ u8 load_elf_bin( u8 * elf) {
     //}
 }
 
+u8 load_elf_segments(u8 * elf){
+
+}
+
+static load_segments(PageTable * vas, u8 * elf){
+    Elf64_Ehdr * elf64 = (Elf64_Ehdr *) elf;
+
+    for(u64 segment=0; segment<elf64->e_phnum; ++segment){
+        Elf64_Phdr * p_header = (Elf64_Phdr *) 
+            (elf + elf64->e_phoff + (elf64->e_phentsize * segment));
+
+        if(p_header->p_type == PT_INTERP){
+            char * ld_path = kmalloc(p_header->p_memsz);
+            char * ld_buf = kmalloc(p_header->p_filesz);
+            memcpy(ld_path, elf + p_header->p_offset, p_header->p_memsz);
+            kprintf("[ELF]  Got linker path: %s ", ld_path);
+            FILE * f = vfs_open((const char *)ld_path, 0);
+            int br = vfs_read(f, f->size, ld_buf);
+            if(br != 0){
+                kprintf("[ELF]  Read %s; Contents: %s\n", ld_path, ld_buf);
+                load_segments(vas, ld_buf);
+            }
+
+
+        }
+
+        if(p_header->p_type == PT_LOAD){
+            /* found loadable segment */
+
+            int flags = PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT;
+
+            u64 blocks = ((p_header->p_vaddr+p_header->p_filesz)/PAGE_SIZE - p_header->p_vaddr/PAGE_SIZE) +1;
+            void * phys_addr = pmm_alloc_blocks(blocks);
+
+            kprintf("Found loadable segment at offset 0x%x\n", p_header->p_offset);
+            memset(phys_addr, 0, p_header->p_memsz);
+            memcpy(phys_addr, 
+                    (void*)elf+(p_header->p_offset), p_header->p_memsz);
+
+            // now map those pages 
+            void* virt_addr =  (void*)p_header->p_vaddr;
+
+            for(u64 page = 0; page<blocks; ++page){
+                vmm_map(vas, virt_addr, phys_addr+(page*PAGE_SIZE), flags);
+                virt_addr += PAGE_SIZE;
+            }
+        }
+    }
+}
+
 u8 load_elf_64( u8 * elf){
     Elf64_Ehdr * elf64 = (Elf64_Ehdr *) elf;
 
@@ -43,6 +93,20 @@ u8 load_elf_64( u8 * elf){
         Elf64_Phdr * p_header = (Elf64_Phdr *) 
             (elf + elf64->e_phoff + (elf64->e_phentsize * segment));
 
+        if(p_header->p_type == PT_INTERP){
+            char * ld_path = kmalloc(p_header->p_memsz);
+            char * ld_buf = kmalloc(p_header->p_filesz);
+            memcpy(ld_path, elf + p_header->p_offset, p_header->p_memsz);
+            kprintf("[ELF]  Got linker path: %s ", ld_path);
+            FILE * f = vfs_open((const char *)ld_path, 0);
+            int br = vfs_read(f, f->size, ld_buf);
+            if(br != 0){
+                kprintf("[ELF]  Read %s; Contents: %s\n", ld_path, ld_buf);
+                load_segments(proc->cr3, ld_buf);
+            }
+
+
+        }
 
         if(p_header->p_type == PT_LOAD){
             /* found loadable segment */

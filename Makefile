@@ -30,7 +30,7 @@ clean-libc:
 	rm -rf $(SYSROOT)/usr
 
 initrd: 
-	tar -C $(SYSROOT) -cvf initrd.tar fonts testfile hello
+	tar -C $(SYSROOT) -cvf initrd.tar lib fonts testfile hello
 
 
 $(ISO_IMAGE): limine kernel/kernel.elf initrd

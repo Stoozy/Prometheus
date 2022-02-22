@@ -81,8 +81,8 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         PDP = (PageTable*)pmm_alloc_block();
         memset(PDP, 0, 0x1000);
         PTE.address = (u64)PDP >> 12;
-        PTE.present = 1;
-        PTE.rw = 1;
+        PTE.present = flags & PAGE_PRESENT;
+        PTE.rw = flags & PAGE_READ_WRITE;
         PTE.user = flags & PAGE_USER;
         pml4->entries[indexer.pml4i] = PTE;
     }
@@ -95,8 +95,8 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         PD = (PageTable*)pmm_alloc_block();
         memset(PD, 0, 0x1000);
         PTE.address = (u64)PD >> 12;
-        PTE.present = 1;
-        PTE.rw = 1;
+        PTE.present = flags & PAGE_PRESENT;
+        PTE.rw = flags  & PAGE_READ_WRITE;
         PTE.user = flags & PAGE_USER;
         PDP->entries[indexer.pml3i] = PTE;
     }
@@ -108,8 +108,8 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         PT = (PageTable*)pmm_alloc_block();
         memset(PT, 0, 0x1000);
         PTE.address = (u64)PT >> 12;
-        PTE.present = 1;
-        PTE.rw = 1;
+        PTE.present = flags & PAGE_PRESENT;
+        PTE.rw = flags & PAGE_READ_WRITE;
         PTE.user = flags & PAGE_USER;
         PD->entries[indexer.pml2i] = PTE;
     }

@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <sys/mman.h>
 
 #include "syscalls.h"
 #include "../config.h"
@@ -9,6 +10,7 @@
 #include "../cpu/cpu.h"
 #include "../kmalloc.h"
 #include "../memory/pmm.h"
+#include "../memory/vmm.h"
 
 typedef long int off_t;
 
@@ -99,6 +101,18 @@ int sys_write(int file, char *ptr, int len){
     //return bytes_written;
 }
 
+/* snatched from mlibc/vm-flags.h */
+#define PROT_NONE  0x00
+#define PROT_READ  0x01
+#define PROT_WRITE 0x02
+#define PROT_EXEC  0x04
+
+#define MAP_PRIVATE   0x01
+#define MAP_SHARED    0x02
+#define MAP_FIXED     0x04
+#define MAP_ANON      0x08
+#define MAP_ANONYMOUS 0x08
+
 
 void * sys_vm_map(
     void * addr, 
@@ -108,8 +122,20 @@ void * sys_vm_map(
     int fd, 
     off_t offset )
 {
-
-
+    /* the calling proc */
+    extern ProcessControlBlock * gp_current_process;
+    if(flags & MAP_ANONYMOUS && flags & MAP_FIXED){
+        size_t rounded_size;
+        rounded_size =  size < PAGE_SIZE ? PAGE_SIZE : (size/PAGE_SIZE) * PAGE_SIZE;
+        int page_flags =  PAGE_USER | PAGE_PRESENT;
+        if(prot & PROT_WRITE)
+            page_flags |= PAGE_READ_WRITE;
+    
+        for(u64 vaddr = addr; vaddr < rounded_size; vaddr += PAGE_SIZE){
+            vmm_map(gp_current_process->cr3, vaddr, (void*)pmm_alloc_block(), page_flags);
+        }
+    }
+    return addr;
 }
 
 int sys_execve(char *name, char **argv, char **env){
@@ -168,7 +194,15 @@ void syscall_dispatcher(Registers regs){
             sys_log_libc(msg);
             break;
         }
-        case SYS_MMAP:{
+        case SYS_VM_MAP:{
+            register void* addr asm("r8");
+            register size_t size asm("r9");
+            register int prot asm("r10");
+            register int flags asm("r10");
+            register int fd asm("r12");
+            register off_t off asm("r13");
+            register void * ret asm ("r15") = sys_vm_map(addr, size, prot, flags, fd, off);
+            break;
         }
         default:{
             break;
