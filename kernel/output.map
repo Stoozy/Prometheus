@@ -1,4 +1,126 @@
 
+Merging program properties
+
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (0x1) and ./src/cpu/irq.o (not found)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (0x0) and ./src/cpu/irq.o (not found)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/drivers/keyboard.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/drivers/keyboard.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/drivers/serial.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/drivers/serial.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/drivers/video.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/drivers/video.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/string/strlen.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/string/strlen.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/string/memmove.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/string/memmove.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/string/memcmp.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/string/memcmp.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/string/strcat.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/string/strcat.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/string/memset.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/string/memset.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/string/strcmp.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/string/strcmp.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/string/memcpy.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/string/memcpy.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/cpu/io.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/cpu/io.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/cpu/cpu.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/cpu/cpu.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/cpu/idt.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/cpu/idt.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/cpu/gdt.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/cpu/gdt.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/cpu/smp.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/cpu/smp.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/memory/vmm.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/memory/vmm.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/memory/pmm.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/memory/pmm.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/syscall/syscalls.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/syscall/syscalls.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/proc/elf.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/proc/elf.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/proc/proc.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/proc/proc.o (0x1)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/proc/scheduler.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/proc/scheduler.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/liballoc.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/liballoc.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/kmalloc.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/kmalloc.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/util.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/util.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/kernel.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/kernel.o (0x1)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/kprintf.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/kprintf.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/fs/vfs.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/fs/vfs.o (0x0)
+Removed property 0xc0010001 to merge ./src/drivers/pit.o (not found) and ./src/fs/tarfs.o (0x1)
+Removed property 0xc0010002 to merge ./src/drivers/pit.o (not found) and ./src/fs/tarfs.o (0x1)
+
+Discarded input sections
+
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/drivers/pit.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/drivers/keyboard.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/drivers/serial.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/drivers/video.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/string/strlen.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/string/memmove.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/string/memcmp.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/string/strcat.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/string/memset.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/string/strcmp.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/string/memcpy.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/cpu/io.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/cpu/cpu.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/cpu/idt.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/cpu/gdt.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/cpu/smp.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/memory/vmm.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/memory/pmm.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/syscall/syscalls.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/proc/elf.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/proc/proc.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/proc/scheduler.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/liballoc.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/kmalloc.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/util.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/kernel.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/kprintf.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/fs/vfs.o
+ .note.gnu.property
+                0x0000000000000000       0x30 ./src/fs/tarfs.o
+
 Memory Configuration
 
 Name             Origin             Length             Attributes
@@ -6,779 +128,845 @@ Name             Origin             Length             Attributes
 
 Linker script and memory map
 
-LOAD ./src/memory/paging.o
-LOAD ./src/spinlock.o
-LOAD ./src/proc/context_switch.o
-LOAD ./src/syscall/syscall_entry.o
 LOAD ./src/cpu/irq.o
 LOAD ./src/cpu/gdt_util.o
-LOAD ./src/fs/vfs.o
-LOAD ./src/fs/tarfs.o
-LOAD ./src/liballoc.o
-LOAD ./src/memory/pmm.o
-LOAD ./src/memory/vmm.o
+LOAD ./src/memory/paging.o
+LOAD ./src/syscall/syscall_entry.o
+LOAD ./src/proc/context_switch.o
+LOAD ./src/spinlock.o
+LOAD ./src/drivers/pit.o
 LOAD ./src/drivers/keyboard.o
 LOAD ./src/drivers/serial.o
-LOAD ./src/drivers/pit.o
 LOAD ./src/drivers/video.o
-LOAD ./src/kprintf.o
 LOAD ./src/string/strlen.o
-LOAD ./src/string/strcat.o
-LOAD ./src/string/strcmp.o
 LOAD ./src/string/memmove.o
 LOAD ./src/string/memcmp.o
-LOAD ./src/string/memcpy.o
+LOAD ./src/string/strcat.o
 LOAD ./src/string/memset.o
-LOAD ./src/proc/proc.o
-LOAD ./src/proc/scheduler.o
-LOAD ./src/proc/elf.o
-LOAD ./src/syscall/syscalls.o
-LOAD ./src/util.o
-LOAD ./src/kernel.o
+LOAD ./src/string/strcmp.o
+LOAD ./src/string/memcpy.o
+LOAD ./src/cpu/io.o
 LOAD ./src/cpu/cpu.o
 LOAD ./src/cpu/idt.o
 LOAD ./src/cpu/gdt.o
-LOAD ./src/cpu/io.o
 LOAD ./src/cpu/smp.o
+LOAD ./src/memory/vmm.o
+LOAD ./src/memory/pmm.o
+LOAD ./src/syscall/syscalls.o
+LOAD ./src/proc/elf.o
+LOAD ./src/proc/proc.o
+LOAD ./src/proc/scheduler.o
+LOAD ./src/liballoc.o
 LOAD ./src/kmalloc.o
+LOAD ./src/util.o
+LOAD ./src/kernel.o
+LOAD ./src/kprintf.o
+LOAD ./src/fs/vfs.o
+LOAD ./src/fs/tarfs.o
                 0xffffffff80200000                . = 0xffffffff80200000
                 0xffffffff80200000                k_start = .
 
 .note.gnu.build-id
                 0xffffffff80200000       0x24
  .note.gnu.build-id
-                0xffffffff80200000       0x24 ./src/memory/paging.o
+                0xffffffff80200000       0x24 ./src/cpu/irq.o
 
 .stivale2hdr    0xffffffff80200040       0x20
  *(.stivale2hdr)
  .stivale2hdr   0xffffffff80200040       0x20 ./src/kernel.o
 
-.text           0xffffffff80201000     0xa070
+.text           0xffffffff80201000     0xaeaf
  *(.text*)
- .text          0xffffffff80201000        0xb ./src/memory/paging.o
-                0xffffffff80201000                load_pagedir
-                0xffffffff80201004                invalidate_tlb
- *fill*         0xffffffff8020100b        0x5 
- .text          0xffffffff80201010       0x1c ./src/spinlock.o
-                0xffffffff80201010                acquire_lock
-                0xffffffff80201025                release_lock
- *fill*         0xffffffff8020102c        0x4 
- .text          0xffffffff80201030       0x24 ./src/proc/context_switch.o
-                0xffffffff80201030                switch_to_process
- *fill*         0xffffffff80201054        0xc 
- .text          0xffffffff80201060       0x89 ./src/syscall/syscall_entry.o
-                0xffffffff80201060                enable_sce
-                0xffffffff8020107b                syscall_entry
- *fill*         0xffffffff802010e9        0x7 
- .text          0xffffffff802010f0       0xda ./src/cpu/irq.o
-                0xffffffff802010f3                dummy_irq
-                0xffffffff80201110                irq0
-                0xffffffff80201143                irq1
-                0xffffffff8020114c                irq2
-                0xffffffff80201155                irq3
-                0xffffffff8020115e                irq4
-                0xffffffff80201167                irq5
-                0xffffffff80201170                irq6
-                0xffffffff80201179                irq7
-                0xffffffff80201182                irq8
-                0xffffffff8020118b                irq9
-                0xffffffff80201194                irq10
-                0xffffffff8020119d                irq11
-                0xffffffff802011a6                irq12
-                0xffffffff802011af                irq13
-                0xffffffff802011b8                irq14
-                0xffffffff802011c1                irq15
- *fill*         0xffffffff802011ca        0x6 
- .text          0xffffffff802011d0       0x22 ./src/cpu/gdt_util.o
-                0xffffffff802011d0                load_gdt
- .text          0xffffffff802011f2      0x649 ./src/fs/vfs.o
-                0xffffffff802013c7                vfs_register_fs
-                0xffffffff8020149f                vfs_unregister_fs
-                0xffffffff8020154f                vfs_read
-                0xffffffff802015e2                vfs_write
-                0xffffffff80201675                vfs_open
-                0xffffffff80201820                vfs_close
- .text          0xffffffff8020183b      0x58d ./src/fs/tarfs.o
-                0xffffffff802018db                ustar_search
-                0xffffffff80201a67                ustar_open
-                0xffffffff80201b25                ustar_close
-                0xffffffff80201b48                ustar_read
-                0xffffffff80201c42                ustar_write
-                0xffffffff80201c71                ustar_finddir
-                0xffffffff80201d02                tarfs_init
- .text          0xffffffff80201dc8      0xcb7 ./src/liballoc.o
-                0xffffffff802023f6                kmalloc
-                0xffffffff80202666                kfree
-                0xffffffff802028dc                kcalloc
-                0xffffffff80202957                krealloc
- .text          0xffffffff80202a7f      0xef6 ./src/memory/pmm.o
-                0xffffffff80202bcc                pmm_is_block_free
-                0xffffffff80202c15                pmm_mark_region_used
-                0xffffffff80202d0c                pmm_init_region
-                0xffffffff802030d9                pmm_alloc_blocks
-                0xffffffff802031e4                pmm_alloc_block
-                0xffffffff802032c1                pmm_free_blocks
-                0xffffffff80203374                pmm_free_block
-                0xffffffff802033fe                pmm_get_free_block_count
-                0xffffffff80203426                pmm_get_block_count
-                0xffffffff8020344e                pmm_dump
-                0xffffffff802035f3                pmm_init
- .text          0xffffffff80203975      0xa4b ./src/memory/vmm.o
-                0xffffffff80203975                vmm_get_page_index
-                0xffffffff80203a06                vmm_virt_to_phys
-                0xffffffff80203c44                vmm_map
-                0xffffffff8020407e                vmm_create_kernel_proc_pml4
-                0xffffffff80204189                vmm_create_user_proc_pml4
-                0xffffffff80204397                vmm_get_current_cr3
- .text          0xffffffff802043c0       0x73 ./src/drivers/keyboard.o
-                0xffffffff802043c0                handle_scan
- .text          0xffffffff80204433      0x37d ./src/drivers/serial.o
-                0xffffffff80204433                serial_init
-                0xffffffff80204592                is_transmit_empty
-                0xffffffff802045d3                write_serial
-                0xffffffff8020463c                turn_color_on
-                0xffffffff802046ec                turn_color_off
- .text          0xffffffff802047b0      0x182 ./src/drivers/pit.o
-                0xffffffff802047b0                pit_init
-                0xffffffff80204865                sleep
-                0xffffffff802048f7                tick
- .text          0xffffffff80204932      0x6fd ./src/drivers/video.o
-                0xffffffff80204932                screen_init
-                0xffffffff80204af7                draw_pixel
-                0xffffffff80204ba3                draw_line
-                0xffffffff80204de7                draw_rect
-                0xffffffff80204ee1                draw_fill_rect
-                0xffffffff80204f89                refresh_screen_proc
-                0xffffffff80204fdf                get_framebuffer_addr
-                0xffffffff80205007                get_framebuffer_size
- .text          0xffffffff8020502f      0xa16 ./src/kprintf.o
-                0xffffffff80205116                kprintf
- .text          0xffffffff80205a45       0x47 ./src/string/strlen.o
-                0xffffffff80205a45                strlen
- .text          0xffffffff80205a8c       0x85 ./src/string/strcat.o
-                0xffffffff80205a8c                strcat
- .text          0xffffffff80205b11       0x6a ./src/string/strcmp.o
-                0xffffffff80205b11                strcmp
- .text          0xffffffff80205b7b       0xb7 ./src/string/memmove.o
-                0xffffffff80205b7b                memmove
- .text          0xffffffff80205c32       0xa6 ./src/string/memcmp.o
-                0xffffffff80205c32                memcmp
- .text          0xffffffff80205cd8       0x72 ./src/string/memcpy.o
-                0xffffffff80205cd8                memcpy
- .text          0xffffffff80205d4a       0x5e ./src/string/memset.o
-                0xffffffff80205d4a                memset
- .text          0xffffffff80205da8      0x7e0 ./src/proc/proc.o
-                0xffffffff80205da8                unmap_fd_to_proc
-                0xffffffff80205dfb                map_fd_to_proc
-                0xffffffff80205e61                kill_proc
-                0xffffffff80205f7f                kill_current_proc
-                0xffffffff80205fba                task_a
-                0xffffffff80205fde                task_b
-                0xffffffff80206029                task_c
-                0xffffffff8020606b                idle_task
-                0xffffffff802060ad                dump_list
-                0xffffffff802061ab                create_process
-                0xffffffff802063ba                register_process
-                0xffffffff80206478                multitasking_init
- .text          0xffffffff80206588      0x460 ./src/proc/scheduler.o
-                0xffffffff80206588                save_context
-                0xffffffff802067c6                schedule
- .text          0xffffffff802069e8      0x7a5 ./src/proc/elf.o
-                0xffffffff802069e8                load_elf_bin
-                0xffffffff80206a63                load_elf_segments
-                0xffffffff80206db4                load_elf_64
- .text          0xffffffff8020718d      0x6ec ./src/syscall/syscalls.o
-                0xffffffff80207213                sys_log_libc
-                0xffffffff8020725a                sys_exit
-                0xffffffff80207295                sys_open
-                0xffffffff8020735f                sys_close
-                0xffffffff802073b6                sys_read
-                0xffffffff8020742f                sys_write
-                0xffffffff802074d8                sys_vm_map
-                0xffffffff802075d9                sys_execve
-                0xffffffff80207608                sys_fork
-                0xffffffff80207627                syscall_dispatcher
-                0xffffffff80207764                sys_init
- .text          0xffffffff80207879      0x5ec ./src/util.o
-                0xffffffff80207879                cli
-                0xffffffff80207895                sti
-                0xffffffff802078b1                abs
-                0xffffffff802078e2                ll_abs
-                0xffffffff80207918                swap
-                0xffffffff80207960                reverse
-                0xffffffff802079d6                ulltoa
-                0xffffffff80207aec                lltoa
-                0xffffffff80207c36                itoa
-                0xffffffff80207d88                set_bit
-                0xffffffff80207dd2                clear_bit
-                0xffffffff80207e1e                check_bit
- *fill*         0xffffffff80207e65      0x19b 
- .text          0xffffffff80208000     0x181f ./src/kernel.o
-                0xffffffff80208000                ssfn_utf8
-                0xffffffff802081bb                ssfn_putc
-                0xffffffff80208930                stivale2_get_tag
-                0xffffffff80209000                userspace_func
-                0xffffffff80209042                hang
-                0xffffffff8020905c                _start
- .text          0xffffffff8020981f      0x430 ./src/cpu/cpu.o
-                0xffffffff8020981f                cpu_init
-                0xffffffff8020989b                get_cpu_struct
-                0xffffffff802098ea                dump_regs
- .text          0xffffffff80209c4f      0xd2f ./src/cpu/idt.o
-                0xffffffff80209c4f                idt_set_descriptor
-                0xffffffff80209cf4                irq0_handler
-                0xffffffff80209d63                irq1_handler
-                0xffffffff80209da4                irq2_handler
-                0xffffffff80209e06                irq3_handler
-                0xffffffff80209e68                irq4_handler
-                0xffffffff80209eca                irq5_handler
-                0xffffffff80209f2c                irq6_handler
-                0xffffffff80209f8e                irq7_handler
-                0xffffffff80209ff0                irq8_handler
-                0xffffffff8020a06e                irq9_handler
-                0xffffffff8020a0ec                irq10_handler
-                0xffffffff8020a16a                irq11_handler
-                0xffffffff8020a1e8                irq12_handler
-                0xffffffff8020a266                irq13_handler
-                0xffffffff8020a2e4                irq14_handler
-                0xffffffff8020a362                irq15_handler
-                0xffffffff8020a3e0                dummy_handler
-                0xffffffff8020a43b                idt_init
- .text          0xffffffff8020a97e      0x149 ./src/cpu/gdt.o
-                0xffffffff8020a97e                gdt_init
- .text          0xffffffff8020aac7      0x19a ./src/cpu/io.o
-                0xffffffff8020aac7                outb
-                0xffffffff8020aafc                outw
-                0xffffffff8020ab31                outl
-                0xffffffff8020ab61                inl
-                0xffffffff8020ab92                insl
-                0xffffffff8020abdc                inw
-                0xffffffff8020ac10                inb
-                0xffffffff8020ac42                io_wait
- .text          0xffffffff8020ac61      0x1dc ./src/cpu/smp.o
-                0xffffffff8020ac61                ap_startup
-                0xffffffff8020ac7c                smp_init
- .text          0xffffffff8020ae3d      0x233 ./src/kmalloc.o
-                0xffffffff8020ae3d                print_spin_wait
-                0xffffffff8020ae87                liballoc_lock
-                0xffffffff8020aed0                liballoc_unlock
-                0xffffffff8020af19                liballoc_alloc
-                0xffffffff8020affd                liballoc_free
+ .text          0xffffffff80201000       0xda ./src/cpu/irq.o
+                0xffffffff80201003                dummy_irq
+                0xffffffff80201020                irq0
+                0xffffffff80201053                irq1
+                0xffffffff8020105c                irq2
+                0xffffffff80201065                irq3
+                0xffffffff8020106e                irq4
+                0xffffffff80201077                irq5
+                0xffffffff80201080                irq6
+                0xffffffff80201089                irq7
+                0xffffffff80201092                irq8
+                0xffffffff8020109b                irq9
+                0xffffffff802010a4                irq10
+                0xffffffff802010ad                irq11
+                0xffffffff802010b6                irq12
+                0xffffffff802010bf                irq13
+                0xffffffff802010c8                irq14
+                0xffffffff802010d1                irq15
+ *fill*         0xffffffff802010da        0x6 
+ .text          0xffffffff802010e0       0x22 ./src/cpu/gdt_util.o
+                0xffffffff802010e0                load_gdt
+ *fill*         0xffffffff80201102        0xe 
+ .text          0xffffffff80201110        0xb ./src/memory/paging.o
+                0xffffffff80201110                load_pagedir
+                0xffffffff80201114                invalidate_tlb
+ *fill*         0xffffffff8020111b        0x5 
+ .text          0xffffffff80201120       0x89 ./src/syscall/syscall_entry.o
+                0xffffffff80201120                enable_sce
+                0xffffffff8020113b                syscall_entry
+ *fill*         0xffffffff802011a9        0x7 
+ .text          0xffffffff802011b0       0x24 ./src/proc/context_switch.o
+                0xffffffff802011b0                switch_to_process
+ *fill*         0xffffffff802011d4        0xc 
+ .text          0xffffffff802011e0       0x1c ./src/spinlock.o
+                0xffffffff802011e0                acquire_lock
+                0xffffffff802011f5                release_lock
+ .text          0xffffffff802011fc      0x185 ./src/drivers/pit.o
+                0xffffffff802011fc                pit_init
+                0xffffffff802012b1                sleep
+                0xffffffff80201346                tick
+ .text          0xffffffff80201381       0x76 ./src/drivers/keyboard.o
+                0xffffffff80201381                handle_scan
+ .text          0xffffffff802013f7      0x38d ./src/drivers/serial.o
+                0xffffffff802013f7                serial_init
+                0xffffffff80201556                is_transmit_empty
+                0xffffffff80201597                write_serial
+                0xffffffff80201601                turn_color_on
+                0xffffffff802016b8                turn_color_off
+ .text          0xffffffff80201784      0x70e ./src/drivers/video.o
+                0xffffffff80201784                screen_init
+                0xffffffff8020194e                draw_pixel
+                0xffffffff802019fa                draw_line
+                0xffffffff80201c44                draw_rect
+                0xffffffff80201d42                draw_fill_rect
+                0xffffffff80201dec                refresh_screen_proc
+                0xffffffff80201e42                get_framebuffer_addr
+                0xffffffff80201e6a                get_framebuffer_size
+ .text          0xffffffff80201e92       0x47 ./src/string/strlen.o
+                0xffffffff80201e92                strlen
+ .text          0xffffffff80201ed9       0xb7 ./src/string/memmove.o
+                0xffffffff80201ed9                memmove
+ .text          0xffffffff80201f90       0xa6 ./src/string/memcmp.o
+                0xffffffff80201f90                memcmp
+ .text          0xffffffff80202036       0x85 ./src/string/strcat.o
+                0xffffffff80202036                strcat
+ .text          0xffffffff802020bb       0x5e ./src/string/memset.o
+                0xffffffff802020bb                memset
+ .text          0xffffffff80202119       0x6a ./src/string/strcmp.o
+                0xffffffff80202119                strcmp
+ .text          0xffffffff80202183       0x72 ./src/string/memcpy.o
+                0xffffffff80202183                memcpy
+ .text          0xffffffff802021f5      0x19a ./src/cpu/io.o
+                0xffffffff802021f5                outb
+                0xffffffff8020222a                outw
+                0xffffffff8020225f                outl
+                0xffffffff8020228f                inl
+                0xffffffff802022c0                insl
+                0xffffffff8020230a                inw
+                0xffffffff8020233e                inb
+                0xffffffff80202370                io_wait
+ .text          0xffffffff8020238f      0x464 ./src/cpu/cpu.o
+                0xffffffff8020238f                cpu_init
+                0xffffffff8020240b                get_cpu_struct
+                0xffffffff8020245b                dump_regs
+ .text          0xffffffff802027f3      0xd75 ./src/cpu/idt.o
+                0xffffffff802027f3                idt_set_descriptor
+                0xffffffff80202899                irq0_handler
+                0xffffffff80202908                irq1_handler
+                0xffffffff80202949                irq2_handler
+                0xffffffff802029ae                irq3_handler
+                0xffffffff80202a13                irq4_handler
+                0xffffffff80202a78                irq5_handler
+                0xffffffff80202add                irq6_handler
+                0xffffffff80202b42                irq7_handler
+                0xffffffff80202ba7                irq8_handler
+                0xffffffff80202c28                irq9_handler
+                0xffffffff80202ca9                irq10_handler
+                0xffffffff80202d2a                irq11_handler
+                0xffffffff80202dab                irq12_handler
+                0xffffffff80202e2c                irq13_handler
+                0xffffffff80202ead                irq14_handler
+                0xffffffff80202f2e                irq15_handler
+                0xffffffff80202faf                dummy_handler
+                0xffffffff8020300a                idt_init
+ .text          0xffffffff80203568      0x14a ./src/cpu/gdt.o
+                0xffffffff80203568                gdt_init
+ .text          0xffffffff802036b2      0x1e6 ./src/cpu/smp.o
+                0xffffffff802036b2                ap_startup
+                0xffffffff802036cd                smp_init
+ .text          0xffffffff80203898      0xa66 ./src/memory/vmm.o
+                0xffffffff80203898                vmm_get_page_index
+                0xffffffff80203929                vmm_virt_to_phys
+                0xffffffff80203b7a                vmm_map
+                0xffffffff80203fb5                vmm_create_kernel_proc_pml4
+                0xffffffff802040c2                vmm_create_user_proc_pml4
+                0xffffffff802042d5                vmm_get_current_cr3
+ .text          0xffffffff802042fe      0xf2b ./src/memory/pmm.o
+                0xffffffff8020444b                pmm_is_block_free
+                0xffffffff80204495                pmm_mark_region_used
+                0xffffffff80204590                pmm_init_region
+                0xffffffff8020496a                pmm_alloc_blocks
+                0xffffffff80204a78                pmm_alloc_block
+                0xffffffff80204b58                pmm_free_blocks
+                0xffffffff80204c0c                pmm_free_block
+                0xffffffff80204c97                pmm_get_free_block_count
+                0xffffffff80204cbf                pmm_get_block_count
+                0xffffffff80204ce7                pmm_dump
+                0xffffffff80204e9f                pmm_init
+ .text          0xffffffff80205229      0x710 ./src/syscall/syscalls.o
+                0xffffffff802052af                sys_log_libc
+                0xffffffff802052f6                sys_exit
+                0xffffffff80205331                sys_open
+                0xffffffff802053fb                sys_close
+                0xffffffff80205452                sys_read
+                0xffffffff802054cb                sys_write
+                0xffffffff8020557a                sys_vm_map
+                0xffffffff8020567b                sys_execve
+                0xffffffff802056aa                sys_fork
+                0xffffffff802056c9                syscall_dispatcher
+                0xffffffff8020580c                sys_init
+ .text          0xffffffff80205939      0x996 ./src/proc/elf.o
+                0xffffffff80205939                load_elf_bin
+                0xffffffff80205d6b                load_elf_64
+ .text          0xffffffff802062cf      0x7fe ./src/proc/proc.o
+                0xffffffff802062cf                unmap_fd_to_proc
+                0xffffffff80206322                map_fd_to_proc
+                0xffffffff80206388                kill_proc
+                0xffffffff802064a6                kill_current_proc
+                0xffffffff802064e2                task_a
+                0xffffffff80206506                task_b
+                0xffffffff80206554                task_c
+                0xffffffff80206599                idle_task
+                0xffffffff802065de                dump_list
+                0xffffffff802066e8                create_process
+                0xffffffff802068f7                register_process
+                0xffffffff802069b5                multitasking_init
+ .text          0xffffffff80206acd      0x464 ./src/proc/scheduler.o
+                0xffffffff80206acd                save_context
+                0xffffffff80206d0b                schedule
+ .text          0xffffffff80206f31      0xccc ./src/liballoc.o
+                0xffffffff80207562                kmalloc
+                0xffffffff802077d8                kfree
+                0xffffffff80207a53                kcalloc
+                0xffffffff80207ad0                krealloc
+ .text          0xffffffff80207bfd      0x23c ./src/kmalloc.o
+                0xffffffff80207bfd                print_spin_wait
+                0xffffffff80207c4a                liballoc_lock
+                0xffffffff80207c96                liballoc_unlock
+                0xffffffff80207ce2                liballoc_alloc
+                0xffffffff80207dc6                liballoc_free
+ .text          0xffffffff80207e39      0x5f2 ./src/util.o
+                0xffffffff80207e39                cli
+                0xffffffff80207e55                sti
+                0xffffffff80207e71                abs
+                0xffffffff80207ea2                ll_abs
+                0xffffffff80207ed8                swap
+                0xffffffff80207f20                reverse
+                0xffffffff80207f97                ulltoa
+                0xffffffff802080ae                lltoa
+                0xffffffff802081fa                itoa
+                0xffffffff8020834e                set_bit
+                0xffffffff80208398                clear_bit
+                0xffffffff802083e4                check_bit
+ *fill*         0xffffffff8020842b      0xbd5 
+ .text          0xffffffff80209000     0x1872 ./src/kernel.o
+                0xffffffff80209000                ssfn_utf8
+                0xffffffff802091bb                ssfn_putc
+                0xffffffff8020995e                stivale2_get_tag
+                0xffffffff8020a000                userspace_func
+                0xffffffff8020a045                hang
+                0xffffffff8020a05f                _start
+ .text          0xffffffff8020a872      0xa38 ./src/kprintf.o
+                0xffffffff8020a959                kprintf
+ .text          0xffffffff8020b2aa      0x65f ./src/fs/vfs.o
+                0xffffffff8020b487                vfs_register_fs
+                0xffffffff8020b562                vfs_unregister_fs
+                0xffffffff8020b612                vfs_read
+                0xffffffff8020b6a5                vfs_write
+                0xffffffff8020b738                vfs_open
+                0xffffffff8020b8ee                vfs_close
+ .text          0xffffffff8020b909      0x5a6 ./src/fs/tarfs.o
+                0xffffffff8020b9aa                ustar_search
+                0xffffffff8020bb3e                ustar_open
+                0xffffffff8020bbfe                ustar_close
+                0xffffffff8020bc21                ustar_read
+                0xffffffff8020bd24                ustar_write
+                0xffffffff8020bd53                ustar_finddir
+                0xffffffff8020bde4                tarfs_init
 
-.plt            0xffffffff8020b070        0x0
- .plt           0xffffffff8020b070        0x0 ./src/memory/paging.o
+.plt            0xffffffff8020beb0        0x0
+ .plt           0xffffffff8020beb0        0x0 ./src/cpu/irq.o
 
-.plt.got        0xffffffff8020b070        0x0
- .plt.got       0xffffffff8020b070        0x0 ./src/memory/paging.o
+.plt.got        0xffffffff8020beb0        0x0
+ .plt.got       0xffffffff8020beb0        0x0 ./src/cpu/irq.o
 
-.rodata         0xffffffff8020b070      0xbcc
+.rodata         0xffffffff8020beb0      0xc46
  *(.rodata*)
- .rodata        0xffffffff8020b070       0x86 ./src/fs/vfs.o
- .rodata        0xffffffff8020b0f6       0x60 ./src/fs/tarfs.o
- *fill*         0xffffffff8020b156        0x2 
- .rodata        0xffffffff8020b158      0x1a0 ./src/memory/pmm.o
- .rodata        0xffffffff8020b2f8       0xef ./src/memory/vmm.o
- .rodata        0xffffffff8020b3e7        0x3 ./src/drivers/keyboard.o
- .rodata        0xffffffff8020b3ea        0xe ./src/drivers/pit.o
- .rodata        0xffffffff8020b3f8        0x5 ./src/kprintf.o
- *fill*         0xffffffff8020b3fd        0x3 
- .rodata        0xffffffff8020b400       0x8e ./src/proc/proc.o
- *fill*         0xffffffff8020b48e        0x2 
- .rodata        0xffffffff8020b490       0x33 ./src/proc/scheduler.o
- *fill*         0xffffffff8020b4c3        0x5 
- .rodata        0xffffffff8020b4c8       0x86 ./src/proc/elf.o
- *fill*         0xffffffff8020b54e        0x2 
- .rodata        0xffffffff8020b550       0x40 ./src/syscall/syscalls.o
- .rodata        0xffffffff8020b590      0x329 ./src/kernel.o
- *fill*         0xffffffff8020b8b9        0x7 
- .rodata        0xffffffff8020b8c0      0x1dd ./src/cpu/cpu.o
- .rodata        0xffffffff8020ba9d       0xfd ./src/cpu/idt.o
- *fill*         0xffffffff8020bb9a        0x6 
- .rodata        0xffffffff8020bba0       0x70 ./src/cpu/smp.o
- .rodata        0xffffffff8020bc10       0x2c ./src/kmalloc.o
+ .rodata        0xffffffff8020beb0        0xe ./src/drivers/pit.o
+ .rodata        0xffffffff8020bebe        0x3 ./src/drivers/keyboard.o
+ *fill*         0xffffffff8020bec1        0x7 
+ .rodata        0xffffffff8020bec8      0x1dd ./src/cpu/cpu.o
+ .rodata        0xffffffff8020c0a5       0xfd ./src/cpu/idt.o
+ *fill*         0xffffffff8020c1a2        0x6 
+ .rodata        0xffffffff8020c1a8       0x70 ./src/cpu/smp.o
+ .rodata        0xffffffff8020c218       0xef ./src/memory/vmm.o
+ *fill*         0xffffffff8020c307        0x1 
+ .rodata        0xffffffff8020c308      0x1a0 ./src/memory/pmm.o
+ .rodata        0xffffffff8020c4a8       0x40 ./src/syscall/syscalls.o
+ .rodata        0xffffffff8020c4e8      0x100 ./src/proc/elf.o
+ .rodata        0xffffffff8020c5e8       0x8e ./src/proc/proc.o
+ *fill*         0xffffffff8020c676        0x2 
+ .rodata        0xffffffff8020c678       0x33 ./src/proc/scheduler.o
+ *fill*         0xffffffff8020c6ab        0x5 
+ .rodata        0xffffffff8020c6b0       0x2c ./src/kmalloc.o
+ *fill*         0xffffffff8020c6dc        0x4 
+ .rodata        0xffffffff8020c6e0      0x329 ./src/kernel.o
+ .rodata        0xffffffff8020ca09        0x5 ./src/kprintf.o
+ *fill*         0xffffffff8020ca0e        0x2 
+ .rodata        0xffffffff8020ca10       0x86 ./src/fs/vfs.o
+ .rodata        0xffffffff8020ca96       0x60 ./src/fs/tarfs.o
 
-.gnu.version_d  0xffffffff8020bc40        0x0
+.gnu.version_d  0xffffffff8020caf8        0x0
  .gnu.version_d
-                0xffffffff8020bc40        0x0 ./src/memory/paging.o
+                0xffffffff8020caf8        0x0 ./src/cpu/irq.o
 
-.gnu.version    0xffffffff8020bc3c        0x0
- .gnu.version   0xffffffff8020bc3c        0x0 ./src/memory/paging.o
+.gnu.version    0xffffffff8020caf6        0x0
+ .gnu.version   0xffffffff8020caf6        0x0 ./src/cpu/irq.o
 
-.gnu.version_r  0xffffffff8020bc40        0x0
+.gnu.version_r  0xffffffff8020caf8        0x0
  .gnu.version_r
-                0xffffffff8020bc40        0x0 ./src/memory/paging.o
+                0xffffffff8020caf8        0x0 ./src/cpu/irq.o
 
-.dynsym         0xffffffff8020bc40       0x18
- .dynsym        0xffffffff8020bc40       0x18 ./src/memory/paging.o
+.dynsym         0xffffffff8020caf8       0x18
+ .dynsym        0xffffffff8020caf8       0x18 ./src/cpu/irq.o
 
-.dynstr         0xffffffff8020bc58        0x1
- .dynstr        0xffffffff8020bc58        0x1 ./src/memory/paging.o
+.dynstr         0xffffffff8020cb10        0x1
+ .dynstr        0xffffffff8020cb10        0x1 ./src/cpu/irq.o
 
-.gnu.hash       0xffffffff8020bc60       0x1c
- .gnu.hash      0xffffffff8020bc60       0x1c ./src/memory/paging.o
+.gnu.hash       0xffffffff8020cb18       0x1c
+ .gnu.hash      0xffffffff8020cb18       0x1c ./src/cpu/irq.o
 
-.eh_frame       0xffffffff8020bc80        0x0
- .eh_frame      0xffffffff8020bc80        0x0 ./src/memory/paging.o
- .eh_frame      0xffffffff8020bc80        0x0 ./src/memory/paging.o
+.eh_frame       0xffffffff8020cb38        0x0
+ .eh_frame      0xffffffff8020cb38        0x0 ./src/cpu/irq.o
+ .eh_frame      0xffffffff8020cb38        0x0 ./src/cpu/irq.o
 
-.eh_frame       0xffffffff8020bc80     0x1ac8
- .eh_frame      0xffffffff8020bc80      0x160 ./src/fs/vfs.o
- .eh_frame      0xffffffff8020bde0      0x180 ./src/fs/tarfs.o
- .eh_frame      0xffffffff8020bf60      0x1f0 ./src/liballoc.o
- .eh_frame      0xffffffff8020c150      0x260 ./src/memory/pmm.o
- .eh_frame      0xffffffff8020c3b0      0x108 ./src/memory/vmm.o
- .eh_frame      0xffffffff8020c4b8       0x40 ./src/drivers/keyboard.o
- .eh_frame      0xffffffff8020c4f8       0xd8 ./src/drivers/serial.o
- .eh_frame      0xffffffff8020c5d0       0x88 ./src/drivers/pit.o
- .eh_frame      0xffffffff8020c658      0x130 ./src/drivers/video.o
- .eh_frame      0xffffffff8020c788       0x90 ./src/kprintf.o
- .eh_frame      0xffffffff8020c818       0x38 ./src/string/strlen.o
- .eh_frame      0xffffffff8020c850       0x40 ./src/string/strcat.o
- .eh_frame      0xffffffff8020c890       0x38 ./src/string/strcmp.o
- .eh_frame      0xffffffff8020c8c8       0x38 ./src/string/memmove.o
- .eh_frame      0xffffffff8020c900       0x38 ./src/string/memcmp.o
- .eh_frame      0xffffffff8020c938       0x38 ./src/string/memcpy.o
- .eh_frame      0xffffffff8020c970       0x38 ./src/string/memset.o
- .eh_frame      0xffffffff8020c9a8      0x1c8 ./src/proc/proc.o
- .eh_frame      0xffffffff8020cb70       0x68 ./src/proc/scheduler.o
- .eh_frame      0xffffffff8020cbd8       0xb0 ./src/proc/elf.o
- .eh_frame      0xffffffff8020cc88      0x200 ./src/syscall/syscalls.o
- .eh_frame      0xffffffff8020ce88      0x1a8 ./src/util.o
- .eh_frame      0xffffffff8020d030       0xf8 ./src/kernel.o
- .eh_frame      0xffffffff8020d128       0x90 ./src/cpu/cpu.o
- .eh_frame      0xffffffff8020d1b8      0x308 ./src/cpu/idt.o
- .eh_frame      0xffffffff8020d4c0       0x48 ./src/cpu/gdt.o
- .eh_frame      0xffffffff8020d508      0x118 ./src/cpu/io.o
- .eh_frame      0xffffffff8020d620       0x58 ./src/cpu/smp.o
- .eh_frame      0xffffffff8020d678       0xd0 ./src/kmalloc.o
+.eh_frame       0xffffffff8020cb38     0x1ab0
+ .eh_frame      0xffffffff8020cb38       0x88 ./src/drivers/pit.o
+ .eh_frame      0xffffffff8020cbc0       0x40 ./src/drivers/keyboard.o
+ .eh_frame      0xffffffff8020cc00       0xd8 ./src/drivers/serial.o
+ .eh_frame      0xffffffff8020ccd8      0x130 ./src/drivers/video.o
+ .eh_frame      0xffffffff8020ce08       0x38 ./src/string/strlen.o
+ .eh_frame      0xffffffff8020ce40       0x38 ./src/string/memmove.o
+ .eh_frame      0xffffffff8020ce78       0x38 ./src/string/memcmp.o
+ .eh_frame      0xffffffff8020ceb0       0x40 ./src/string/strcat.o
+ .eh_frame      0xffffffff8020cef0       0x38 ./src/string/memset.o
+ .eh_frame      0xffffffff8020cf28       0x38 ./src/string/strcmp.o
+ .eh_frame      0xffffffff8020cf60       0x38 ./src/string/memcpy.o
+ .eh_frame      0xffffffff8020cf98      0x118 ./src/cpu/io.o
+ .eh_frame      0xffffffff8020d0b0       0x90 ./src/cpu/cpu.o
+ .eh_frame      0xffffffff8020d140      0x308 ./src/cpu/idt.o
+ .eh_frame      0xffffffff8020d448       0x48 ./src/cpu/gdt.o
+ .eh_frame      0xffffffff8020d490       0x58 ./src/cpu/smp.o
+ .eh_frame      0xffffffff8020d4e8      0x108 ./src/memory/vmm.o
+ .eh_frame      0xffffffff8020d5f0      0x260 ./src/memory/pmm.o
+ .eh_frame      0xffffffff8020d850      0x200 ./src/syscall/syscalls.o
+ .eh_frame      0xffffffff8020da50       0x90 ./src/proc/elf.o
+ .eh_frame      0xffffffff8020dae0      0x1c8 ./src/proc/proc.o
+ .eh_frame      0xffffffff8020dca8       0x68 ./src/proc/scheduler.o
+ .eh_frame      0xffffffff8020dd10      0x1f0 ./src/liballoc.o
+ .eh_frame      0xffffffff8020df00       0xd0 ./src/kmalloc.o
+ .eh_frame      0xffffffff8020dfd0      0x1a8 ./src/util.o
+ .eh_frame      0xffffffff8020e178       0xf8 ./src/kernel.o
+ .eh_frame      0xffffffff8020e270       0x90 ./src/kprintf.o
+ .eh_frame      0xffffffff8020e300      0x168 ./src/fs/vfs.o
+ .eh_frame      0xffffffff8020e468      0x180 ./src/fs/tarfs.o
 
-.eh_frame_hdr   0xffffffff8020d748        0x0
- .eh_frame_hdr  0xffffffff8020d748        0x0 ./src/fs/vfs.o
+.eh_frame_hdr   0xffffffff8020e5e8        0x0
+ .eh_frame_hdr  0xffffffff8020e5e8        0x0 ./src/drivers/pit.o
 
-.rela.dyn       0xffffffff8020d748      0x378
- .rela.plt      0xffffffff8020d748        0x0 ./src/memory/paging.o
- .rela.got      0xffffffff8020d748      0x258 ./src/memory/paging.o
- .rela.bss      0xffffffff8020d9a0        0x0 ./src/memory/paging.o
+.rela.dyn       0xffffffff8020e5e8      0x378
+ .rela.plt      0xffffffff8020e5e8        0x0 ./src/cpu/irq.o
+ .rela.got      0xffffffff8020e5e8      0x258 ./src/cpu/irq.o
+ .rela.bss      0xffffffff8020e840        0x0 ./src/cpu/irq.o
  .rela.data.rel.ro
-                0xffffffff8020d9a0        0x0 ./src/memory/paging.o
- .rela.ifunc    0xffffffff8020d9a0        0x0 ./src/memory/paging.o
+                0xffffffff8020e840        0x0 ./src/cpu/irq.o
+ .rela.ifunc    0xffffffff8020e840        0x0 ./src/cpu/irq.o
  .rela.data.rel.local
-                0xffffffff8020d9a0       0xf0 ./src/memory/paging.o
+                0xffffffff8020e840       0xf0 ./src/cpu/irq.o
  .rela.stivale2hdr
-                0xffffffff8020da90       0x30 ./src/memory/paging.o
+                0xffffffff8020e930       0x30 ./src/cpu/irq.o
 
-.data           0xffffffff8020e000     0x1048
+.data           0xffffffff8020f000     0x1108
  *(.data*)
- .data.rel.ro   0xffffffff8020e000        0x0 ./src/memory/paging.o
- .data          0xffffffff8020e000        0x0 ./src/fs/vfs.o
- .data          0xffffffff8020e000        0x0 ./src/fs/tarfs.o
- .data          0xffffffff8020e000        0x8 ./src/liballoc.o
- .data          0xffffffff8020e008       0x10 ./src/memory/pmm.o
-                0xffffffff8020e008                total_blocks
-                0xffffffff8020e010                last_checked_block
- .data          0xffffffff8020e018        0x0 ./src/memory/vmm.o
- *fill*         0xffffffff8020e018        0x8 
- .data          0xffffffff8020e020       0x80 ./src/drivers/keyboard.o
-                0xffffffff8020e020                kbdus
- .data          0xffffffff8020e0a0        0x0 ./src/drivers/serial.o
- .data          0xffffffff8020e0a0        0x0 ./src/drivers/pit.o
- .data          0xffffffff8020e0a0        0x0 ./src/drivers/video.o
- .data          0xffffffff8020e0a0        0x0 ./src/kprintf.o
- .data          0xffffffff8020e0a0        0x0 ./src/string/strlen.o
- .data          0xffffffff8020e0a0        0x0 ./src/string/strcat.o
- .data          0xffffffff8020e0a0        0x0 ./src/string/strcmp.o
- .data          0xffffffff8020e0a0        0x0 ./src/string/memmove.o
- .data          0xffffffff8020e0a0        0x0 ./src/string/memcmp.o
- .data          0xffffffff8020e0a0        0x0 ./src/string/memcpy.o
- .data          0xffffffff8020e0a0        0x0 ./src/string/memset.o
- .data          0xffffffff8020e0a0        0x0 ./src/proc/proc.o
- .data          0xffffffff8020e0a0        0x0 ./src/proc/scheduler.o
- .data          0xffffffff8020e0a0        0x0 ./src/proc/elf.o
- .data          0xffffffff8020e0a0        0x0 ./src/syscall/syscalls.o
+ .data.rel.ro   0xffffffff8020f000        0x0 ./src/cpu/irq.o
+ .data          0xffffffff8020f000        0x0 ./src/drivers/pit.o
+ .data          0xffffffff8020f000       0x80 ./src/drivers/keyboard.o
+                0xffffffff8020f000                kbdus
+ .data          0xffffffff8020f080        0x0 ./src/drivers/serial.o
+ .data          0xffffffff8020f080        0x0 ./src/drivers/video.o
+ .data          0xffffffff8020f080        0x0 ./src/string/strlen.o
+ .data          0xffffffff8020f080        0x0 ./src/string/memmove.o
+ .data          0xffffffff8020f080        0x0 ./src/string/memcmp.o
+ .data          0xffffffff8020f080        0x0 ./src/string/strcat.o
+ .data          0xffffffff8020f080        0x0 ./src/string/memset.o
+ .data          0xffffffff8020f080        0x0 ./src/string/strcmp.o
+ .data          0xffffffff8020f080        0x0 ./src/string/memcpy.o
+ .data          0xffffffff8020f080        0x0 ./src/cpu/io.o
+ .data          0xffffffff8020f080        0x0 ./src/cpu/cpu.o
+ .data          0xffffffff8020f080        0x0 ./src/cpu/idt.o
+ *fill*         0xffffffff8020f080      0xf80 
+ .data          0xffffffff80210000       0x40 ./src/cpu/gdt.o
+                0xffffffff80210000                gdt_table
+ .data          0xffffffff80210040        0x8 ./src/cpu/smp.o
+ .data          0xffffffff80210048        0x0 ./src/memory/vmm.o
+ .data          0xffffffff80210048       0x10 ./src/memory/pmm.o
+                0xffffffff80210048                total_blocks
+                0xffffffff80210050                last_checked_block
+ .data          0xffffffff80210058        0x0 ./src/syscall/syscalls.o
  .data.rel.local
-                0xffffffff8020e0a0        0x8 ./src/syscall/syscalls.o
-                0xffffffff8020e0a0                environ
- .data          0xffffffff8020e0a8        0x0 ./src/util.o
- *fill*         0xffffffff8020e0a8        0x8 
- .data          0xffffffff8020e0b0       0x18 ./src/kernel.o
- *fill*         0xffffffff8020e0c8       0x18 
+                0xffffffff80210058        0x8 ./src/syscall/syscalls.o
+                0xffffffff80210058                environ
+ .data          0xffffffff80210060        0x0 ./src/proc/elf.o
+ .data          0xffffffff80210060        0x0 ./src/proc/proc.o
+ .data          0xffffffff80210060        0x0 ./src/proc/scheduler.o
+ .data          0xffffffff80210060        0x8 ./src/liballoc.o
+ .data          0xffffffff80210068        0x0 ./src/kmalloc.o
+ .data          0xffffffff80210068        0x0 ./src/util.o
+ *fill*         0xffffffff80210068        0x8 
+ .data          0xffffffff80210070       0x18 ./src/kernel.o
+ *fill*         0xffffffff80210088       0x18 
  .data.rel.local
-                0xffffffff8020e0e0       0x68 ./src/kernel.o
-                0xffffffff8020e0e0                ssfn_errstr
- .data          0xffffffff8020e148        0x0 ./src/cpu/cpu.o
- .data          0xffffffff8020e148        0x0 ./src/cpu/idt.o
- *fill*         0xffffffff8020e148      0xeb8 
- .data          0xffffffff8020f000       0x40 ./src/cpu/gdt.o
-                0xffffffff8020f000                gdt_table
- .data          0xffffffff8020f040        0x0 ./src/cpu/io.o
- .data          0xffffffff8020f040        0x8 ./src/cpu/smp.o
- .data          0xffffffff8020f048        0x0 ./src/kmalloc.o
+                0xffffffff802100a0       0x68 ./src/kernel.o
+                0xffffffff802100a0                ssfn_errstr
+ .data          0xffffffff80210108        0x0 ./src/kprintf.o
+ .data          0xffffffff80210108        0x0 ./src/fs/vfs.o
+ .data          0xffffffff80210108        0x0 ./src/fs/tarfs.o
 
-.dynamic        0xffffffff8020f048      0x100
- .dynamic       0xffffffff8020f048      0x100 ./src/memory/paging.o
-                0xffffffff8020f048                _DYNAMIC
+.dynamic        0xffffffff80210108      0x100
+ .dynamic       0xffffffff80210108      0x100 ./src/cpu/irq.o
+                0xffffffff80210108                _DYNAMIC
 
-.got            0xffffffff8020f148       0xc8
- .got           0xffffffff8020f148       0xc8 ./src/memory/paging.o
+.got            0xffffffff80210208       0xc8
+ .got           0xffffffff80210208       0xc8 ./src/cpu/irq.o
 
-.got.plt        0xffffffff8020f210       0x18
- .got.plt       0xffffffff8020f210       0x18 ./src/memory/paging.o
-                0xffffffff8020f210                _GLOBAL_OFFSET_TABLE_
+.got.plt        0xffffffff802102d0       0x18
+ .got.plt       0xffffffff802102d0       0x18 ./src/cpu/irq.o
+                0xffffffff802102d0                _GLOBAL_OFFSET_TABLE_
 
-.bss            0xffffffff8020f240    0x4e204
+.bss            0xffffffff80210300    0x4e208
  *(COMMON)
  *(.bss*)
- .bss           0xffffffff8020f240      0x820 ./src/fs/vfs.o
- .bss           0xffffffff8020fa60        0x8 ./src/fs/tarfs.o
- *fill*         0xffffffff8020fa68       0x18 
- .bss           0xffffffff8020fa80      0x184 ./src/liballoc.o
-                0xffffffff8020fa80                l_kfreePages
-                0xffffffff8020fb80                l_completePages
- *fill*         0xffffffff8020fc04       0x1c 
- .bss           0xffffffff8020fc20    0x40020 ./src/memory/pmm.o
-                0xffffffff8020fc20                total_bmaps
-                0xffffffff8020fc28                free_blocks
-                0xffffffff8020fc30                used_blocks
-                0xffffffff8020fc40                mmap
- .bss           0xffffffff8024fc40        0x0 ./src/memory/vmm.o
- .bss           0xffffffff8024fc40        0x0 ./src/drivers/keyboard.o
- .bss           0xffffffff8024fc40        0x0 ./src/drivers/serial.o
- .bss           0xffffffff8024fc40        0x8 ./src/drivers/pit.o
-                0xffffffff8024fc40                g_ticks
- .bss           0xffffffff8024fc48       0x20 ./src/drivers/video.o
- .bss           0xffffffff8024fc68        0x0 ./src/kprintf.o
- .bss           0xffffffff8024fc68        0x0 ./src/string/strlen.o
- .bss           0xffffffff8024fc68        0x0 ./src/string/strcat.o
- .bss           0xffffffff8024fc68        0x0 ./src/string/strcmp.o
- .bss           0xffffffff8024fc68        0x0 ./src/string/memmove.o
- .bss           0xffffffff8024fc68        0x0 ./src/string/memcmp.o
- .bss           0xffffffff8024fc68        0x0 ./src/string/memcpy.o
- .bss           0xffffffff8024fc68        0x0 ./src/string/memset.o
- .bss           0xffffffff8024fc68       0x20 ./src/proc/proc.o
-                0xffffffff8024fc68                gp_process_queue
-                0xffffffff8024fc70                gp_current_process
-                0xffffffff8024fc78                g_procs
-                0xffffffff8024fc80                kernel_cr3
- .bss           0xffffffff8024fc88        0x0 ./src/proc/scheduler.o
- .bss           0xffffffff8024fc88        0x0 ./src/proc/elf.o
- .bss           0xffffffff8024fc88        0x8 ./src/syscall/syscalls.o
-                0xffffffff8024fc88                __env
- .bss           0xffffffff8024fc90        0x0 ./src/util.o
- *fill*         0xffffffff8024fc90       0x10 
- .bss           0xffffffff8024fca0     0x2040 ./src/kernel.o
-                0xffffffff8024fca0                ssfn_src
-                0xffffffff8024fcc0                ssfn_dst
-                0xffffffff8024fce0                stack
-                0xffffffff80250ce0                user_stack
- .bss           0xffffffff80251ce0     0xa758 ./src/cpu/cpu.o
-                0xffffffff80251ce0                cpus
- *fill*         0xffffffff8025c438        0x8 
- .bss           0xffffffff8025c440     0x1000 ./src/cpu/idt.o
-                0xffffffff8025c440                idt
- .bss           0xffffffff8025d440        0x0 ./src/cpu/gdt.o
- .bss           0xffffffff8025d440        0x0 ./src/cpu/io.o
- .bss           0xffffffff8025d440        0x0 ./src/cpu/smp.o
- .bss           0xffffffff8025d440        0x4 ./src/kmalloc.o
-                0xffffffff8025d440                lock
-                0xffffffff8025d444                k_end = .
+ .bss           0xffffffff80210300        0x8 ./src/drivers/pit.o
+                0xffffffff80210300                g_ticks
+ .bss           0xffffffff80210308        0x0 ./src/drivers/keyboard.o
+ .bss           0xffffffff80210308        0x0 ./src/drivers/serial.o
+ .bss           0xffffffff80210308       0x20 ./src/drivers/video.o
+ .bss           0xffffffff80210328        0x0 ./src/string/strlen.o
+ .bss           0xffffffff80210328        0x0 ./src/string/memmove.o
+ .bss           0xffffffff80210328        0x0 ./src/string/memcmp.o
+ .bss           0xffffffff80210328        0x0 ./src/string/strcat.o
+ .bss           0xffffffff80210328        0x0 ./src/string/memset.o
+ .bss           0xffffffff80210328        0x0 ./src/string/strcmp.o
+ .bss           0xffffffff80210328        0x0 ./src/string/memcpy.o
+ .bss           0xffffffff80210328        0x0 ./src/cpu/io.o
+ *fill*         0xffffffff80210328       0x18 
+ .bss           0xffffffff80210340     0xa758 ./src/cpu/cpu.o
+                0xffffffff80210340                cpus
+ *fill*         0xffffffff8021aa98        0x8 
+ .bss           0xffffffff8021aaa0     0x1000 ./src/cpu/idt.o
+                0xffffffff8021aaa0                idt
+ .bss           0xffffffff8021baa0        0x0 ./src/cpu/gdt.o
+ .bss           0xffffffff8021baa0        0x0 ./src/cpu/smp.o
+ .bss           0xffffffff8021baa0        0x0 ./src/memory/vmm.o
+ .bss           0xffffffff8021baa0    0x40020 ./src/memory/pmm.o
+                0xffffffff8021baa0                total_bmaps
+                0xffffffff8021baa8                free_blocks
+                0xffffffff8021bab0                used_blocks
+                0xffffffff8021bac0                mmap
+ .bss           0xffffffff8025bac0        0x8 ./src/syscall/syscalls.o
+                0xffffffff8025bac0                __env
+ .bss           0xffffffff8025bac8        0x0 ./src/proc/elf.o
+ .bss           0xffffffff8025bac8       0x20 ./src/proc/proc.o
+                0xffffffff8025bac8                gp_process_queue
+                0xffffffff8025bad0                gp_current_process
+                0xffffffff8025bad8                g_procs
+                0xffffffff8025bae0                kernel_cr3
+ .bss           0xffffffff8025bae8        0x0 ./src/proc/scheduler.o
+ *fill*         0xffffffff8025bae8       0x18 
+ .bss           0xffffffff8025bb00      0x184 ./src/liballoc.o
+                0xffffffff8025bb00                l_kfreePages
+                0xffffffff8025bc00                l_completePages
+ .bss           0xffffffff8025bc84        0x4 ./src/kmalloc.o
+                0xffffffff8025bc84                lock
+ .bss           0xffffffff8025bc88        0x0 ./src/util.o
+ *fill*         0xffffffff8025bc88       0x18 
+ .bss           0xffffffff8025bca0     0x2040 ./src/kernel.o
+                0xffffffff8025bca0                ssfn_src
+                0xffffffff8025bcc0                ssfn_dst
+                0xffffffff8025bce0                stack
+                0xffffffff8025cce0                user_stack
+ .bss           0xffffffff8025dce0        0x0 ./src/kprintf.o
+ .bss           0xffffffff8025dce0      0x820 ./src/fs/vfs.o
+ .bss           0xffffffff8025e500        0x8 ./src/fs/tarfs.o
+                0xffffffff8025e508                k_end = .
 OUTPUT(kernel.elf elf64-x86-64)
 
-.dynbss         0xffffffff8025d444        0x0
- .dynbss        0xffffffff8025d444        0x0 ./src/memory/paging.o
+.dynbss         0xffffffff8025e508        0x0
+ .dynbss        0xffffffff8025e508        0x0 ./src/cpu/irq.o
 
-.debug_info     0x0000000000000000     0x916e
- .debug_info    0x0000000000000000      0x6a0 ./src/fs/vfs.o
- .debug_info    0x00000000000006a0      0x809 ./src/fs/tarfs.o
- .debug_info    0x0000000000000ea9      0x84a ./src/liballoc.o
- .debug_info    0x00000000000016f3      0x8d1 ./src/memory/pmm.o
- .debug_info    0x0000000000001fc4      0x6f9 ./src/memory/vmm.o
- .debug_info    0x00000000000026bd       0xd7 ./src/drivers/keyboard.o
- .debug_info    0x0000000000002794      0x2bc ./src/drivers/serial.o
- .debug_info    0x0000000000002a50      0x19d ./src/drivers/pit.o
- .debug_info    0x0000000000002bed      0x6bc ./src/drivers/video.o
- .debug_info    0x00000000000032a9      0x5a4 ./src/kprintf.o
- .debug_info    0x000000000000384d       0xb0 ./src/string/strlen.o
- .debug_info    0x00000000000038fd       0xd2 ./src/string/strcat.o
- .debug_info    0x00000000000039cf       0xa0 ./src/string/strcmp.o
- .debug_info    0x0000000000003a6f      0x12f ./src/string/memmove.o
- .debug_info    0x0000000000003b9e      0x100 ./src/string/memcmp.o
- .debug_info    0x0000000000003c9e      0x116 ./src/string/memcpy.o
- .debug_info    0x0000000000003db4       0xea ./src/string/memset.o
- .debug_info    0x0000000000003e9e      0x745 ./src/proc/proc.o
- .debug_info    0x00000000000045e3      0x5b0 ./src/proc/scheduler.o
- .debug_info    0x0000000000004b93      0xa83 ./src/proc/elf.o
- .debug_info    0x0000000000005616      0xcd4 ./src/syscall/syscalls.o
- .debug_info    0x00000000000062ea      0x47f ./src/util.o
- .debug_info    0x0000000000006769      0xe7d ./src/kernel.o
- .debug_info    0x00000000000075e6      0x390 ./src/cpu/cpu.o
- .debug_info    0x0000000000007976      0xb64 ./src/cpu/idt.o
- .debug_info    0x00000000000084da      0x339 ./src/cpu/gdt.o
- .debug_info    0x0000000000008813      0x268 ./src/cpu/io.o
- .debug_info    0x0000000000008a7b      0x300 ./src/cpu/smp.o
- .debug_info    0x0000000000008d7b      0x3f3 ./src/kmalloc.o
+.debug_info     0x0000000000000000     0x9315
+ .debug_info    0x0000000000000000      0x1cf ./src/drivers/pit.o
+ .debug_info    0x00000000000001cf       0xf1 ./src/drivers/keyboard.o
+ .debug_info    0x00000000000002c0      0x2e0 ./src/drivers/serial.o
+ .debug_info    0x00000000000005a0      0x69d ./src/drivers/video.o
+ .debug_info    0x0000000000000c3d       0xb1 ./src/string/strlen.o
+ .debug_info    0x0000000000000cee      0x123 ./src/string/memmove.o
+ .debug_info    0x0000000000000e11       0xf6 ./src/string/memcmp.o
+ .debug_info    0x0000000000000f07       0xe3 ./src/string/strcat.o
+ .debug_info    0x0000000000000fea       0xe3 ./src/string/memset.o
+ .debug_info    0x00000000000010cd       0x9d ./src/string/strcmp.o
+ .debug_info    0x000000000000116a      0x10b ./src/string/memcpy.o
+ .debug_info    0x0000000000001275      0x24e ./src/cpu/io.o
+ .debug_info    0x00000000000014c3      0x37a ./src/cpu/cpu.o
+ .debug_info    0x000000000000183d      0xc25 ./src/cpu/idt.o
+ .debug_info    0x0000000000002462      0x360 ./src/cpu/gdt.o
+ .debug_info    0x00000000000027c2      0x305 ./src/cpu/smp.o
+ .debug_info    0x0000000000002ac7      0x6fc ./src/memory/vmm.o
+ .debug_info    0x00000000000031c3      0x8af ./src/memory/pmm.o
+ .debug_info    0x0000000000003a72      0xcd0 ./src/syscall/syscalls.o
+ .debug_info    0x0000000000004742      0xb2b ./src/proc/elf.o
+ .debug_info    0x000000000000526d      0x744 ./src/proc/proc.o
+ .debug_info    0x00000000000059b1      0x59e ./src/proc/scheduler.o
+ .debug_info    0x0000000000005f4f      0x816 ./src/liballoc.o
+ .debug_info    0x0000000000006765      0x42f ./src/kmalloc.o
+ .debug_info    0x0000000000006b94      0x44a ./src/util.o
+ .debug_info    0x0000000000006fde      0xeb3 ./src/kernel.o
+ .debug_info    0x0000000000007e91      0x5d7 ./src/kprintf.o
+ .debug_info    0x0000000000008468      0x687 ./src/fs/vfs.o
+ .debug_info    0x0000000000008aef      0x826 ./src/fs/tarfs.o
 
-.debug_abbrev   0x0000000000000000     0x2582
- .debug_abbrev  0x0000000000000000      0x1b6 ./src/fs/vfs.o
- .debug_abbrev  0x00000000000001b6      0x1ac ./src/fs/tarfs.o
- .debug_abbrev  0x0000000000000362      0x1b6 ./src/liballoc.o
- .debug_abbrev  0x0000000000000518      0x210 ./src/memory/pmm.o
- .debug_abbrev  0x0000000000000728      0x19d ./src/memory/vmm.o
- .debug_abbrev  0x00000000000008c5       0xa9 ./src/drivers/keyboard.o
- .debug_abbrev  0x000000000000096e       0xbe ./src/drivers/serial.o
- .debug_abbrev  0x0000000000000a2c       0xc7 ./src/drivers/pit.o
- .debug_abbrev  0x0000000000000af3      0x14a ./src/drivers/video.o
- .debug_abbrev  0x0000000000000c3d      0x154 ./src/kprintf.o
- .debug_abbrev  0x0000000000000d91       0x89 ./src/string/strlen.o
- .debug_abbrev  0x0000000000000e1a       0x98 ./src/string/strcat.o
- .debug_abbrev  0x0000000000000eb2       0x69 ./src/string/strcmp.o
- .debug_abbrev  0x0000000000000f1b       0xa9 ./src/string/memmove.o
- .debug_abbrev  0x0000000000000fc4       0x97 ./src/string/memcmp.o
- .debug_abbrev  0x000000000000105b       0xa5 ./src/string/memcpy.o
- .debug_abbrev  0x0000000000001100       0x92 ./src/string/memset.o
- .debug_abbrev  0x0000000000001192      0x22a ./src/proc/proc.o
- .debug_abbrev  0x00000000000013bc      0x1ca ./src/proc/scheduler.o
- .debug_abbrev  0x0000000000001586      0x1fe ./src/proc/elf.o
- .debug_abbrev  0x0000000000001784      0x2d1 ./src/syscall/syscalls.o
- .debug_abbrev  0x0000000000001a55       0xfb ./src/util.o
- .debug_abbrev  0x0000000000001b50      0x2db ./src/kernel.o
- .debug_abbrev  0x0000000000001e2b      0x121 ./src/cpu/cpu.o
- .debug_abbrev  0x0000000000001f4c      0x167 ./src/cpu/idt.o
- .debug_abbrev  0x00000000000020b3       0xf2 ./src/cpu/gdt.o
- .debug_abbrev  0x00000000000021a5       0xe1 ./src/cpu/io.o
- .debug_abbrev  0x0000000000002286      0x146 ./src/cpu/smp.o
- .debug_abbrev  0x00000000000023cc      0x1b6 ./src/kmalloc.o
+.debug_abbrev   0x0000000000000000     0x2b48
+ .debug_abbrev  0x0000000000000000      0x125 ./src/drivers/pit.o
+ .debug_abbrev  0x0000000000000125       0xc4 ./src/drivers/keyboard.o
+ .debug_abbrev  0x00000000000001e9       0xf1 ./src/drivers/serial.o
+ .debug_abbrev  0x00000000000002da      0x17c ./src/drivers/video.o
+ .debug_abbrev  0x0000000000000456       0x88 ./src/string/strlen.o
+ .debug_abbrev  0x00000000000004de       0xac ./src/string/memmove.o
+ .debug_abbrev  0x000000000000058a       0x9a ./src/string/memcmp.o
+ .debug_abbrev  0x0000000000000624       0xb2 ./src/string/strcat.o
+ .debug_abbrev  0x00000000000006d6       0x94 ./src/string/memset.o
+ .debug_abbrev  0x000000000000076a       0x6a ./src/string/strcmp.o
+ .debug_abbrev  0x00000000000007d4       0xa8 ./src/string/memcpy.o
+ .debug_abbrev  0x000000000000087c       0xe4 ./src/cpu/io.o
+ .debug_abbrev  0x0000000000000960      0x173 ./src/cpu/cpu.o
+ .debug_abbrev  0x0000000000000ad3      0x1ab ./src/cpu/idt.o
+ .debug_abbrev  0x0000000000000c7e      0x143 ./src/cpu/gdt.o
+ .debug_abbrev  0x0000000000000dc1      0x17d ./src/cpu/smp.o
+ .debug_abbrev  0x0000000000000f3e      0x1f7 ./src/memory/vmm.o
+ .debug_abbrev  0x0000000000001135      0x245 ./src/memory/pmm.o
+ .debug_abbrev  0x000000000000137a      0x319 ./src/syscall/syscalls.o
+ .debug_abbrev  0x0000000000001693      0x255 ./src/proc/elf.o
+ .debug_abbrev  0x00000000000018e8      0x299 ./src/proc/proc.o
+ .debug_abbrev  0x0000000000001b81      0x207 ./src/proc/scheduler.o
+ .debug_abbrev  0x0000000000001d88      0x201 ./src/liballoc.o
+ .debug_abbrev  0x0000000000001f89      0x1f3 ./src/kmalloc.o
+ .debug_abbrev  0x000000000000217c       0xff ./src/util.o
+ .debug_abbrev  0x000000000000227b      0x34a ./src/kernel.o
+ .debug_abbrev  0x00000000000025c5      0x1a5 ./src/kprintf.o
+ .debug_abbrev  0x000000000000276a      0x1f7 ./src/fs/vfs.o
+ .debug_abbrev  0x0000000000002961      0x1e7 ./src/fs/tarfs.o
 
 .debug_aranges  0x0000000000000000      0x570
  .debug_aranges
-                0x0000000000000000       0x30 ./src/fs/vfs.o
+                0x0000000000000000       0x30 ./src/drivers/pit.o
  .debug_aranges
-                0x0000000000000030       0x30 ./src/fs/tarfs.o
+                0x0000000000000030       0x30 ./src/drivers/keyboard.o
  .debug_aranges
-                0x0000000000000060       0x30 ./src/liballoc.o
+                0x0000000000000060       0x30 ./src/drivers/serial.o
  .debug_aranges
-                0x0000000000000090       0x30 ./src/memory/pmm.o
+                0x0000000000000090       0x30 ./src/drivers/video.o
  .debug_aranges
-                0x00000000000000c0       0x30 ./src/memory/vmm.o
+                0x00000000000000c0       0x30 ./src/string/strlen.o
  .debug_aranges
-                0x00000000000000f0       0x30 ./src/drivers/keyboard.o
+                0x00000000000000f0       0x30 ./src/string/memmove.o
  .debug_aranges
-                0x0000000000000120       0x30 ./src/drivers/serial.o
+                0x0000000000000120       0x30 ./src/string/memcmp.o
  .debug_aranges
-                0x0000000000000150       0x30 ./src/drivers/pit.o
+                0x0000000000000150       0x30 ./src/string/strcat.o
  .debug_aranges
-                0x0000000000000180       0x30 ./src/drivers/video.o
+                0x0000000000000180       0x30 ./src/string/memset.o
  .debug_aranges
-                0x00000000000001b0       0x30 ./src/kprintf.o
+                0x00000000000001b0       0x30 ./src/string/strcmp.o
  .debug_aranges
-                0x00000000000001e0       0x30 ./src/string/strlen.o
+                0x00000000000001e0       0x30 ./src/string/memcpy.o
  .debug_aranges
-                0x0000000000000210       0x30 ./src/string/strcat.o
+                0x0000000000000210       0x30 ./src/cpu/io.o
  .debug_aranges
-                0x0000000000000240       0x30 ./src/string/strcmp.o
+                0x0000000000000240       0x30 ./src/cpu/cpu.o
  .debug_aranges
-                0x0000000000000270       0x30 ./src/string/memmove.o
+                0x0000000000000270       0x30 ./src/cpu/idt.o
  .debug_aranges
-                0x00000000000002a0       0x30 ./src/string/memcmp.o
+                0x00000000000002a0       0x30 ./src/cpu/gdt.o
  .debug_aranges
-                0x00000000000002d0       0x30 ./src/string/memcpy.o
+                0x00000000000002d0       0x30 ./src/cpu/smp.o
  .debug_aranges
-                0x0000000000000300       0x30 ./src/string/memset.o
+                0x0000000000000300       0x30 ./src/memory/vmm.o
  .debug_aranges
-                0x0000000000000330       0x30 ./src/proc/proc.o
+                0x0000000000000330       0x30 ./src/memory/pmm.o
  .debug_aranges
-                0x0000000000000360       0x30 ./src/proc/scheduler.o
+                0x0000000000000360       0x30 ./src/syscall/syscalls.o
  .debug_aranges
                 0x0000000000000390       0x30 ./src/proc/elf.o
  .debug_aranges
-                0x00000000000003c0       0x30 ./src/syscall/syscalls.o
+                0x00000000000003c0       0x30 ./src/proc/proc.o
  .debug_aranges
-                0x00000000000003f0       0x30 ./src/util.o
+                0x00000000000003f0       0x30 ./src/proc/scheduler.o
  .debug_aranges
-                0x0000000000000420       0x30 ./src/kernel.o
+                0x0000000000000420       0x30 ./src/liballoc.o
  .debug_aranges
-                0x0000000000000450       0x30 ./src/cpu/cpu.o
+                0x0000000000000450       0x30 ./src/kmalloc.o
  .debug_aranges
-                0x0000000000000480       0x30 ./src/cpu/idt.o
+                0x0000000000000480       0x30 ./src/util.o
  .debug_aranges
-                0x00000000000004b0       0x30 ./src/cpu/gdt.o
+                0x00000000000004b0       0x30 ./src/kernel.o
  .debug_aranges
-                0x00000000000004e0       0x30 ./src/cpu/io.o
+                0x00000000000004e0       0x30 ./src/kprintf.o
  .debug_aranges
-                0x0000000000000510       0x30 ./src/cpu/smp.o
+                0x0000000000000510       0x30 ./src/fs/vfs.o
  .debug_aranges
-                0x0000000000000540       0x30 ./src/kmalloc.o
+                0x0000000000000540       0x30 ./src/fs/tarfs.o
 
-.debug_line     0x0000000000000000     0x3c22
- .debug_line    0x0000000000000000      0x202 ./src/fs/vfs.o
- .debug_line    0x0000000000000202      0x1da ./src/fs/tarfs.o
- .debug_line    0x00000000000003dc      0x4b4 ./src/liballoc.o
- .debug_line    0x0000000000000890      0x499 ./src/memory/pmm.o
- .debug_line    0x0000000000000d29      0x3b7 ./src/memory/vmm.o
- .debug_line    0x00000000000010e0       0x90 ./src/drivers/keyboard.o
- .debug_line    0x0000000000001170       0xe3 ./src/drivers/serial.o
- .debug_line    0x0000000000001253       0xd3 ./src/drivers/pit.o
- .debug_line    0x0000000000001326      0x2aa ./src/drivers/video.o
- .debug_line    0x00000000000015d0      0x313 ./src/kprintf.o
- .debug_line    0x00000000000018e3       0x92 ./src/string/strlen.o
- .debug_line    0x0000000000001975       0x78 ./src/string/strcat.o
- .debug_line    0x00000000000019ed       0x6e ./src/string/strcmp.o
- .debug_line    0x0000000000001a5b       0xee ./src/string/memmove.o
- .debug_line    0x0000000000001b49       0xb2 ./src/string/memcmp.o
- .debug_line    0x0000000000001bfb       0xba ./src/string/memcpy.o
- .debug_line    0x0000000000001cb5       0xb0 ./src/string/memset.o
- .debug_line    0x0000000000001d65      0x2af ./src/proc/proc.o
- .debug_line    0x0000000000002014      0x24a ./src/proc/scheduler.o
- .debug_line    0x000000000000225e      0x318 ./src/proc/elf.o
- .debug_line    0x0000000000002576      0x359 ./src/syscall/syscalls.o
- .debug_line    0x00000000000028cf      0x24d ./src/util.o
- .debug_line    0x0000000000002b1c      0x97b ./src/kernel.o
- .debug_line    0x0000000000003497       0xf0 ./src/cpu/cpu.o
- .debug_line    0x0000000000003587      0x291 ./src/cpu/idt.o
- .debug_line    0x0000000000003818       0xe5 ./src/cpu/gdt.o
- .debug_line    0x00000000000038fd       0xd5 ./src/cpu/io.o
- .debug_line    0x00000000000039d2      0x14e ./src/cpu/smp.o
- .debug_line    0x0000000000003b20      0x102 ./src/kmalloc.o
+.debug_line     0x0000000000000000     0x3578
+ .debug_line    0x0000000000000000       0xb4 ./src/drivers/pit.o
+ .debug_line    0x00000000000000b4       0x75 ./src/drivers/keyboard.o
+ .debug_line    0x0000000000000129       0xdf ./src/drivers/serial.o
+ .debug_line    0x0000000000000208      0x268 ./src/drivers/video.o
+ .debug_line    0x0000000000000470       0x6a ./src/string/strlen.o
+ .debug_line    0x00000000000004da       0xc7 ./src/string/memmove.o
+ .debug_line    0x00000000000005a1       0x8c ./src/string/memcmp.o
+ .debug_line    0x000000000000062d       0x80 ./src/string/strcat.o
+ .debug_line    0x00000000000006ad       0x8a ./src/string/memset.o
+ .debug_line    0x0000000000000737       0x71 ./src/string/strcmp.o
+ .debug_line    0x00000000000007a8       0x94 ./src/string/memcpy.o
+ .debug_line    0x000000000000083c       0xb2 ./src/cpu/io.o
+ .debug_line    0x00000000000008ee       0xce ./src/cpu/cpu.o
+ .debug_line    0x00000000000009bc      0x24b ./src/cpu/idt.o
+ .debug_line    0x0000000000000c07       0xbf ./src/cpu/gdt.o
+ .debug_line    0x0000000000000cc6       0xf0 ./src/cpu/smp.o
+ .debug_line    0x0000000000000db6      0x37a ./src/memory/vmm.o
+ .debug_line    0x0000000000001130      0x42d ./src/memory/pmm.o
+ .debug_line    0x000000000000155d      0x262 ./src/syscall/syscalls.o
+ .debug_line    0x00000000000017bf      0x2f3 ./src/proc/elf.o
+ .debug_line    0x0000000000001ab2      0x21d ./src/proc/proc.o
+ .debug_line    0x0000000000001ccf      0x193 ./src/proc/scheduler.o
+ .debug_line    0x0000000000001e62      0x4b2 ./src/liballoc.o
+ .debug_line    0x0000000000002314       0xeb ./src/kmalloc.o
+ .debug_line    0x00000000000023ff      0x259 ./src/util.o
+ .debug_line    0x0000000000002658      0x8c8 ./src/kernel.o
+ .debug_line    0x0000000000002f20      0x2b4 ./src/kprintf.o
+ .debug_line    0x00000000000031d4      0x1f5 ./src/fs/vfs.o
+ .debug_line    0x00000000000033c9      0x1af ./src/fs/tarfs.o
 
-.debug_str      0x0000000000000000     0x19e3
- .debug_str     0x0000000000000000      0x2cd ./src/fs/vfs.o
-                                        0x34b (size before relaxing)
- .debug_str     0x00000000000002cd      0x173 ./src/fs/tarfs.o
-                                        0x3f0 (size before relaxing)
- .debug_str     0x0000000000000440      0x197 ./src/liballoc.o
-                                        0x33f (size before relaxing)
- .debug_str     0x00000000000005d7      0x225 ./src/memory/pmm.o
-                                        0x410 (size before relaxing)
- .debug_str     0x00000000000007fc      0x19e ./src/memory/vmm.o
-                                        0x3a0 (size before relaxing)
- .debug_str     0x000000000000099a       0x33 ./src/drivers/keyboard.o
+.debug_str      0x0000000000000000     0x17ab
+ .debug_str     0x0000000000000000      0x150 ./src/drivers/pit.o
+                                        0x189 (size before relaxing)
+ .debug_str     0x0000000000000150       0x1c ./src/drivers/keyboard.o
+                                        0x145 (size before relaxing)
+ .debug_str     0x000000000000016c       0x48 ./src/drivers/serial.o
+                                        0x19e (size before relaxing)
+ .debug_str     0x00000000000001b4      0x1c9 ./src/drivers/video.o
+                                        0x33a (size before relaxing)
+ .debug_str     0x000000000000037d        0x7 ./src/string/strlen.o
+                                         0xff (size before relaxing)
+ .debug_str     0x0000000000000384       0x16 ./src/string/memmove.o
+                                        0x11c (size before relaxing)
+ .debug_str     0x000000000000039a       0x11 ./src/string/memcmp.o
+                                        0x117 (size before relaxing)
+ .debug_str     0x00000000000003ab       0x1a ./src/string/strcat.o
+                                        0x119 (size before relaxing)
+ .debug_str     0x00000000000003c5        0xd ./src/string/memset.o
+                                        0x11a (size before relaxing)
+ .debug_str     0x00000000000003d2        0x7 ./src/string/strcmp.o
+                                         0xf8 (size before relaxing)
+ .debug_str     0x00000000000003d9        0x7 ./src/string/memcpy.o
+                                        0x11b (size before relaxing)
+ .debug_str     0x00000000000003d9       0x25 ./src/cpu/io.o
+                                        0x15c (size before relaxing)
+ .debug_str     0x00000000000003fe       0x78 ./src/cpu/cpu.o
+                                        0x1c0 (size before relaxing)
+ .debug_str     0x0000000000000476      0x285 ./src/cpu/idt.o
+                                        0x41a (size before relaxing)
+ .debug_str     0x00000000000006fb      0x134 ./src/cpu/gdt.o
+                                        0x293 (size before relaxing)
+ .debug_str     0x000000000000082f       0xa9 ./src/cpu/smp.o
+                                        0x262 (size before relaxing)
+ .debug_str     0x00000000000008d8      0x179 ./src/memory/vmm.o
+                                        0x356 (size before relaxing)
+ .debug_str     0x0000000000000a51      0x1b7 ./src/memory/pmm.o
+                                        0x3c6 (size before relaxing)
+ .debug_str     0x0000000000000c08      0x1cf ./src/syscall/syscalls.o
+                                        0x4a7 (size before relaxing)
+ .debug_str     0x0000000000000dd7      0x1e6 ./src/proc/elf.o
+                                        0x51d (size before relaxing)
+ .debug_str     0x0000000000000fbd       0xc4 ./src/proc/proc.o
+                                        0x406 (size before relaxing)
+ .debug_str     0x0000000000001081        0xd ./src/proc/scheduler.o
+                                        0x34d (size before relaxing)
+ .debug_str     0x000000000000108e      0x182 ./src/liballoc.o
+                                        0x2f0 (size before relaxing)
+ .debug_str     0x0000000000001210       0x37 ./src/kmalloc.o
+                                        0x2c1 (size before relaxing)
+ .debug_str     0x0000000000001247       0x3c ./src/util.o
+                                        0x167 (size before relaxing)
+ .debug_str     0x0000000000001283      0x27b ./src/kernel.o
+                                        0x721 (size before relaxing)
+ .debug_str     0x00000000000014fe       0xb9 ./src/kprintf.o
+                                        0x27f (size before relaxing)
+ .debug_str     0x00000000000015b7       0xb7 ./src/fs/vfs.o
+                                        0x305 (size before relaxing)
+ .debug_str     0x000000000000166e      0x13d ./src/fs/tarfs.o
+                                        0x3a8 (size before relaxing)
+
+.debug_line_str
+                0x0000000000000000      0x5dd
+ .debug_line_str
+                0x0000000000000000       0xb3 ./src/drivers/pit.o
+                                         0xe7 (size before relaxing)
+ .debug_line_str
+                0x00000000000000b3       0x1d ./src/drivers/keyboard.o
+                                         0xa7 (size before relaxing)
+ .debug_line_str
+                0x00000000000000d0       0x15 ./src/drivers/serial.o
+                                         0xcc (size before relaxing)
+ .debug_line_str
+                0x00000000000000e5       0x6c ./src/drivers/video.o
+                                        0x116 (size before relaxing)
+ .debug_line_str
+                0x0000000000000151       0x1f ./src/string/strlen.o
+                                         0xad (size before relaxing)
+ .debug_line_str
+                0x0000000000000170       0x15 ./src/string/memmove.o
+                                         0xb0 (size before relaxing)
+ .debug_line_str
+                0x0000000000000185       0x14 ./src/string/memcmp.o
+                                         0xad (size before relaxing)
+ .debug_line_str
+                0x0000000000000199       0x14 ./src/string/strcat.o
+                                         0xb6 (size before relaxing)
+ .debug_line_str
+                0x00000000000001ad       0x14 ./src/string/memset.o
+                                         0xad (size before relaxing)
+ .debug_line_str
+                0x00000000000001c1       0x14 ./src/string/strcmp.o
+                                         0x74 (size before relaxing)
+ .debug_line_str
+                0x00000000000001d5       0x14 ./src/string/memcpy.o
+                                         0xad (size before relaxing)
+ .debug_line_str
+                0x00000000000001e9       0x15 ./src/cpu/io.o
+                                         0x9c (size before relaxing)
+ .debug_line_str
+                0x00000000000001fe       0x37 ./src/cpu/cpu.o
+                                         0xa0 (size before relaxing)
+ .debug_line_str
+                0x0000000000000235       0x5e ./src/cpu/idt.o
+                                        0x11a (size before relaxing)
+ .debug_line_str
+                0x0000000000000293       0x26 ./src/cpu/gdt.o
+                                         0xea (size before relaxing)
+ .debug_line_str
+                0x00000000000002b9        0xe ./src/cpu/smp.o
+                                         0xeb (size before relaxing)
+ .debug_line_str
+                0x00000000000002c7       0x63 ./src/memory/vmm.o
+                                        0x10f (size before relaxing)
+ .debug_line_str
+                0x000000000000032a       0x11 ./src/memory/pmm.o
+                                         0xfd (size before relaxing)
+ .debug_line_str
+                0x000000000000033b       0xc9 ./src/syscall/syscalls.o
                                         0x197 (size before relaxing)
- .debug_str     0x00000000000009cd       0x62 ./src/drivers/serial.o
-                                        0x1e2 (size before relaxing)
- .debug_str     0x0000000000000a2f       0x3d ./src/drivers/pit.o
-                                        0x1c5 (size before relaxing)
- .debug_str     0x0000000000000a6c      0x17c ./src/drivers/video.o
-                                        0x387 (size before relaxing)
- .debug_str     0x0000000000000be8       0xcb ./src/kprintf.o
-                                        0x2cd (size before relaxing)
- .debug_str     0x0000000000000cb3       0x14 ./src/string/strlen.o
-                                        0x153 (size before relaxing)
- .debug_str     0x0000000000000cc7       0x2e ./src/string/strcat.o
-                                        0x166 (size before relaxing)
- .debug_str     0x0000000000000cf5       0x1b ./src/string/strcmp.o
-                                        0x14c (size before relaxing)
- .debug_str     0x0000000000000d10       0x2b ./src/string/memmove.o
-                                        0x171 (size before relaxing)
- .debug_str     0x0000000000000d3b       0x1e ./src/string/memcmp.o
-                                        0x16b (size before relaxing)
- .debug_str     0x0000000000000d59       0x14 ./src/string/memcpy.o
-                                        0x16f (size before relaxing)
- .debug_str     0x0000000000000d6d       0x21 ./src/string/memset.o
-                                        0x16e (size before relaxing)
- .debug_str     0x0000000000000d8e      0x194 ./src/proc/proc.o
-                                        0x44f (size before relaxing)
- .debug_str     0x0000000000000f22       0x80 ./src/proc/scheduler.o
-                                        0x3a2 (size before relaxing)
- .debug_str     0x0000000000000fa2      0x1dd ./src/proc/elf.o
-                                        0x567 (size before relaxing)
- .debug_str     0x000000000000117f      0x10b ./src/syscall/syscalls.o
-                                        0x4fe (size before relaxing)
- .debug_str     0x000000000000128a       0x3b ./src/util.o
-                                        0x1b2 (size before relaxing)
- .debug_str     0x00000000000012c5      0x2a4 ./src/kernel.o
-                                        0x770 (size before relaxing)
- .debug_str     0x0000000000001569       0x18 ./src/cpu/cpu.o
-                                        0x209 (size before relaxing)
- .debug_str     0x0000000000001581      0x27b ./src/cpu/idt.o
-                                        0x457 (size before relaxing)
- .debug_str     0x00000000000017fc      0x139 ./src/cpu/gdt.o
-                                        0x2da (size before relaxing)
- .debug_str     0x0000000000001935       0x29 ./src/cpu/io.o
-                                        0x1a9 (size before relaxing)
- .debug_str     0x000000000000195e       0x40 ./src/cpu/smp.o
-                                        0x2b0 (size before relaxing)
- .debug_str     0x000000000000199e       0x45 ./src/kmalloc.o
-                                        0x30a (size before relaxing)
+ .debug_line_str
+                0x0000000000000404       0x72 ./src/proc/elf.o
+                                        0x146 (size before relaxing)
+ .debug_line_str
+                0x0000000000000476       0x10 ./src/proc/proc.o
+                                        0x143 (size before relaxing)
+ .debug_line_str
+                0x0000000000000486       0x8b ./src/proc/scheduler.o
+                                        0x164 (size before relaxing)
+ .debug_line_str
+                0x0000000000000511       0x1a ./src/liballoc.o
+                                         0x70 (size before relaxing)
+ .debug_line_str
+                0x000000000000052b        0xe ./src/kmalloc.o
+                                         0x8e (size before relaxing)
+ .debug_line_str
+                0x0000000000000539        0xb ./src/util.o
+                                         0x64 (size before relaxing)
+ .debug_line_str
+                0x0000000000000544       0x40 ./src/kernel.o
+                                        0x190 (size before relaxing)
+ .debug_line_str
+                0x0000000000000584       0x22 ./src/kprintf.o
+                                         0xea (size before relaxing)
+ .debug_line_str
+                0x00000000000005a6       0x17 ./src/fs/vfs.o
+                                         0xc7 (size before relaxing)
+ .debug_line_str
+                0x00000000000005bd       0x20 ./src/fs/tarfs.o
+                                         0xef (size before relaxing)
 
-.comment        0x0000000000000000       0x27
- .comment       0x0000000000000000       0x27 ./src/fs/vfs.o
-                                         0x28 (size before relaxing)
- .comment       0x0000000000000027       0x28 ./src/fs/tarfs.o
- .comment       0x0000000000000027       0x28 ./src/liballoc.o
- .comment       0x0000000000000027       0x28 ./src/memory/pmm.o
- .comment       0x0000000000000027       0x28 ./src/memory/vmm.o
- .comment       0x0000000000000027       0x28 ./src/drivers/keyboard.o
- .comment       0x0000000000000027       0x28 ./src/drivers/serial.o
- .comment       0x0000000000000027       0x28 ./src/drivers/pit.o
- .comment       0x0000000000000027       0x28 ./src/drivers/video.o
- .comment       0x0000000000000027       0x28 ./src/kprintf.o
- .comment       0x0000000000000027       0x28 ./src/string/strlen.o
- .comment       0x0000000000000027       0x28 ./src/string/strcat.o
- .comment       0x0000000000000027       0x28 ./src/string/strcmp.o
- .comment       0x0000000000000027       0x28 ./src/string/memmove.o
- .comment       0x0000000000000027       0x28 ./src/string/memcmp.o
- .comment       0x0000000000000027       0x28 ./src/string/memcpy.o
- .comment       0x0000000000000027       0x28 ./src/string/memset.o
- .comment       0x0000000000000027       0x28 ./src/proc/proc.o
- .comment       0x0000000000000027       0x28 ./src/proc/scheduler.o
- .comment       0x0000000000000027       0x28 ./src/proc/elf.o
- .comment       0x0000000000000027       0x28 ./src/syscall/syscalls.o
- .comment       0x0000000000000027       0x28 ./src/util.o
- .comment       0x0000000000000027       0x28 ./src/kernel.o
- .comment       0x0000000000000027       0x28 ./src/cpu/cpu.o
- .comment       0x0000000000000027       0x28 ./src/cpu/idt.o
- .comment       0x0000000000000027       0x28 ./src/cpu/gdt.o
- .comment       0x0000000000000027       0x28 ./src/cpu/io.o
- .comment       0x0000000000000027       0x28 ./src/cpu/smp.o
- .comment       0x0000000000000027       0x28 ./src/kmalloc.o
+.comment        0x0000000000000000       0x12
+ .comment       0x0000000000000000       0x12 ./src/drivers/pit.o
+                                         0x13 (size before relaxing)
+ .comment       0x0000000000000012       0x13 ./src/drivers/keyboard.o
+ .comment       0x0000000000000012       0x13 ./src/drivers/serial.o
+ .comment       0x0000000000000012       0x13 ./src/drivers/video.o
+ .comment       0x0000000000000012       0x13 ./src/string/strlen.o
+ .comment       0x0000000000000012       0x13 ./src/string/memmove.o
+ .comment       0x0000000000000012       0x13 ./src/string/memcmp.o
+ .comment       0x0000000000000012       0x13 ./src/string/strcat.o
+ .comment       0x0000000000000012       0x13 ./src/string/memset.o
+ .comment       0x0000000000000012       0x13 ./src/string/strcmp.o
+ .comment       0x0000000000000012       0x13 ./src/string/memcpy.o
+ .comment       0x0000000000000012       0x13 ./src/cpu/io.o
+ .comment       0x0000000000000012       0x13 ./src/cpu/cpu.o
+ .comment       0x0000000000000012       0x13 ./src/cpu/idt.o
+ .comment       0x0000000000000012       0x13 ./src/cpu/gdt.o
+ .comment       0x0000000000000012       0x13 ./src/cpu/smp.o
+ .comment       0x0000000000000012       0x13 ./src/memory/vmm.o
+ .comment       0x0000000000000012       0x13 ./src/memory/pmm.o
+ .comment       0x0000000000000012       0x13 ./src/syscall/syscalls.o
+ .comment       0x0000000000000012       0x13 ./src/proc/elf.o
+ .comment       0x0000000000000012       0x13 ./src/proc/proc.o
+ .comment       0x0000000000000012       0x13 ./src/proc/scheduler.o
+ .comment       0x0000000000000012       0x13 ./src/liballoc.o
+ .comment       0x0000000000000012       0x13 ./src/kmalloc.o
+ .comment       0x0000000000000012       0x13 ./src/util.o
+ .comment       0x0000000000000012       0x13 ./src/kernel.o
+ .comment       0x0000000000000012       0x13 ./src/kprintf.o
+ .comment       0x0000000000000012       0x13 ./src/fs/vfs.o
+ .comment       0x0000000000000012       0x13 ./src/fs/tarfs.o
 
 .note.GNU-stack
                 0x0000000000000000        0x0
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/fs/vfs.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/fs/tarfs.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/liballoc.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/memory/pmm.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/memory/vmm.o
+                0x0000000000000000        0x0 ./src/drivers/pit.o
  .note.GNU-stack
                 0x0000000000000000        0x0 ./src/drivers/keyboard.o
  .note.GNU-stack
                 0x0000000000000000        0x0 ./src/drivers/serial.o
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/drivers/pit.o
- .note.GNU-stack
                 0x0000000000000000        0x0 ./src/drivers/video.o
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/kprintf.o
- .note.GNU-stack
                 0x0000000000000000        0x0 ./src/string/strlen.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/string/strcat.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/string/strcmp.o
  .note.GNU-stack
                 0x0000000000000000        0x0 ./src/string/memmove.o
  .note.GNU-stack
                 0x0000000000000000        0x0 ./src/string/memcmp.o
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/string/memcpy.o
+                0x0000000000000000        0x0 ./src/string/strcat.o
  .note.GNU-stack
                 0x0000000000000000        0x0 ./src/string/memset.o
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/proc/proc.o
+                0x0000000000000000        0x0 ./src/string/strcmp.o
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/proc/scheduler.o
+                0x0000000000000000        0x0 ./src/string/memcpy.o
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/proc/elf.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/syscall/syscalls.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/util.o
- .note.GNU-stack
-                0x0000000000000000        0x0 ./src/kernel.o
+                0x0000000000000000        0x0 ./src/cpu/io.o
  .note.GNU-stack
                 0x0000000000000000        0x0 ./src/cpu/cpu.o
  .note.GNU-stack
@@ -786,8 +974,30 @@ OUTPUT(kernel.elf elf64-x86-64)
  .note.GNU-stack
                 0x0000000000000000        0x0 ./src/cpu/gdt.o
  .note.GNU-stack
-                0x0000000000000000        0x0 ./src/cpu/io.o
- .note.GNU-stack
                 0x0000000000000000        0x0 ./src/cpu/smp.o
  .note.GNU-stack
+                0x0000000000000000        0x0 ./src/memory/vmm.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/memory/pmm.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/syscall/syscalls.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/proc/elf.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/proc/proc.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/proc/scheduler.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/liballoc.o
+ .note.GNU-stack
                 0x0000000000000000        0x0 ./src/kmalloc.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/util.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/kernel.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/kprintf.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/fs/vfs.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ./src/fs/tarfs.o

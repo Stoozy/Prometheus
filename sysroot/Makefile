@@ -10,13 +10,13 @@ INC_PARAMS=$(foreach d, $(INC_DIRS), -I$d)
 LIBRARIES=$(shell pwd)/lib
 
 
-CFLAGS=-nostartfiles -nostdlib -fPIC -no-pie -LD_LIBRARY_PATH=lib/ld.so
+CFLAGS= -fPIC -shared -no-pie -nostartfiles -nostdlib  -LD_LIBRARY_PATH=a0:lib/
 
 .PHONY: all clean 
 all: hello 
 
 hello:
-	$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBRARIES)  crt0.o -lc -o hello
+	$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBRARIES) lib/crt1.o -lc -o hello
 	patchelf hello --set-interpreter a0:lib/ld.so
 
 clean:

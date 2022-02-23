@@ -14,8 +14,8 @@
 #define HIDDEN  __attribute__ ((visibility ("hidden")))
 #define EXPORT  __attribute__ ((visibility ("default")))
 
-static constexpr bool logEntryExit = false;
-static constexpr bool logStartup = false;
+static constexpr bool logEntryExit = true;
+static constexpr bool logStartup = true;
 
 #ifndef MLIBC_STATIC_BUILD
 extern HIDDEN void *_GLOBAL_OFFSET_TABLE_[];

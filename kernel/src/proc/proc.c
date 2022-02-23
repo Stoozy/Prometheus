@@ -103,7 +103,7 @@ void dump_list(){
 
 
 // Creates a process with given entrypoint
-// this entails allocating a stack, setting the stack
+// this requires allocating a stack, setting the stack
 // and creating page tables
 ProcessControlBlock * create_process(void (*entry)(void)){
     ProcessControlBlock * pcb = kmalloc(sizeof(ProcessControlBlock));

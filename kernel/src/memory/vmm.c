@@ -79,7 +79,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     PageTable* PDP;
     if (!PTE.present){
         PDP = (PageTable*)pmm_alloc_block();
-        memset(PDP, 0, 0x1000);
+        memset(PDP, 0, PAGE_SIZE);
         PTE.address = (u64)PDP >> 12;
         PTE.present = flags & PAGE_PRESENT;
         PTE.rw = flags & PAGE_READ_WRITE;
@@ -93,7 +93,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     PageTable* PD;
     if (!PTE.present){
         PD = (PageTable*)pmm_alloc_block();
-        memset(PD, 0, 0x1000);
+        memset(PD, 0, PAGE_SIZE);
         PTE.address = (u64)PD >> 12;
         PTE.present = flags & PAGE_PRESENT;
         PTE.rw = flags  & PAGE_READ_WRITE;
@@ -106,7 +106,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     PageTable* PT;
     if (!PTE.present){
         PT = (PageTable*)pmm_alloc_block();
-        memset(PT, 0, 0x1000);
+        memset(PT, 0, PAGE_SIZE);
         PTE.address = (u64)PT >> 12;
         PTE.present = flags & PAGE_PRESENT;
         PTE.rw = flags & PAGE_READ_WRITE;
@@ -150,7 +150,7 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
 
     memset(pml4, 0x0, PAGE_SIZE);
 
-    int uflags =  PAGE_READ_WRITE | PAGE_USER | PAGE_PRESENT;
+    int uflags = PAGE_READ_WRITE | PAGE_USER | PAGE_PRESENT;
 
     /* map some user pages */
     for(u64 addr = 0; addr <  1024*PAGE_SIZE; addr+=PAGE_SIZE)

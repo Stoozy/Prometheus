@@ -230,11 +230,11 @@ void _start(struct stivale2_struct * boot_info) {
     else; // do something else;
 
     FILE * execfile = vfs_open("a0:hello", 0);
+    //FILE * execfile = vfs_open("a0:lib/libc.so", 0);
     kprintf("[MAIN] VFS OPEN TEST : %s\n", execfile->name);
 
-    u64 filesize = execfile->size;
-    u8 *buffer = kmalloc(sizeof(char)*filesize);
-    u64 bytes_read = vfs_read(execfile, filesize, buffer);
+    u8 *buffer = kmalloc(execfile->size);
+    u64 bytes_read = vfs_read(execfile, execfile->size, buffer);
     if(bytes_read)
         kprintf("Read %llu bytes from file. Contents: %s\n", bytes_read, buffer);
 
@@ -248,3 +248,5 @@ void _start(struct stivale2_struct * boot_info) {
     // We're done, just hang...
     hang();
 }
+
+
