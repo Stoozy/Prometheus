@@ -152,7 +152,6 @@ void hang(){
 
 void _start(struct stivale2_struct * boot_info) {
 
-    gdt_init();
     serial_init();                      /* init debugging */
 
 
@@ -165,6 +164,7 @@ void _start(struct stivale2_struct * boot_info) {
         stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 
     pmm_init(meminfo);
+    gdt_init();
 
     pit_init(1000);
     idt_init();

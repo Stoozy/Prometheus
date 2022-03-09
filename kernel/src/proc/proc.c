@@ -110,7 +110,7 @@ ProcessControlBlock * create_process(void (*entry)(void)){
 
     memset(pcb, 0, sizeof(ProcessControlBlock));
 
-    pcb->p_stack = kmalloc(0x1000)+0x1000;
+    pcb->p_stack = pmm_alloc_block()+PAGE_SIZE;
 
 	u64 * stack = (u64 *)(pcb->p_stack);
     PageTable * pml4 = vmm_create_user_proc_pml4(stack);

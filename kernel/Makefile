@@ -41,7 +41,7 @@ NASM_OBJ    := $(ASM_FILES:.asm=.o)
 all: $(KERNEL)
 
 $(KERNEL): $(NASM_OBJ) $(C_OBJ) $(AS_OBJ)
-	$(CC) $(INTERNALLDFLAGS) $(NASM_OBJ) $(C_OBJ) -Xlinker -Map=output.map -o $@
+	$(CC) $(INTERNALLDFLAGS) $(NASM_OBJ) $(C_OBJ)  -o $@
 
 stivale2.h:
 	wget https://github.com/stivale/stivale/raw/master/stivale2.h
