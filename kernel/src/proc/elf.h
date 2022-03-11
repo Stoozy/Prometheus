@@ -350,7 +350,12 @@ typedef struct {
 #define ELFDATA2MSB	2
 #define ELFDATANUM	3
 
+typedef struct {
+    u64 entrypoint;
+} ElfInfo;
 
-uint8_t load_elf_bin( uint8_t *);
+uint8_t validate_elf( uint8_t *);
+ElfInfo load_elf_segments(PageTable *, uint8_t * , bool);
+ProcessControlBlock * create_elf_process(const char * path);
 
 #endif // _ELF_H

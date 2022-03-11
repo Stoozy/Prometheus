@@ -229,20 +229,13 @@ void _start(struct stivale2_struct * boot_info) {
         vfs_register_fs(tarfs, 0);
     else; // do something else;
 
-    FILE * execfile = vfs_open("a0:hello", 0);
-    //FILE * execfile = vfs_open("a0:lib/libc.so", 0);
-    kprintf("[MAIN] VFS OPEN TEST : %s\n", execfile->name);
-
-    u8 *buffer = kmalloc(execfile->size);
-    u64 bytes_read = vfs_read(execfile, execfile->size, buffer);
-    if(bytes_read)
-        kprintf("Read %llu bytes from file. Contents: %s\n", bytes_read, buffer);
 
     cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
     sys_init();
-    load_elf_bin(buffer);
+    ProcessControlBlock * hello_proc = create_elf_process("a0:hello");
+    register_process(hello_proc);
     multitasking_init();
 
     // We're done, just hang...

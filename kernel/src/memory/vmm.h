@@ -7,9 +7,9 @@
 #include <stdbool.h>
 
 enum {
-    PAGE_PRESENT = 1 << 0, // same as 1
+    PAGE_PRESENT    = 1 << 0, // same as 1
     PAGE_READ_WRITE = 1 << 1, // same as 2, binary 10
-    PAGE_USER = 1 << 2, // same as 4, binary 100
+    PAGE_USER       = 1 << 2, // same as 4, binary 100
 };
 
 typedef struct {
