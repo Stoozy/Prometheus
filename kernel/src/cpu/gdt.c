@@ -18,10 +18,11 @@ typedef struct {
     u64 ist2;      u64 ist3;      u64 ist4;
     u64 ist5;      u64 ist6;      u64 ist7;
     u64 reserved2; u16 reserved3; u16 iopb_offset;
-} __attribute__((packed))  Tss;
+} __attribute__((packed))  TSS;
+
+TSS g_tss;
 
 __attribute__((aligned(4096)))
-
 typedef struct {
 
   struct gdt_entry null;
@@ -51,17 +52,19 @@ GdtTable gdt_table = {
 
 void gdt_init(){
 
-    Tss * tss  = (Tss*)pmm_alloc_block();
+    TSS * tss  = &g_tss;
     u64 tss_base = ((u64)tss);
 
-    memset(tss, 0, sizeof(Tss));
+    memset(tss, 0, sizeof(TSS));
 
-    tss->rsp0 = (u64)pmm_alloc_block();
+    extern u8 stack[4096];
+    tss->rsp0 = (u64)&stack[4095];
+    kprintf("[GDT]  TSS stack at 0x%x\n", tss->rsp0);
 
     gdt_table.tss_low.base15_0 = tss_base & 0xffff;
     gdt_table.tss_low.base23_16 = (tss_base >> 16) & 0xff;
     gdt_table.tss_low.base31_24 = (tss_base >> 24) & 0xff;
-    gdt_table.tss_low.limit15_0 = sizeof(Tss);
+    gdt_table.tss_low.limit15_0 = sizeof(TSS);
 
     gdt_table.tss_high.limit15_0 = (tss_base >> 32) & 0xffff;
     gdt_table.tss_high.base15_0 = (tss_base >> 48) & 0xffff;

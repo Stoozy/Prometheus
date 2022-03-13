@@ -355,7 +355,7 @@ typedef struct {
 } ElfInfo;
 
 uint8_t validate_elf( uint8_t *);
-ElfInfo load_elf_segments(PageTable *, uint8_t * , bool);
+ElfInfo load_elf_segments(PageTable *, uint8_t * );
 ProcessControlBlock * create_elf_process(const char * path);
 
 #endif // _ELF_H

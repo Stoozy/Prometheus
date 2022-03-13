@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../typedefs.h"
+#include "../memory/vmm.h"
 
 typedef struct  {
     u64 rdi;    
@@ -29,6 +30,7 @@ typedef struct  {
 typedef struct {
     u64 * syscall_kernel_stack;
     u64 * syscall_user_stack;
+    PageTable * cr3;
 
     Registers regs;
 } __attribute__((packed)) LocalCpuData;

@@ -9,6 +9,8 @@ LocalCpuData cpus[MAX_CORES];
 
 void cpu_init(u8 id){
     cpus[id].syscall_kernel_stack = pmm_alloc_block() + 0x1000; 
+    cpus[id].cr3  = vmm_get_current_cr3();
+
     return;
 }
 

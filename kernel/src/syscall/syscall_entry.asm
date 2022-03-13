@@ -59,8 +59,11 @@ syscall_entry:
     swapgs
 
     mov [gs:0x8], rsp       ; save process stack
-    mov rsp, [gs:0x0]       ; switch to syscall stack
 
+    mov rdi, [gs:0xA]
+    mov cr3, rdi
+
+    mov rsp, [gs:0x0]       ; switch to syscall stack
 
     push qword 0x23         ; user ss
 

@@ -8,6 +8,7 @@
 #include "vmm.h"
 #include "pmm.h"
 #include "../drivers/video.h"
+#include "../config.h"
 
 #define PAGING_KERNEL_OFFSET        0xffffffff80000000
 #define PAGING_VIRTUAL_OFFSET       0xffff800000000000
@@ -71,6 +72,10 @@ void * vmm_virt_to_phys(PageTable * cr3, void * virt_addr){
 }
 
 i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
+
+#ifdef VMM_DEBUG
+    kprintf("[VMM]  Mapping 0x%x virt to 0x%x phys on CR3: 0x%x\n", virt_addr, phys_addr, pml4);
+#endif
 
     PageIndex indexer = vmm_get_page_index((u64)virt_addr);
     PageTableEntry PTE;
