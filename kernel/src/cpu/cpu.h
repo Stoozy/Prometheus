@@ -28,9 +28,10 @@ typedef struct  {
 } __attribute__((packed)) Registers;
 
 typedef struct {
-    u64 * syscall_kernel_stack;
-    u64 * syscall_user_stack;
-    PageTable * cr3;
+    u64 * syscall_kernel_stack; // 0x0
+    u64 * syscall_user_stack;   // 0x8
+    PageTable * kcr3;           // 0x10
+    PageTable * pcr3;           // 0x18
 
     Registers regs;
 } __attribute__((packed)) LocalCpuData;

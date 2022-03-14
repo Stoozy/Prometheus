@@ -59,8 +59,10 @@ syscall_entry:
     swapgs
 
     mov [gs:0x8], rsp       ; save process stack
+    mov rdi, cr3      ; save process cr3
+    mov [gs:0x18], rdi
 
-    mov rdi, [gs:0xA]
+    mov rdi, [gs:0x10]      ; load  kernel cr3
     mov cr3, rdi
 
     mov rsp, [gs:0x0]       ; switch to syscall stack
@@ -84,7 +86,9 @@ syscall_entry:
 
     popaq
 
-    mov rsp, [gs:0x8]       ; back to kernel stack
+    mov rsp, [gs:0x8]       ; back to user stack
+    mov rdi, [gs:0x18]      ; back to user cr3
+    mov cr3, rdi
 
     swapgs
 
