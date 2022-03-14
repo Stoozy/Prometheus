@@ -31,18 +31,24 @@ u8 validate_elf(u8 * elf) {
 
 #define LD_BASE 0xC000000000
 
-ElfInfo load_elf_segments(PageTable * vas, uint8_t * elf_data){
+Auxval load_elf_segments(PageTable * vas, uint8_t * elf_data){
     kprintf("[ELF]  Load elf segments called with %x vas and %x elf buffer\n", vas, elf_data);
-    ElfInfo info = {0};
+    Auxval aux = {0};
 
     // load elf file here
 
     Elf64_Ehdr * elf_hdr = (Elf64_Ehdr *) elf_data;
-    info.entrypoint = elf_hdr->e_entry;
+    aux.entry = elf_hdr->e_entry;
+    aux.phnum = elf_hdr->e_phnum;
+    aux.phent = elf_hdr->e_phentsize;
 
     for(u64 segment=0; segment<elf_hdr->e_phnum; ++segment){
         Elf64_Phdr * p_header = (Elf64_Phdr *) 
             (elf_data + elf_hdr->e_phoff + (elf_hdr->e_phentsize * segment));
+
+        if(p_header->p_type == PT_PHDR){
+            aux.phdr = (u64)p_header;
+        }
 
         if(p_header->p_type ==  PT_INTERP){
             char * ld_path = kmalloc(p_header->p_memsz);
@@ -57,7 +63,7 @@ ElfInfo load_elf_segments(PageTable * vas, uint8_t * elf_data){
             if(!(br != 0 && validate_elf(ld_data))) continue;
 
             Elf64_Ehdr * ld_hdr = ( Elf64_Ehdr *) ld_data;
-            info.entrypoint = (LD_BASE + ld_hdr->e_entry);
+            aux.entry = (LD_BASE + ld_hdr->e_entry);
 
             for(u64 lds=0; lds<ld_hdr->e_phnum; ++lds){
                 Elf64_Phdr  * ldph = (Elf64_Phdr*) (ld_data + ld_hdr->e_phoff + (ld_hdr->e_phentsize * lds));
@@ -100,7 +106,7 @@ ElfInfo load_elf_segments(PageTable * vas, uint8_t * elf_data){
         }
 	}
 
-    return info;
+    return aux;
 }
 
 ProcessControlBlock * create_elf_process(const char * path){
@@ -122,14 +128,14 @@ ProcessControlBlock * create_elf_process(const char * path){
     proc->cr3 = vas;
     //memset(proc->cr3, 0, PAGE_SIZE);
 
-    ElfInfo info = load_elf_segments(proc->cr3, elf_data);
+    Auxval aux = load_elf_segments(proc->cr3, elf_data);
  
 	u64 * stack = (u64 *)(proc->p_stack);
     *--stack = 0x23; // ss
 	*--stack = (u64)proc->p_stack; // rsp
 	*--stack = 0x202 ; // rflags
 	*--stack = 0x2b; // cs
-	*--stack = (u64)info.entrypoint; // rip
+	*--stack = (u64)aux.entry; // rip
 
     *--stack = 0; // r8
     *--stack = 0;

@@ -351,11 +351,14 @@ typedef struct {
 #define ELFDATANUM	3
 
 typedef struct {
-    u64 entrypoint;
-} ElfInfo;
+    u64 entry;
+    u64 phdr;
+    u64 phent;
+    u64 phnum;
+} Auxval;
 
 uint8_t validate_elf( uint8_t *);
-ElfInfo load_elf_segments(PageTable *, uint8_t * );
+Auxval load_elf_segments(PageTable *, uint8_t * );
 ProcessControlBlock * create_elf_process(const char * path);
 
 #endif // _ELF_H
