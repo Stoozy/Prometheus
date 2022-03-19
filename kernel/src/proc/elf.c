@@ -29,9 +29,9 @@ u8 validate_elf(u8 * elf) {
 }
 
 
-#define LD_BASE 0xC000000000
+#define LD_BASE 0xA000000
 
-Auxval load_elf_segments(PageTable * vas, uint8_t * elf_data){
+Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
     kprintf("[ELF]  Load elf segments called with %x vas and %x elf buffer\n", vas, elf_data);
     Auxval aux = {0};
 
@@ -63,15 +63,15 @@ Auxval load_elf_segments(PageTable * vas, uint8_t * elf_data){
             if(!(br != 0 && validate_elf(ld_data))) continue;
 
             Elf64_Ehdr * ld_hdr = ( Elf64_Ehdr *) ld_data;
-            aux.entry = (LD_BASE + ld_hdr->e_entry);
+            aux.ld_entry = (LD_BASE + ld_hdr->e_entry);
 
             for(u64 lds=0; lds<ld_hdr->e_phnum; ++lds){
                 Elf64_Phdr  * ldph = (Elf64_Phdr*) (ld_data + ld_hdr->e_phoff + (ld_hdr->e_phentsize * lds));
 
                 if(ldph->p_type != PT_LOAD) continue;
 
-                size_t offset = ldph->p_vaddr & (PAGE_SIZE-1);
-                size_t blocks = (ldph->p_memsz/PAGE_SIZE)+2;
+                u64 offset = ldph->p_vaddr & (PAGE_SIZE-1);
+                u64 blocks = (ldph->p_memsz/PAGE_SIZE)+2;
 
                 void * paddr = pmm_alloc_blocks(blocks);
                 void * vaddr = (void*)(LD_BASE + (ldph->p_vaddr & ~(0xfff)));
@@ -90,8 +90,8 @@ Auxval load_elf_segments(PageTable * vas, uint8_t * elf_data){
 		
         if(p_header->p_type != PT_LOAD) continue;
 
-        size_t offset = p_header->p_vaddr & (PAGE_SIZE-1);
-        size_t blocks = (p_header->p_memsz/PAGE_SIZE)+1;
+        u64 offset = p_header->p_vaddr & (PAGE_SIZE-1);
+        u64 blocks = (p_header->p_memsz/PAGE_SIZE)+1;
 
         void * phys_addr = pmm_alloc_blocks(blocks);
         void * virt_addr = (void*)(p_header->p_vaddr-offset);
@@ -108,6 +108,15 @@ Auxval load_elf_segments(PageTable * vas, uint8_t * elf_data){
 
     return aux;
 }
+
+
+#define AT_PHDR 3
+#define AT_PHENT 4
+#define AT_PHNUM 5
+#define AT_ENTRY 9
+#define AT_RANDOM 25
+#define AT_EXECFN 31
+
 
 ProcessControlBlock * create_elf_process(const char * path){
     FILE * elf_file = vfs_open(path, 0);
@@ -129,13 +138,26 @@ ProcessControlBlock * create_elf_process(const char * path){
     //memset(proc->cr3, 0, PAGE_SIZE);
 
     Auxval aux = load_elf_segments(proc->cr3, elf_data);
- 
+
 	u64 * stack = (u64 *)(proc->p_stack);
+
+    *--stack = 0; *--stack = 0;
+    *--stack = aux.entry;   *--stack = AT_ENTRY;
+    *--stack = aux.phent;   *--stack = AT_PHENT;
+    *--stack = aux.phnum;   *--stack = AT_PHNUM;
+    *--stack = aux.phdr;    *--stack = AT_PHDR;
+
+    *--stack = 0; // end argv
+    *--stack = 0; // end envp
+    *--stack = 0; // argc
+    uintptr_t sa = stack;
+    
+    // Interrupt frame
     *--stack = 0x23; // ss
-	*--stack = (u64)proc->p_stack; // rsp
+	*--stack = sa; // rsp
 	*--stack = 0x202 ; // rflags
 	*--stack = 0x2b; // cs
-	*--stack = (u64)aux.entry; // rip
+	*--stack = (u64)aux.ld_entry; // rip
 
     *--stack = 0; // r8
     *--stack = 0;
@@ -151,7 +173,9 @@ ProcessControlBlock * create_elf_process(const char * path){
 	*--stack = 0; // rdi
 
     proc->p_stack = stack;
-    proc->next = NULL;
+
+
+    proc->next = (void*)0;
 
     return proc;
 }

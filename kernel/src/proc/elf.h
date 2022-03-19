@@ -352,13 +352,14 @@ typedef struct {
 
 typedef struct {
     u64 entry;
+    u64 ld_entry;
     u64 phdr;
     u64 phent;
     u64 phnum;
 } Auxval;
 
-uint8_t validate_elf( uint8_t *);
-Auxval load_elf_segments(PageTable *, uint8_t * );
+u8 validate_elf( u8 *);
+Auxval load_elf_segments(PageTable *, u8 * );
 ProcessControlBlock * create_elf_process(const char * path);
 
 #endif // _ELF_H

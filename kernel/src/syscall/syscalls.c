@@ -44,6 +44,22 @@ void sys_log_libc(const char * message){
     kprintf(message);
 }
 
+
+void * sys_anon_allocate(size_t size){ 
+    kprintf("[SYS]  sys anon allocate was called\n");
+    u64 blocks = (size/PAGE_SIZE) +1;
+    kprintf("[SYS]  Requesting %llu  blocks\n");
+    void * ret = pmm_alloc_blocks(blocks);
+    extern ProcessControlBlock * gp_current_process;
+
+    int flags =  PAGE_PRESENT | PAGE_READ_WRITE | PAGE_USER;
+    for(u64 page = 0; page < blocks; page++){
+        void * caddr = (void*)(ret + (page * PAGE_SIZE));
+        vmm_map(gp_current_process->cr3, caddr, caddr, flags);
+    }
+    return ret;
+}
+
 int sys_exit(){
     kill_current_proc();
     return 0;
@@ -122,6 +138,7 @@ void * sys_vm_map(
     int fd, 
     off_t offset )
 {
+    kprintf("sys_vm_map was called\n");
     /* the calling proc */
     extern ProcessControlBlock * gp_current_process;
     if(flags & MAP_ANONYMOUS && flags & MAP_FIXED){
@@ -131,8 +148,8 @@ void * sys_vm_map(
         if(prot & PROT_WRITE)
             page_flags |= PAGE_READ_WRITE;
     
-        for(u64 vaddr = addr; vaddr < rounded_size; vaddr += PAGE_SIZE){
-            vmm_map(gp_current_process->cr3, vaddr, (void*)pmm_alloc_block(), page_flags);
+        for(u64 vaddr = (u64)addr; vaddr < rounded_size; vaddr += PAGE_SIZE){
+            vmm_map(gp_current_process->cr3, (void*)vaddr, (void*)pmm_alloc_block(), page_flags);
         }
     }
     return addr;
@@ -203,6 +220,10 @@ void syscall_dispatcher(Registers regs){
             register off_t off asm("r13");
             register void * ret asm ("r15") = sys_vm_map(addr, size, prot, flags, fd, off);
             break;
+        }
+        case SYS_ANON_ALLOC:{
+            register size_t size asm("r8");
+            register void * ret asm ("r15") = sys_anon_allocate(size);
         }
         default:{
             break;

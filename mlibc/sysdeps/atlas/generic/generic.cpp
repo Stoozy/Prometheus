@@ -8,13 +8,15 @@
 #include <limits.h>
 
 namespace mlibc {
-const int SYS_EXIT      = 0;
-const int SYS_OPEN      = 1;
-const int SYS_CLOSE     = 2;
-const int SYS_READ      = 3;
-const int SYS_WRITE     = 4;
-const int SYS_LOG_LIBC  = 5;
-const int SYS_VM_MAP    = 6;
+
+const int SYS_EXIT          = 0;
+const int SYS_OPEN          = 1;
+const int SYS_CLOSE         = 2;
+const int SYS_READ          = 3;
+const int SYS_WRITE         = 4;
+const int SYS_LOG_LIBC      = 5;
+const int SYS_VM_MAP        = 6;
+const int SYS_ANON_ALLOC    = 7;
 
 
 void sys_libc_log(const char *message) {
@@ -48,6 +50,15 @@ int sys_anon_allocate(size_t size, void **pointer) {
     //    return sys_errno;
 
 	//*pointer = ret;
+    
+    register int syscall asm("rsi") = SYS_ANON_ALLOC;
+    register size_t sz asm("r8") = size;
+
+    asm("syscall");
+
+    register void* ret asm("r15");
+    *pointer = ret;
+
     return 0;
 }
 
@@ -177,8 +188,9 @@ int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
 int sys_vm_map(void *hint, size_t size, int prot, int flags,
 		int fd, off_t offset, void **window) {
     __ensure(flags & MAP_ANONYMOUS);
+
     register int syscall asm("rsi") = SYS_VM_MAP;
-    register void* addr asm("r8") = addr;
+    register void* addr asm("r8") = hint;
     register size_t sz asm("r9") = size;
     register int _prot asm("r10") = prot;
     register int _flags asm("r10") = flags;

@@ -176,6 +176,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 
 	// Find the auxiliary vector by skipping args and environment.
 	auto aux = entryStack;
+
 	aux += *aux + 1; // First, we skip argc and all args.
 	__ensure(!*aux);
 	aux++;
@@ -209,7 +210,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	phdr_count = ehdr->e_phnum;
 	entry_pointer = reinterpret_cast<void*>(ehdr->e_entry);
 #endif
-	__ensure(phdr_pointer);
+    __ensure(phdr_pointer);
 	__ensure(entry_pointer);
 
 	if(logStartup)

@@ -59,7 +59,7 @@ syscall_entry:
     swapgs
 
     mov [gs:0x8], rsp       ; save process stack
-    mov rdi, cr3      ; save process cr3
+    mov rdi, cr3            ; save process cr3
     mov [gs:0x18], rdi
 
     mov rdi, [gs:0x10]      ; load  kernel cr3
@@ -68,14 +68,10 @@ syscall_entry:
     mov rsp, [gs:0x0]       ; switch to syscall stack
 
     push qword 0x23         ; user ss
-
     push qword [gs:0x8]     ; saved rsp
-
     push qword r11          ; rflags
     push qword 0x2b         ; user cs
-
     push rcx                ; rip
-
 
     cld
     pushaq
