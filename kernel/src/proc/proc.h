@@ -9,7 +9,7 @@
 
 enum TaskState {
     READY,
-	RUNNING,
+    RUNNING,
     ZOMBIE
 };
 
@@ -19,6 +19,8 @@ typedef struct process_control_block {
     void * p_stack;
 	PageTable * cr3;	
     enum TaskState state;
+
+    uint64_t mmap_base;
 
     struct file * fd_table[MAX_PROC_FDS];
     int fd_length;

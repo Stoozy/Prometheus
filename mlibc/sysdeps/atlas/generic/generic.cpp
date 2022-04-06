@@ -38,28 +38,11 @@ int sys_tcb_set(void *pointer) {
 }
 
 int sys_anon_allocate(size_t size, void **pointer) {
-	//void *ret;
-    //int sys_errno;
 
-	//asm volatile ("syscall"
-    //        : "=a"(ret), "=d"(sys_errno)
-	//		: "a"(9), "D"(0), "S"(size)
-	//		: "rcx", "r11");
+    int errno = sys_vm_map(NULL, size, PROT_EXEC | PROT_READ | PROT_WRITE,
+            MAP_ANONYMOUS, -1, 0, pointer);
 
-    //if (!ret)
-    //    return sys_errno;
-
-	//*pointer = ret;
-    
-    register int syscall asm("rsi") = SYS_ANON_ALLOC;
-    register size_t sz asm("r8") = size;
-
-    asm("syscall");
-
-    register void* ret asm("r15");
-    *pointer = ret;
-
-    return 0;
+    return errno;
 }
 
 int sys_anon_free(void *pointer, size_t size) {
@@ -203,23 +186,6 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags,
     *window = ret;
 
     return 0;
-    // TODO
-    //void *ret;
-    //int sys_errno;
-
-    // mlibc::infoLogger() << "calling sys_vm_map with size: " << size << frg::endlog;
-
-    //asm volatile ("syscall"
-    //        : "=a"(ret), "=d"(sys_errno)
-	//		: "a"(9), "D"(hint), "S"(size)
-	//		: "rcx", "r11");
-
-    //if (!ret)
-    //    return sys_errno;
-
-	//*window = ret;
-
-    //return 0;
 }
 
 int sys_vm_unmap(void *pointer, size_t size) {

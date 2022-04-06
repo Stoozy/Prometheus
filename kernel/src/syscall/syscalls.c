@@ -141,9 +141,21 @@ void * sys_vm_map(
     kprintf("sys_vm_map was called\n");
     /* the calling proc */
     extern ProcessControlBlock * gp_current_process;
-    if(flags & MAP_ANONYMOUS && flags & MAP_FIXED){
-        size_t rounded_size;
-        rounded_size =  size < PAGE_SIZE ? PAGE_SIZE : (size/PAGE_SIZE) * PAGE_SIZE;
+
+    size_t rounded_size;
+    rounded_size =  size < PAGE_SIZE ? PAGE_SIZE : (size/PAGE_SIZE) * PAGE_SIZE;
+
+
+
+    if( flags & MAP_ANON){
+
+        kprintf("[MMAP] Mapping anon and fixed\n");
+
+        if((uint64_t)addr == 0){
+            addr = (void*)gp_current_process->mmap_base;            
+            gp_current_process->mmap_base += rounded_size;
+            kprintf("[MMAP] Address was NULL: new addr 0x%x\n", addr);
+        }
         int page_flags =  PAGE_USER | PAGE_PRESENT;
         if(prot & PROT_WRITE)
             page_flags |= PAGE_READ_WRITE;
@@ -151,7 +163,10 @@ void * sys_vm_map(
         for(u64 vaddr = (u64)addr; vaddr < rounded_size; vaddr += PAGE_SIZE){
             vmm_map(gp_current_process->cr3, (void*)vaddr, (void*)pmm_alloc_block(), page_flags);
         }
+        extern void invalidate_tlb();
+        invalidate_tlb();
     }
+
     return addr;
 }
 

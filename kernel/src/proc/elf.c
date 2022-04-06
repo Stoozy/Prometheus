@@ -174,6 +174,7 @@ ProcessControlBlock * create_elf_process(const char * path){
 
     proc->p_stack = stack;
 
+    proc->mmap_base = 0xB000000;
 
     proc->next = (void*)0;
 

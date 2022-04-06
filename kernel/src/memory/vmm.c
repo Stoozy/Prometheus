@@ -128,7 +128,6 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     PT->entries[indexer.pml1i] = PTE;
 
 
-    //invalidate_tlb();
     return SUCCESS;
 } /* vmm_map */
 
