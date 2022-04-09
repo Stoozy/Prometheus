@@ -143,25 +143,30 @@ void * sys_vm_map(
     extern ProcessControlBlock * gp_current_process;
 
     size_t rounded_size;
-    rounded_size =  size < PAGE_SIZE ? PAGE_SIZE : (size/PAGE_SIZE) * PAGE_SIZE;
+    rounded_size =  size < PAGE_SIZE ? PAGE_SIZE : ((size+PAGE_SIZE)/PAGE_SIZE) * PAGE_SIZE;
 
 
 
     if( flags & MAP_ANON){
 
-        kprintf("[MMAP] Mapping anon and fixed\n");
+        kprintf("[MMAP] Mapping anon and fixed on cr3 0x%x\n", gp_current_process->cr3);
 
         if((uint64_t)addr == 0){
             addr = (void*)gp_current_process->mmap_base;            
             gp_current_process->mmap_base += rounded_size;
             kprintf("[MMAP] Address was NULL: new addr 0x%x\n", addr);
         }
-        int page_flags =  PAGE_USER | PAGE_PRESENT;
+        int page_flags =  PAGE_PRESENT | PAGE_USER;
         if(prot & PROT_WRITE)
             page_flags |= PAGE_READ_WRITE;
     
-        for(u64 vaddr = (u64)addr; vaddr < rounded_size; vaddr += PAGE_SIZE){
-            vmm_map(gp_current_process->cr3, (void*)vaddr, (void*)pmm_alloc_block(), page_flags);
+        void * paddr = pmm_alloc_blocks(rounded_size/PAGE_SIZE);
+        if(paddr == NULL){
+            kprintf("Not enough memory!\n");
+            return -1;
+        }
+        for(void* vaddr = addr; (u64)vaddr < ((u64)addr+rounded_size); vaddr += PAGE_SIZE, paddr += PAGE_SIZE){
+            vmm_map(gp_current_process->cr3, (void*)vaddr, paddr, page_flags);
         }
         extern void invalidate_tlb();
         invalidate_tlb();
@@ -191,7 +196,6 @@ void syscall_dispatcher(Registers regs){
     switch(syscall){
         case SYS_EXIT:{
             register int status asm("r9");
-            // TODO: maybe use status code somehow?
             sys_exit();
             break;
         }

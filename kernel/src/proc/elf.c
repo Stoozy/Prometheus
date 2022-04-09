@@ -176,7 +176,7 @@ ProcessControlBlock * create_elf_process(const char * path){
 
     proc->mmap_base = 0xB000000;
 
-    proc->next = (void*)0;
+    proc->next = 0;
 
     return proc;
 }
