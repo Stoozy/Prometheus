@@ -33,6 +33,12 @@ typedef struct {
     u64 address: 52;
 } __attribute__((packed)) PageTableEntry;
 
+typedef struct {
+    void * vaddr;
+    void * paddr;
+    u64 length;
+} MemRange;
+
 
 typedef struct {
     PageTableEntry entries[512];
@@ -44,6 +50,7 @@ i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical, int f
 PageTable * vmm_create_user_proc_pml4();
 PageTable * vmm_create_kernel_proc_pml4();
 PageTable * vmm_get_current_cr3();
+void        vmm_map_range(PageTable * cr3, MemRange range, int flags);
 void        vmm_init();
 
 #endif 

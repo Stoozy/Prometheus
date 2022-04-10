@@ -131,6 +131,16 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     return SUCCESS;
 } /* vmm_map */
 
+void vmm_map_range(PageTable * cr3, MemRange range, int flags){
+
+    void * end   = range.vaddr + range.length;
+    void * vc =  range.vaddr,  * pc =  range.paddr;
+    
+    while(vc != end){
+        vmm_map(cr3, vc, pc, flags);
+        vc += PAGE_SIZE; pc += PAGE_SIZE;
+    }
+}
 
 PageTable * vmm_create_kernel_proc_pml4(void * stack_top){
     PageTable * pml4 = pmm_alloc_block();

@@ -9,12 +9,12 @@
 extern u64 k_start;
 extern u64 k_end;
 
-volatile u64     total_blocks = _PMM_MAX_BITMAPS * _PMM_BLOCKS_PER_BYTE; 
+volatile u64     total_blocks = PMM_MAX_BITMAPS * PMM_BLOCKS_PER_BYTE; 
 volatile u64     total_bmaps; 
 volatile u64     free_blocks;
 volatile u64     used_blocks; 
 volatile u64     last_checked_block = 1; 
-volatile u8      mmap[_PMM_MAX_BITMAPS]; /* max maps for a 64 GiB memory space (takes 2 KiB) */
+volatile u8      mmap[PMM_MAX_BITMAPS]; /* max maps for a 64 GiB memory space (takes 2 KiB) */
 
 static void set_frame_used(u64 block){
     u8 index = block/8;
@@ -41,11 +41,11 @@ bool pmm_is_block_free(u64 block){
 
 void pmm_mark_region_used(void *  start_addr, void *  end_addr ){
 
-    u64 start_block = (u64)start_addr / _PMM_BLOCK_SIZE;
-    u64 end_block =  ((u64)end_addr / _PMM_BLOCK_SIZE) + 1; 
+    u64 start_block = (u64)start_addr / PMM_BLOCK_SIZE;
+    u64 end_block =  ((u64)end_addr / PMM_BLOCK_SIZE) + 1; 
 
     kprintf("[PMM]  Marking blocks from 0x%x to 0x%x as used\n", 
-            start_block * _PMM_BLOCK_SIZE, end_block * _PMM_BLOCK_SIZE);
+            start_block * PMM_BLOCK_SIZE, end_block * PMM_BLOCK_SIZE);
 
     for(u64 block = start_block; block < end_block; ++block){
         set_frame_used(block);
@@ -60,8 +60,8 @@ void pmm_init_region(void * addr, u64 size){
 
     kprintf("[PMM]  Address: 0x%x with size: %llu bytes.\n", addr, size);
 
-    u64 start_frame = ((u64)addr)/_PMM_BLOCK_SIZE;
-    u64 end_frame = start_frame + (size/_PMM_BLOCK_SIZE);
+    u64 start_frame = ((u64)addr)/PMM_BLOCK_SIZE;
+    u64 end_frame = start_frame + (size/PMM_BLOCK_SIZE);
     
     for(u64 i=start_frame; i<end_frame; i++){
        set_frame_free(i);
@@ -131,7 +131,7 @@ void * pmm_alloc_blocks(u64 size){
         if(sb == -1) return 0x0; // ran out of usable mem
     }
      
-    u64 addr = sb * _PMM_BLOCK_SIZE; 
+    u64 addr = sb * PMM_BLOCK_SIZE; 
 
     for(u64 b=sb; b<(sb+size); ++b){
         set_frame_used(b);
@@ -158,7 +158,7 @@ void * pmm_alloc_block(){
         }
     } 
 
-    u64 addr = block * _PMM_BLOCK_SIZE;
+    u64 addr = block * PMM_BLOCK_SIZE;
 
     // set block used
     set_frame_used(block);
@@ -172,7 +172,7 @@ void * pmm_alloc_block(){
 
 // TODO
 void  pmm_free_blocks(u64 addr, u64 blocks){
-    int sb = addr/_PMM_BLOCK_SIZE; 
+    int sb = addr/PMM_BLOCK_SIZE; 
 
     for(u64 b=sb; b<(sb+blocks); ++b){
         set_frame_free(b);
@@ -183,7 +183,7 @@ void  pmm_free_blocks(u64 addr, u64 blocks){
 }
 
 void pmm_free_block(u64 addr){
-    int block = addr/_PMM_BLOCK_SIZE;
+    int block = addr/PMM_BLOCK_SIZE;
 
     set_frame_free(block);
 
@@ -211,9 +211,9 @@ void pmm_dump(){
 
     for(u64 i=0; i<total_blocks; i++){
         if(is_block_used(i))
-            kprintf("Block #%d; Addr: 0x%x; Status: Used\n", i, i*_PMM_BLOCK_SIZE );
+            kprintf("Block #%d; Addr: 0x%x; Status: Used\n", i, i*PMM_BLOCK_SIZE );
         else 
-            kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*_PMM_BLOCK_SIZE );
+            kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*PMM_BLOCK_SIZE );
     }
 
     /*for(u64 i=0; i<total_bmaps; i++){
@@ -224,7 +224,7 @@ void pmm_dump(){
 
 void pmm_init(struct stivale2_struct_tag_memmap * meminfo){
 
-    total_bmaps = total_blocks / _PMM_BLOCKS_PER_BYTE;
+    total_bmaps = total_blocks / PMM_BLOCKS_PER_BYTE;
     used_blocks = total_blocks;
     free_blocks = 0;
 

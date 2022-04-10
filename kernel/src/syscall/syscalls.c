@@ -138,41 +138,36 @@ void * sys_vm_map(
     int fd, 
     off_t offset )
 {
-    kprintf("sys_vm_map was called\n");
+    kprintf("[MMAP] Called\n");
+    kprintf("[MMAP] Requesting %llu bytes\n", size);
+
     /* the calling proc */
     extern ProcessControlBlock * gp_current_process;
 
-    size_t rounded_size;
-    rounded_size =  size < PAGE_SIZE ? PAGE_SIZE : ((size+PAGE_SIZE)/PAGE_SIZE) * PAGE_SIZE;
+    if( !(flags & MAP_ANON)){
+        kprintf("[MMAP] Non anonymous mapping\n");
 
-
-
-    if( flags & MAP_ANON){
-
-        kprintf("[MMAP] Mapping anon and fixed on cr3 0x%x\n", gp_current_process->cr3);
-
-        if((uint64_t)addr == 0){
-            addr = (void*)gp_current_process->mmap_base;            
-            gp_current_process->mmap_base += rounded_size;
-            kprintf("[MMAP] Address was NULL: new addr 0x%x\n", addr);
+    }else{
+        // size isn't page aligned
+        if(size % PAGE_SIZE != 0){
+            kprintf("[MMAP] Size wasn't page aligned");
+            return NULL;
         }
-        int page_flags =  PAGE_PRESENT | PAGE_USER;
-        if(prot & PROT_WRITE)
+        
+        void * virt_base = addr == NULL ? (void*)gp_current_process->mmap_base : addr;
+        void * phys_base = pmm_alloc_blocks(size/PAGE_SIZE);
+        kprintf("[MMAP] Found free chunk at 0x%x phys\n", phys_base);
+        MemRange range = {virt_base, phys_base, size};
+        int page_flags = PAGE_USER | PAGE_PRESENT;
+
+        if (flags & PROT_WRITE)
             page_flags |= PAGE_READ_WRITE;
-    
-        void * paddr = pmm_alloc_blocks(rounded_size/PAGE_SIZE);
-        if(paddr == NULL){
-            kprintf("Not enough memory!\n");
-            return -1;
-        }
-        for(void* vaddr = addr; (u64)vaddr < ((u64)addr+rounded_size); vaddr += PAGE_SIZE, paddr += PAGE_SIZE){
-            vmm_map(gp_current_process->cr3, (void*)vaddr, paddr, page_flags);
-        }
-        extern void invalidate_tlb();
-        invalidate_tlb();
+
+        vmm_map_range(gp_current_process->cr3, range, page_flags);
+        return virt_base;
     }
 
-    return addr;
+    return NULL;
 }
 
 int sys_execve(char *name, char **argv, char **env){
