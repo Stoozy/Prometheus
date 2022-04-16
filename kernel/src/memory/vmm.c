@@ -133,11 +133,16 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
 
 void vmm_map_range(PageTable * cr3, MemRange range, int flags){
 
-    void * end   = range.vaddr + range.length;
-    void * vc =  range.vaddr,  * pc =  range.paddr;
+    // page align all addresses
+    uintptr_t vc   = (u64)range.vaddr & ~(0xfff);
+    uintptr_t pc =  (u64)range.paddr & ~(0xfff);
+
+    uintptr_t end  = (u64)range.vaddr + range.length;
+    // page align last page
+    end &= ~(0xfff);
     
     while(vc != end){
-        vmm_map(cr3, vc, pc, flags);
+        vmm_map(cr3, (void*)vc, (void*)pc, flags);
         vc += PAGE_SIZE; pc += PAGE_SIZE;
     }
 }
@@ -182,6 +187,8 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
 
     //void * stack = stack_top;
+    vmm_map(pml4, stack_top-0x3000, stack_top-0x3001, uflags);
+    vmm_map(pml4, stack_top-0x2000, stack_top-0x2000, uflags);
     vmm_map(pml4, stack_top-0x1000, stack_top-0x1000, uflags);
     vmm_map(pml4, stack_top, stack_top, uflags);
 

@@ -138,7 +138,6 @@ void * sys_vm_map(
     int fd, 
     off_t offset )
 {
-    kprintf("[MMAP] Called\n");
     kprintf("[MMAP] Requesting %llu bytes\n", size);
 
     /* the calling proc */
@@ -154,8 +153,19 @@ void * sys_vm_map(
             return NULL;
         }
         
-        void * virt_base = addr == NULL ? (void*)gp_current_process->mmap_base : addr;
         void * phys_base = pmm_alloc_blocks(size/PAGE_SIZE);
+        if(phys_base == NULL){
+            // out of memory
+            kprintf("Out of memory\n");
+            return NULL;
+        }
+
+        void * virt_base =  NULL; 
+        if(addr == NULL){
+            virt_base = (void*)gp_current_process->mmap_base;
+            gp_current_process->mmap_base += size;
+        }
+
         kprintf("[MMAP] Found free chunk at 0x%x phys\n", phys_base);
         MemRange range = {virt_base, phys_base, size};
         int page_flags = PAGE_USER | PAGE_PRESENT;
@@ -164,6 +174,8 @@ void * sys_vm_map(
             page_flags |= PAGE_READ_WRITE;
 
         vmm_map_range(gp_current_process->cr3, range, page_flags);
+        kprintf("[MMAP] Returning 0x%x\n", virt_base);
+
         return virt_base;
     }
 
@@ -190,11 +202,13 @@ void syscall_dispatcher(Registers regs){
 
     switch(syscall){
         case SYS_EXIT:{
+            kprintf("[SYS]  EXIT CALLED");
             register int status asm("r9");
             sys_exit();
             break;
         }
         case SYS_OPEN:{
+            kprintf("[SYS]  OPEN CALLED");
             register const char * fp asm("r8");
             register int flags asm("r9");
             register int * fd asm("r10");
@@ -203,9 +217,11 @@ void syscall_dispatcher(Registers regs){
             break;
         }
         case SYS_CLOSE:{
+            kprintf("[SYS]  CLOSE CALLED");
             break;
         }
         case SYS_READ:{
+            kprintf("[SYS]  READ CALLED");
             register int fd asm("r8");
             register char * buf asm("r9");
             register size_t count asm("r10");
@@ -214,6 +230,7 @@ void syscall_dispatcher(Registers regs){
 
         }
         case SYS_WRITE:{
+            kprintf("[SYS]  WRITE CALLED");
             register int file asm("r8");
             register char * ptr asm("r9");
             register int len asm("r10");
@@ -226,6 +243,7 @@ void syscall_dispatcher(Registers regs){
             break;
         }
         case SYS_VM_MAP:{
+            kprintf("[SYS]  VM_MAP CALLED");
             register void* addr asm("r8");
             register size_t size asm("r9");
             register int prot asm("r10");
@@ -236,6 +254,7 @@ void syscall_dispatcher(Registers regs){
             break;
         }
         case SYS_ANON_ALLOC:{
+            kprintf("[SYS]  ANON_ALLOC CALLED");
             register size_t size asm("r8");
             register void * ret asm ("r15") = sys_anon_allocate(size);
         }

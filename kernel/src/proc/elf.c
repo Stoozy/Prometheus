@@ -36,7 +36,6 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
     Auxval aux = {0};
 
     // load elf file here
-
     Elf64_Ehdr * elf_hdr = (Elf64_Ehdr *) elf_data;
     aux.entry = elf_hdr->e_entry;
     aux.phnum = elf_hdr->e_phnum;
@@ -47,7 +46,8 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
             (elf_data + elf_hdr->e_phoff + (elf_hdr->e_phentsize * segment));
 
         if(p_header->p_type == PT_PHDR){
-            aux.phdr = (u64)p_header;
+            kprintf("PT_PHDR vaddr is 0x%x\n", p_header->p_vaddr);
+            aux.phdr = (u64)p_header->p_vaddr;
         }
 
         if(p_header->p_type ==  PT_INTERP){
@@ -120,12 +120,13 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
 
 ProcessControlBlock * create_elf_process(const char * path){
     FILE * elf_file = vfs_open(path, 0);
+
     u8 * elf_data = kmalloc(elf_file->size);
     int br = vfs_read(elf_file, elf_file->size, elf_data);
 
-    if(!validate_elf(elf_data))
+    if(!validate_elf(elf_data)){
         return NULL;
-
+    }
 
 	ProcessControlBlock * proc = kmalloc(sizeof(ProcessControlBlock));
 
@@ -135,7 +136,11 @@ ProcessControlBlock * create_elf_process(const char * path){
 
     PageTable * vas = vmm_create_user_proc_pml4(proc->p_stack); 
     proc->cr3 = vas;
-    //memset(proc->cr3, 0, PAGE_SIZE);
+
+    kprintf("Elf file size is %llu bytes\n", elf_file->size);
+    // mapping entire file
+    MemRange range = {(void*)elf_data, (void*)elf_data, elf_file->size};
+    vmm_map_range(vas, range, PAGE_USER | PAGE_PRESENT | PAGE_READ_WRITE);
 
     Auxval aux = load_elf_segments(proc->cr3, elf_data);
 
