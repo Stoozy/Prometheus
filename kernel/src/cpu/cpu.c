@@ -8,7 +8,18 @@
 LocalCpuData cpus[MAX_CORES];
 
 void cpu_init(u8 id){
-    cpus[id].syscall_kernel_stack = pmm_alloc_block() + 0x1000; 
+    kprintf("Initializing CPU #%lu\n", id);
+
+    void * addr = pmm_alloc_blocks(4) + 4 * PAGE_SIZE;
+
+    extern void panic();
+    if(addr != NULL){
+        cpus[id].syscall_kernel_stack = (u64*)addr; 
+        kprintf("kernel stack at 0x%x\n", addr);
+    }else {
+        kprintf("OUT OF MEMORY\n");
+        panic();
+    }
     cpus[id].kcr3  = vmm_get_current_cr3();
 
     return;

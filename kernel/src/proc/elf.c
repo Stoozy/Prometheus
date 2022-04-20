@@ -128,19 +128,25 @@ ProcessControlBlock * create_elf_process(const char * path){
         return NULL;
     }
 
-	ProcessControlBlock * proc = kmalloc(sizeof(ProcessControlBlock));
+	//ProcessControlBlock * proc = kmalloc(sizeof(ProcessControlBlock));
+	ProcessControlBlock * proc = (ProcessControlBlock *)pmm_alloc_block();
+
 
     /* 4 KiB stack */
-    proc->p_stack = pmm_alloc_blocks(4) + 4 * PAGE_SIZE;
+    proc->p_stack = pmm_alloc_blocks(4) + (4 * PAGE_SIZE);
+    kprintf("Process stack at 0x%x\n", proc->p_stack);
 
 
     PageTable * vas = vmm_create_user_proc_pml4(proc->p_stack); 
+
     proc->cr3 = vas;
 
     kprintf("Elf file size is %llu bytes\n", elf_file->size);
+
     // mapping entire file
     MemRange range = {(void*)elf_data, (void*)elf_data, elf_file->size};
     vmm_map_range(vas, range, PAGE_USER | PAGE_PRESENT | PAGE_READ_WRITE);
+
 
     Auxval aux = load_elf_segments(proc->cr3, elf_data);
 
@@ -178,9 +184,7 @@ ProcessControlBlock * create_elf_process(const char * path){
 	*--stack = 0; // rdi
 
     proc->p_stack = stack;
-
     proc->mmap_base = 0xB000000;
-
     proc->next = 0;
 
     return proc;

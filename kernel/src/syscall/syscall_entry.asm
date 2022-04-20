@@ -47,7 +47,7 @@ enable_sce:
     wrmsr               ; write back new EFER
     mov rcx, 0xc0000081 ; STAR MSR
     rdmsr               ; read current STAR
-    mov edx, 0x180008 ; load up GDT segment bases 0x0 (kernel) and 0x18 (user)
+    mov edx, 0x180008   ; load up GDT segment bases 0x0 (kernel) and 0x18 (user)
     wrmsr               ; write back new STAR
     ret                 ; return back to C
 
@@ -62,8 +62,6 @@ syscall_entry:
     mov rdi, cr3            ; save process cr3
     mov [gs:0x18], rdi
 
-    mov rdi, [gs:0x10]      ; load  kernel cr3
-    mov cr3, rdi
 
     mov rsp, [gs:0x0]       ; switch to syscall stack
 
@@ -73,8 +71,8 @@ syscall_entry:
     push qword 0x2b         ; user cs
     push rcx                ; rip
 
-    cld
     pushaq
+    cld
 
     mov rdi, rsp
     mov rbp, 0
@@ -83,8 +81,6 @@ syscall_entry:
     popaq
 
     mov rsp, [gs:0x8]       ; back to user stack
-    mov rdi, [gs:0x18]      ; back to user cr3
-    mov cr3, rdi
 
     swapgs
 

@@ -28,4 +28,5 @@ typedef unsigned long long caddr_t;
 #define SYS_VM_MAP      6
 #define SYS_ANON_ALLOC  7
 
+void sys_init();
 

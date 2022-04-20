@@ -27,6 +27,8 @@
 #include "syscall/syscalls.h"
 #include "string/string.h"
 
+#include "syscall/syscalls.h"
+
 extern u64 k_start;
 extern u64 k_end;
 
@@ -142,12 +144,14 @@ extern void enable_sce();
 extern void to_userspace(void* entry, void* stack);
 
 
-__attribute__ ((aligned(0x1000))) void userspace_func(){
-    for(;;) kprintf("Bonjour\n");
-}
-
 void hang(){
     for (;;);
+}
+
+
+void panic(){
+    kprintf("KERNEL PANIC\n");
+    for(;;);
 }
 
 void _start(struct stivale2_struct * boot_info) {
@@ -234,6 +238,7 @@ void _start(struct stivale2_struct * boot_info) {
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
 
     sys_init();
+
     ProcessControlBlock * hello_proc = create_elf_process("a0:hello");
     register_process(hello_proc);
     multitasking_init();

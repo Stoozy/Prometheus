@@ -143,6 +143,8 @@ void * sys_vm_map(
     /* the calling proc */
     extern ProcessControlBlock * gp_current_process;
 
+    kprintf("Current process at 0x%x\n", gp_current_process);
+
     if( !(flags & MAP_ANON)){
         kprintf("[MMAP] Non anonymous mapping\n");
 
@@ -202,13 +204,13 @@ void syscall_dispatcher(Registers regs){
 
     switch(syscall){
         case SYS_EXIT:{
-            kprintf("[SYS]  EXIT CALLED");
+            kprintf("[SYS]  EXIT CALLED\n");
             register int status asm("r9");
             sys_exit();
             break;
         }
         case SYS_OPEN:{
-            kprintf("[SYS]  OPEN CALLED");
+            kprintf("[SYS]  OPEN CALLED\n");
             register const char * fp asm("r8");
             register int flags asm("r9");
             register int * fd asm("r10");
@@ -217,11 +219,11 @@ void syscall_dispatcher(Registers regs){
             break;
         }
         case SYS_CLOSE:{
-            kprintf("[SYS]  CLOSE CALLED");
+            kprintf("[SYS]  CLOSE CALLED\n");
             break;
         }
         case SYS_READ:{
-            kprintf("[SYS]  READ CALLED");
+            kprintf("[SYS]  READ CALLED\n");
             register int fd asm("r8");
             register char * buf asm("r9");
             register size_t count asm("r10");
@@ -230,7 +232,7 @@ void syscall_dispatcher(Registers regs){
 
         }
         case SYS_WRITE:{
-            kprintf("[SYS]  WRITE CALLED");
+            kprintf("[SYS]  WRITE CALLED\n");
             register int file asm("r8");
             register char * ptr asm("r9");
             register int len asm("r10");
@@ -243,7 +245,7 @@ void syscall_dispatcher(Registers regs){
             break;
         }
         case SYS_VM_MAP:{
-            kprintf("[SYS]  VM_MAP CALLED");
+            kprintf("[SYS]  VM_MAP CALLED\n");
             register void* addr asm("r8");
             register size_t size asm("r9");
             register int prot asm("r10");
@@ -254,7 +256,7 @@ void syscall_dispatcher(Registers regs){
             break;
         }
         case SYS_ANON_ALLOC:{
-            kprintf("[SYS]  ANON_ALLOC CALLED");
+            kprintf("[SYS]  ANON_ALLOC CALLED\n");
             register size_t size asm("r8");
             register void * ret asm ("r15") = sys_anon_allocate(size);
         }

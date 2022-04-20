@@ -9,6 +9,7 @@
 #include "pmm.h"
 #include "../drivers/video.h"
 #include "../config.h"
+#include "../cpu/cpu.h"
 
 #define PAGING_KERNEL_OFFSET        0xffffffff80000000
 #define PAGING_VIRTUAL_OFFSET       0xffff800000000000
@@ -171,10 +172,6 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
 
     int uflags = PAGE_READ_WRITE | PAGE_USER | PAGE_PRESENT;
 
-    /* map some user pages */
-    for(u64 addr = 0; addr <  1024*PAGE_SIZE; addr+=PAGE_SIZE)
-        vmm_map(pml4, (void*)addr, (void*)addr, uflags);
-
 
     /* map framebuffer */
     for(u64 addr = (u64)get_framebuffer_addr(); 
@@ -186,11 +183,17 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
 
-    //void * stack = stack_top;
-    vmm_map(pml4, stack_top-0x3000, stack_top-0x3001, uflags);
-    vmm_map(pml4, stack_top-0x2000, stack_top-0x2000, uflags);
-    vmm_map(pml4, stack_top-0x1000, stack_top-0x1000, uflags);
-    vmm_map(pml4, stack_top, stack_top, uflags);
+    
+    for(int p= 0; p<4; p++) 
+        vmm_map(pml4, stack_top-(p*PAGE_SIZE), stack_top-(p*PAGE_SIZE), uflags);
+
+    LocalCpuData * lcd = get_cpu_struct(0); 
+    /* map kernel stack */
+    uintptr_t kstack_top = lcd->syscall_kernel_stack;
+
+    kprintf("Kernel stack top 0x%x\n", kstack_top);
+    for(int p = 0; p<4; p++)
+        vmm_map(pml4, kstack_top-(p*PAGE_SIZE), kstack_top-(p*PAGE_SIZE), kflags);
 
     return pml4;
 }
