@@ -177,8 +177,6 @@ void multitasking_init(){
     // save kernel page tables
 
     kernel_cr3 = vmm_get_current_cr3();
-    //register_process(create_process(idle_task));
-    //register_process(create_process(refresh_screen_proc));
     gp_current_process = gp_process_queue;
 
     kprintf("Switching to process with 0x%llx cr3\n", gp_current_process->cr3);

@@ -79,11 +79,8 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
                 memset(paddr, 0, ldph->p_memsz);
                 memcpy(paddr+offset, (ld_data+ldph->p_offset), ldph->p_filesz);
 
-                int page_flags = PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT;
-                for(int block=0; block<blocks; block++){
-                    vmm_map(vas, vaddr, paddr, page_flags);
-                    vaddr += PAGE_SIZE; paddr += PAGE_SIZE;
-                }
+                int page_flags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
+                vmm_map_range(vas, vaddr, paddr, blocks * PAGE_SIZE, page_flags);
                 
             }
         }
@@ -99,7 +96,7 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
         memset(phys_addr, 0, p_header->p_memsz);
         memcpy(phys_addr+offset, (elf_data+p_header->p_offset), p_header->p_filesz);
 
-        int page_flags = PAGE_USER | PAGE_READ_WRITE | PAGE_PRESENT;
+        int page_flags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
         for(int block=0; block<blocks; block++){
             vmm_map(vas, virt_addr, phys_addr, page_flags); 
             virt_addr += PAGE_SIZE; phys_addr += PAGE_SIZE;
@@ -128,25 +125,24 @@ ProcessControlBlock * create_elf_process(const char * path){
         return NULL;
     }
 
-	//ProcessControlBlock * proc = kmalloc(sizeof(ProcessControlBlock));
-	ProcessControlBlock * proc = (ProcessControlBlock *)pmm_alloc_block();
-
+	ProcessControlBlock * proc = kmalloc(sizeof(ProcessControlBlock));
+	//ProcessControlBlock * proc = (ProcessControlBlock *)pmm_alloc_block();
 
     /* 4 KiB stack */
-    proc->p_stack = pmm_alloc_blocks(4) + (4 * PAGE_SIZE);
+    proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
     kprintf("Process stack at 0x%x\n", proc->p_stack);
 
 
-    PageTable * vas = vmm_create_user_proc_pml4(proc->p_stack); 
+    proc->cr3 = vmm_create_user_proc_pml4(proc->p_stack); 
 
-    proc->cr3 = vas;
-
+    vmm_map(proc->cr3, (void*)proc, (void*)proc, PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
     kprintf("Elf file size is %llu bytes\n", elf_file->size);
 
-    // mapping entire file
-    MemRange range = {(void*)elf_data, (void*)elf_data, elf_file->size};
-    vmm_map_range(vas, range, PAGE_USER | PAGE_PRESENT | PAGE_READ_WRITE);
+    void* pa_virt_start = (void*)(((u64)elf_data / PAGE_SIZE)  * PAGE_SIZE);
 
+    void * phys_start = pmm_alloc_blocks((elf_file->size / PAGE_SIZE) + 1);
+    size_t pa_size = ((elf_file->size / PAGE_SIZE) + 1)  * PAGE_SIZE; 
+    vmm_map_range(proc->cr3, pa_virt_start, phys_start, pa_size,  PAGE_USER | PAGE_PRESENT | PAGE_WRITE);
 
     Auxval aux = load_elf_segments(proc->cr3, elf_data);
 

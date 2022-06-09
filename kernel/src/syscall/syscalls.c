@@ -14,6 +14,9 @@
 
 typedef long int off_t;
 
+extern void load_pagedir(PageTable *);
+extern PageTable * kernel_cr3;
+
 static inline uint64_t rdmsr(uint64_t msr){
 	uint32_t low, high;
 	asm volatile (
@@ -52,11 +55,12 @@ void * sys_anon_allocate(size_t size){
     void * ret = pmm_alloc_blocks(blocks);
     extern ProcessControlBlock * gp_current_process;
 
-    int flags =  PAGE_PRESENT | PAGE_READ_WRITE | PAGE_USER;
+    int flags =  PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
     for(u64 page = 0; page < blocks; page++){
         void * caddr = (void*)(ret + (page * PAGE_SIZE));
         vmm_map(gp_current_process->cr3, caddr, caddr, flags);
     }
+
     return ret;
 }
 
@@ -139,23 +143,26 @@ void * sys_vm_map(
     off_t offset )
 {
     kprintf("[MMAP] Requesting %llu bytes\n", size);
+    kprintf("[MMAP] Hint : 0x%llx\n", addr);
+    kprintf("[MMAP] Size : 0x%llx\n", size);
 
-    /* the calling proc */
+    load_pagedir(kernel_cr3);
     extern ProcessControlBlock * gp_current_process;
 
     kprintf("Current process at 0x%x\n", gp_current_process);
 
     if( !(flags & MAP_ANON)){
         kprintf("[MMAP] Non anonymous mapping\n");
-
     }else{
         // size isn't page aligned
         if(size % PAGE_SIZE != 0){
             kprintf("[MMAP] Size wasn't page aligned");
             return NULL;
         }
+
         
-        void * phys_base = pmm_alloc_blocks(size/PAGE_SIZE);
+        int pages =  (size/PAGE_SIZE) + 1;
+        void * phys_base = pmm_alloc_blocks(pages);
         if(phys_base == NULL){
             // out of memory
             kprintf("Out of memory\n");
@@ -163,24 +170,32 @@ void * sys_vm_map(
         }
 
         void * virt_base =  NULL; 
-        if(addr == NULL){
+        if(flags & MAP_FIXED) {
+            virt_base = addr;
+        }else{
             virt_base = (void*)gp_current_process->mmap_base;
             gp_current_process->mmap_base += size;
         }
 
         kprintf("[MMAP] Found free chunk at 0x%x phys\n", phys_base);
-        MemRange range = {virt_base, phys_base, size};
-        int page_flags = PAGE_USER | PAGE_PRESENT;
+        int page_flags = PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
 
         if (flags & PROT_WRITE)
-            page_flags |= PAGE_READ_WRITE;
+            page_flags |= PAGE_WRITE;
 
-        vmm_map_range(gp_current_process->cr3, range, page_flags);
+
+        kprintf("Virt base is %x\n", virt_base);
+
+        vmm_map_range(gp_current_process->cr3, virt_base, phys_base, size, page_flags);
+
+        load_pagedir(gp_current_process->cr3);
+
         kprintf("[MMAP] Returning 0x%x\n", virt_base);
-
+        
         return virt_base;
     }
 
+    kprintf("Returning NULL");
     return NULL;
 }
 
@@ -246,13 +261,16 @@ void syscall_dispatcher(Registers regs){
         }
         case SYS_VM_MAP:{
             kprintf("[SYS]  VM_MAP CALLED\n");
-            register void* addr asm("r8");
-            register size_t size asm("r9");
-            register int prot asm("r10");
-            register int flags asm("r10");
-            register int fd asm("r12");
-            register off_t off asm("r13");
-            register void * ret asm ("r15") = sys_vm_map(addr, size, prot, flags, fd, off);
+            void* addr  = (void*)  regs.r8;
+            size_t size = regs.r9;
+            int prot    = regs.r10;
+            int flags   = regs.r12;
+            int fd      = regs.r13;
+            off_t off   = regs.r14;
+
+            void  * ret = sys_vm_map(addr, size, prot, flags, fd, off);
+            regs.r15 = (uint64_t)ret;
+
             break;
         }
         case SYS_ANON_ALLOC:{

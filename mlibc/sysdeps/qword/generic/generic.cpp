@@ -213,7 +213,9 @@ int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
 int sys_vm_map(void *hint, size_t size, int prot, int flags,
 		int fd, off_t offset, void **window) {
     __ensure(flags & MAP_ANONYMOUS);
+
     void *res;
+
     size_t size_in_pages = (size + 4096 - 1) / 4096;
     asm volatile ("syscall" : "=a"(res)
             : "a"(6), "D"(hint), "S"(size_in_pages)

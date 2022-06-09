@@ -4,7 +4,7 @@
 #undef PIT_DEBUG 
 #undef ALLOCATOR_DEBUG
 #undef SYSCALL_DEBUG
-#undef VMM_DEBUG
+#define VMM_DEBUG
 
 #define SMP_TIMESLICE   20
 #define MAX_PROC_FDS    255

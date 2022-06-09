@@ -5,10 +5,11 @@
 
 #include "../typedefs.h"
 #include <stdbool.h>
+#include <stddef.h>
 
 enum {
     PAGE_PRESENT    = 1 << 0, // same as 1
-    PAGE_READ_WRITE = 1 << 1, // same as 2, binary 10
+    PAGE_WRITE      = 1 << 1, // same as 2, binary 10
     PAGE_USER       = 1 << 2, // same as 4, binary 100
 };
 
@@ -50,7 +51,15 @@ i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical, int f
 PageTable * vmm_create_user_proc_pml4();
 PageTable * vmm_create_kernel_proc_pml4();
 PageTable * vmm_get_current_cr3();
-void        vmm_map_range(PageTable * cr3, MemRange range, int flags);
+
+void        vmm_map_range(
+                PageTable * cr3, 
+                void * virt_start, 
+                void * phys_start, 
+                size_t size,
+                int flags );
+
 void        vmm_init();
 
 #endif 
+

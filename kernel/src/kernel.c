@@ -160,9 +160,8 @@ void _start(struct stivale2_struct * boot_info) {
 
 
     kprintf("[MAIN]   Kernel starts at 0x%x\n", &k_start);
-    kprintf("[MAIN]   Kernel ends at 0x%x\n", &k_end);
+    kprintf("[MAIN]   Kernel ends at 0x%x\n\n", &k_end);
 
-    kprintf("\n");
 
     struct stivale2_struct_tag_memmap * meminfo =
         stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MEMMAP_ID);
@@ -239,12 +238,14 @@ void _start(struct stivale2_struct * boot_info) {
 
     sys_init();
 
+
     ProcessControlBlock * hello_proc = create_elf_process("a0:hello");
     register_process(hello_proc);
     multitasking_init();
 
     // We're done, just hang...
     hang();
+
 }
 
 

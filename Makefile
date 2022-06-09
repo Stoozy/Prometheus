@@ -3,7 +3,7 @@ SYSROOT=$(shell pwd)/sysroot
 QEMU_RUN_FLAGS= -smp cores=2 -serial stdio  -vga std -machine q35 -no-reboot -d int  -M smm=off -no-shutdown -m 8G
 QEMU_MONITOR_FLAGS =  -smp cores=2 -monitor stdio  -vga std -machine q35 -no-reboot -d int -M smm=off -no-shutdown -m 8G 
 
-.PHONY: clean all run
+.PHONY: clean all run libc
 
 all: $(ISO_IMAGE) 
 

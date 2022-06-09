@@ -172,18 +172,22 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags,
 		int fd, off_t offset, void **window) {
     __ensure(flags & MAP_ANONYMOUS);
 
-    register int syscall asm("rsi") = SYS_VM_MAP;
-    register void* addr asm("r8") = hint;
-    register size_t sz asm("r9") = size;
-    register int _prot asm("r10") = prot;
-    register int _flags asm("r10") = flags;
-    register int _fd asm("r12") = fd;
-    register off_t off asm("r13") = offset;
+    register int rsi asm("rsi") = SYS_VM_MAP;
+    register void* r8 asm("r8") = hint;
+    register size_t r9 asm("r9") = size;
+    register int r10 asm("r10") = prot;
+    register int r12 asm("r12") = flags;
+    register int r13 asm("r13") = fd;
+    register off_t r14 asm("r14") = offset;
 
-    asm("syscall");
+    register void *  r15 asm("r15");
 
-    register void * ret asm("r15");
-    *window = ret;
+    asm volatile("syscall" 
+            : "=r"(r15) : "r" (rsi), "r" (r8),  "r" (r9), "r" (r10) , "r" (r12) , "r" (r13), "r" (r14)
+            : "rcx", "r11", "memory");
+
+    *window = (void*)r15;
+    mlibc::infoLogger() << "[mlibc] Got vm_map return value " << r15 << frg::endlog;
 
     return 0;
 }

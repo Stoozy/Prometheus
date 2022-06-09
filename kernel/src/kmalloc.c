@@ -30,21 +30,29 @@ int liballoc_unlock(){
 }
 
 void * liballoc_alloc(int pages){
+
+    kprintf("Got pages %d\n", pages);
+
+    if(pages < 0) {
+        return NULL;
+    }
+
     void * addr = pmm_alloc_blocks(pages);
 
-    PageTable * cr3 = vmm_get_current_cr3();
+    PageTable * current_cr3 = vmm_get_current_cr3();
 
-    for(u64 page = 0; page<pages; ++page){
-        void * current_addr = addr + page * PAGE_SIZE;
+    int flags = PAGE_WRITE | PAGE_PRESENT;
+    for(u64 page = 1; page<pages; ++page){
+        void * current_addr = addr + (page * PAGE_SIZE);
 
 #ifdef ALLOCATOR_DEBUG
         kprintf("[ALLCOATOR]    Identity mapping 0x%llx\n", current_addr);
 #endif
-        vmm_map(cr3, current_addr, current_addr-PAGING_VIRTUAL_OFFSET,  PAGE_READ_WRITE | PAGE_PRESENT);
+        vmm_map(current_cr3, current_addr, current_addr-PAGING_VIRTUAL_OFFSET,  flags);
     }
 
     //invalidate_tlb();
-    load_pagedir(cr3);
+    load_pagedir(current_cr3);
     return addr;
 }
 

@@ -1,8 +1,10 @@
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include "../kprintf.h"
 #include "../typedefs.h"
-#include <stdbool.h>
 #include "../string/string.h"
-
 #include "../kmalloc.h"
 #include "../stivale2.h"
 #include "vmm.h"
@@ -25,14 +27,16 @@ extern u64 k_end;
 PageIndex vmm_get_page_index(u64 vaddr){
     PageIndex ret;
 
-    ret.pml1i = (vaddr >> 12) & 0x1FF;
-    ret.pml2i = (vaddr >> 21) & 0x1FF;
-    ret.pml3i = (vaddr >> 30) & 0x1FF;
-    ret.pml4i = (vaddr >> 39) & 0x1FF;
+    ret.pml4i = (vaddr & ((uintptr_t) 0x1ff << 39)) >> 39;
+    ret.pml3i = (vaddr & ((uintptr_t) 0x1ff << 30)) >> 30;
+    ret.pml2i = (vaddr & ((uintptr_t) 0x1ff << 21)) >> 21;
+    ret.pml1i = (vaddr & ((uintptr_t) 0x1ff << 12)) >> 12;
 
     return ret;
 
-} /* vmm_get_index */
+}
+
+
 
 void * vmm_virt_to_phys(PageTable * cr3, void * virt_addr){
     kprintf("[VMM]  Translating address: 0x%x\n", virt_addr);
@@ -72,28 +76,28 @@ void * vmm_virt_to_phys(PageTable * cr3, void * virt_addr){
     return (void*)((pte.address << 12) + ((u64)virt_addr & 0xfff));
 }
 
+
+
 i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
 
 #ifdef VMM_DEBUG
-    kprintf("[VMM]  Mapping 0x%x virt to 0x%x phys on CR3: 0x%x\n", virt_addr, phys_addr, pml4);
+    kprintf("[VMM]  Mapping 0x%x virt to 0x%x phys on CR3: 0x%x; Flags: %d\n", virt_addr, phys_addr, pml4, flags);
 #endif
 
     PageIndex indexer = vmm_get_page_index((u64)virt_addr);
-    PageTableEntry PTE;
+    PageTableEntry PTE = pml4->entries[indexer.pml4i];
 
-    PTE = pml4->entries[indexer.pml4i];
     PageTable* PDP;
     if (!PTE.present){
         PDP = (PageTable*)pmm_alloc_block();
         memset(PDP, 0, PAGE_SIZE);
         PTE.address = (u64)PDP >> 12;
         PTE.present = flags & PAGE_PRESENT;
-        PTE.rw = flags & PAGE_READ_WRITE;
+        PTE.rw = flags & PAGE_WRITE;
         PTE.user = flags & PAGE_USER;
         pml4->entries[indexer.pml4i] = PTE;
     }
     else PDP = (PageTable*)((u64)PTE.address << 12);
-
 
     PTE = PDP->entries[indexer.pml3i];
     PageTable* PD;
@@ -102,7 +106,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         memset(PD, 0, PAGE_SIZE);
         PTE.address = (u64)PD >> 12;
         PTE.present = flags & PAGE_PRESENT;
-        PTE.rw = flags  & PAGE_READ_WRITE;
+        PTE.rw = flags  & PAGE_WRITE;
         PTE.user = flags & PAGE_USER;
         PDP->entries[indexer.pml3i] = PTE;
     }
@@ -115,7 +119,7 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
         memset(PT, 0, PAGE_SIZE);
         PTE.address = (u64)PT >> 12;
         PTE.present = flags & PAGE_PRESENT;
-        PTE.rw = flags & PAGE_READ_WRITE;
+        PTE.rw = flags & PAGE_WRITE;
         PTE.user = flags & PAGE_USER;
         PD->entries[indexer.pml2i] = PTE;
     }
@@ -124,43 +128,57 @@ i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
     PTE = PT->entries[indexer.pml1i];
     PTE.address = (u64)phys_addr >> 12;
     PTE.present = flags & PAGE_PRESENT;
-    PTE.rw = flags & PAGE_READ_WRITE;
+    PTE.rw = flags & PAGE_WRITE;
     PTE.user = flags & PAGE_USER;
+
     PT->entries[indexer.pml1i] = PTE;
 
 
     return SUCCESS;
 } /* vmm_map */
 
-void vmm_map_range(PageTable * cr3, MemRange range, int flags){
+void vmm_map_range(
+    PageTable * cr3, 
+    void * virt_start, 
+    void * phys_start, 
+    size_t size,
+    int flags )
+{
 
-    // page align all addresses
-    uintptr_t vc   = (u64)range.vaddr & ~(0xfff);
-    uintptr_t pc =  (u64)range.paddr & ~(0xfff);
-
-    uintptr_t end  = (u64)range.vaddr + range.length;
-    // page align last page
-    end &= ~(0xfff);
-    
-    while(vc != end){
-        vmm_map(cr3, (void*)vc, (void*)pc, flags);
-        vc += PAGE_SIZE; pc += PAGE_SIZE;
+    if( size % PAGE_SIZE != 0 || 
+        (u64)virt_start % PAGE_SIZE != 0 ||
+        (u64)phys_start % PAGE_SIZE != 0){
+        /* not page aligned */
+        kprintf("Range not page aligned");
+        for(;;);
     }
+
+    kprintf("[MMAP] virt_start is 0x%x\n", virt_start);
+    kprintf("[MMAP] phys_start is 0x%x\n", phys_start);
+    kprintf("[MMAP] size is 0x%x\n", size);
+
+    void * vaddr = virt_start;
+    void * paddr = phys_start;
+
+    for(; vaddr < (virt_start+size); vaddr+=PAGE_SIZE, paddr+=PAGE_SIZE)
+        vmm_map(cr3, vaddr, paddr, flags);
+
+    kprintf("[MMAP] Finished all mappings\n");
+
 }
+
 
 PageTable * vmm_create_kernel_proc_pml4(void * stack_top){
     PageTable * pml4 = pmm_alloc_block();
 
     memset(pml4, 0x0, PAGE_SIZE);
 
-    int kflags =  PAGE_READ_WRITE | PAGE_PRESENT;
+    int kflags =  PAGE_WRITE | PAGE_PRESENT;
 
     /* map kernel only */
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
 
-    //void * stack = stack_top-0x1000;
-    //vmm_map(pml4, stack, stack, kflags);
 
     return pml4;
 }
@@ -170,8 +188,9 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
 
     memset(pml4, 0x0, PAGE_SIZE);
 
-    int uflags = PAGE_READ_WRITE | PAGE_USER | PAGE_PRESENT;
+    int uflags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
 
+    /*vmm_map(pml4, NULL, pmm_alloc_block(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER);*/
 
     /* map framebuffer */
     for(u64 addr = (u64)get_framebuffer_addr(); 
@@ -179,12 +198,12 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
 
     /* map kernel as user accessible for now*/
-    int kflags = PAGE_PRESENT | PAGE_READ_WRITE;
+    int kflags = PAGE_PRESENT | PAGE_WRITE;
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
         vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
 
     
-    for(int p= 0; p<4; p++) 
+    for(int p= 0; p<8; p++) 
         vmm_map(pml4, stack_top-(p*PAGE_SIZE), stack_top-(p*PAGE_SIZE), uflags);
 
     LocalCpuData * lcd = get_cpu_struct(0); 

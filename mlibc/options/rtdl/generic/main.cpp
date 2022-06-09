@@ -203,6 +203,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 		aux += 2;
 	}
 	globalDebugInterface.base = reinterpret_cast<void*>(ldso_base);
+
 #else
 	auto ehdr = reinterpret_cast<Elf64_Ehdr*>(__ehdr_start);
 	phdr_pointer = reinterpret_cast<void*>((uintptr_t)ehdr->e_phoff + (uintptr_t)ehdr);
@@ -216,6 +217,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	if(logStartup)
 		mlibc::infoLogger() << "ldso: Executable PHDRs are at " << phdr_pointer
 				<< frg::endlog;
+    
 
 	// perform the initial dynamic linking
 	initialRepository.initialize();
@@ -224,6 +226,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 
 	// Add the dynamic linker, as well as the exectuable to the repository.
 #ifndef MLIBC_STATIC_BUILD
+
 	auto ldso_soname = reinterpret_cast<const char *>(ldso_base + strtab_offset + soname_str);
 	auto ldso = initialRepository->injectObjectFromDts(ldso_soname,
 		frg::string<MemoryAllocator> { getAllocator() },
@@ -238,6 +241,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	// so we have to set the ldso path after loading both.
 	ldso->path = executableSO->interpreterPath;
 
+    mlibc::infoLogger() << "Got ldso->path" << ldso->path << frg::endlog;
 #else
 	executableSO = initialRepository->injectStaticObject(execfn,
 			frg::string<MemoryAllocator>{ execfn, getAllocator() },
@@ -272,6 +276,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	if(logEntryExit)
 		mlibc::infoLogger() << "Leaving ld.so, jump to "
 				<< (void *)executableSO->entry << frg::endlog;
+
 	return executableSO->entry;
 }
 
