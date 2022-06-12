@@ -238,7 +238,6 @@ void _start(struct stivale2_struct * boot_info) {
 
     sys_init();
 
-
     ProcessControlBlock * hello_proc = create_elf_process("a0:hello");
     register_process(hello_proc);
     multitasking_init();

@@ -178,20 +178,18 @@ void * sys_vm_map(
         }
 
         kprintf("[MMAP] Found free chunk at 0x%x phys\n", phys_base);
-        int page_flags = PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+        int page_flags = PAGE_USER | PAGE_PRESENT | PAGE_WRITE;
 
         if (flags & PROT_WRITE)
             page_flags |= PAGE_WRITE;
 
-
         kprintf("Virt base is %x\n", virt_base);
 
+        asm("cli");
         vmm_map_range(gp_current_process->cr3, virt_base, phys_base, size, page_flags);
-
         load_pagedir(gp_current_process->cr3);
-
         kprintf("[MMAP] Returning 0x%x\n", virt_base);
-        
+
         return virt_base;
     }
 
