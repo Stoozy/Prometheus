@@ -30,7 +30,7 @@ static void set_frame_free(u64 block){
 
 static bool is_block_used(u64 block){
     // 1 if used; 0 if free
-    u8 index = block/8; 
+    u64 index = block/8; 
     return mmap[index] & (1 << (block % 8));
 }
 

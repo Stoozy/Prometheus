@@ -58,7 +58,7 @@ static uintptr_t * get_next_table(uintptr_t * table, u64 entry){
 void vmm_map_page(PageTable * pml4, uintptr_t virt, uintptr_t phys, int flags){
     PageIndex indices = vmm_get_page_index(virt);
 
-    kprintf("[VMM]  Got following indices for %llx PML4I: %d PML3I: %d PML2I: %d PML1I: %d\n", virt, indices.pml4i, indices.pml3i,  indices.pml2i, indices.pml1i);
+    //kprintf("[VMM]  Got following indices for %llx PML4I: %d PML3I: %d PML2I: %d PML1I: %d\n", virt, indices.pml4i, indices.pml3i,  indices.pml2i, indices.pml1i);
     uintptr_t * pml3 = get_next_table(pml4, indices.pml4i);
     uintptr_t * pml2 = get_next_table(pml3, indices.pml3i);
     uintptr_t * pml1 = get_next_table(pml2, indices.pml2i);
