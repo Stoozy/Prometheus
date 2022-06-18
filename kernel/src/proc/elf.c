@@ -98,7 +98,7 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
 
         int page_flags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
         for(int block=0; block<blocks; block++){
-            vmm_map(vas, virt_addr, phys_addr, page_flags); 
+            vmm_map_page(vas, (uintptr_t)virt_addr, (uintptr_t)phys_addr, page_flags); 
             virt_addr += PAGE_SIZE; phys_addr += PAGE_SIZE;
         }
 	}
@@ -126,16 +126,12 @@ ProcessControlBlock * create_elf_process(const char * path){
     }
 
 	ProcessControlBlock * proc = kmalloc(sizeof(ProcessControlBlock));
-	//ProcessControlBlock * proc = (ProcessControlBlock *)pmm_alloc_block();
 
-    /* 4 KiB stack */
     proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
     kprintf("Process stack at 0x%x\n", proc->p_stack);
 
-
     proc->cr3 = vmm_create_user_proc_pml4(proc->p_stack); 
 
-    vmm_map(proc->cr3, (void*)proc, (void*)proc, PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
     kprintf("Elf file size is %llu bytes\n", elf_file->size);
 
     void* pa_virt_start = (void*)(((u64)elf_data / PAGE_SIZE)  * PAGE_SIZE);
@@ -182,6 +178,7 @@ ProcessControlBlock * create_elf_process(const char * path){
     proc->p_stack = stack;
     proc->mmap_base = 0xB000000;
     proc->next = 0;
+
 
     return proc;
 }

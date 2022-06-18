@@ -147,6 +147,7 @@ void idt_init(){
     extern int irq15(); 
     extern int dummy_irq(); 
 
+
     u64 irq0_addr;
     u64 irq1_addr;
     u64 irq2_addr;

@@ -159,28 +159,19 @@ void _start(struct stivale2_struct * boot_info) {
     serial_init();                      /* init debugging */
 
 
-    kprintf("[MAIN]   Kernel starts at 0x%x\n", &k_start);
-    kprintf("[MAIN]   Kernel ends at 0x%x\n\n", &k_end);
-
-
     struct stivale2_struct_tag_memmap * meminfo =
         stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MEMMAP_ID);
-
-    pmm_init(meminfo);
-    gdt_init();
-
-    pit_init(1000);
-    idt_init();
-
-
-    u64 k_size = ((u64)&k_end - (u64)&k_start);
-    kprintf("[MAIN]   Kernel start: 0x%x\n", k_start);
-    kprintf("[MAIN]   Kernel end: 0x%x\n", k_end);
-    kprintf("[MAIN]   Kernel size is %d bytes (0x%x)\n", k_size, k_size);
-
     struct stivale2_struct_tag_modules * modules_tag =
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
 
+    pmm_init(meminfo);
+
+    gdt_init();
+    idt_init();
+
+    pit_init(1000);
+
+    u64 k_size = ((u64)&k_end - (u64)&k_start);
     FileSystem * tarfs = NULL;
     if(modules_tag == NULL){
         kprintf("[MAIN]   No modules found. Exiting.\n");
@@ -222,8 +213,6 @@ void _start(struct stivale2_struct * boot_info) {
         ssfn_dst.x =  100;
         ssfn_dst.y =  205;
         ssfn_dst.fg = 0xffffff;
-
-
         //screen_init(framebuffer_tag);
     }
 
@@ -235,7 +224,6 @@ void _start(struct stivale2_struct * boot_info) {
 
     cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
-
     sys_init();
 
     ProcessControlBlock * hello_proc = create_elf_process("a0:hello");

@@ -30,33 +30,24 @@ int liballoc_unlock(){
 }
 
 void * liballoc_alloc(int pages){
-
-    kprintf("Got pages %d\n", pages);
-
-    if(pages < 0) {
+    if(pages <= 0) 
         return NULL;
-    }
 
-    void * addr = pmm_alloc_blocks(pages);
-
-    PageTable * current_cr3 = vmm_get_current_cr3();
-
-    int flags = PAGE_WRITE | PAGE_PRESENT;
-    for(u64 page = 1; page<pages; ++page){
-        void * current_addr = addr + (page * PAGE_SIZE);
+    //void * addr = pmm_alloc_blocks(pages);
 
 #ifdef ALLOCATOR_DEBUG
-        kprintf("[ALLCOATOR]    Identity mapping 0x%llx\n", current_addr);
+    kprintf("[ALLOCATOR]    Got %d pages at 0x%x\n", pages, addr);
 #endif
-        vmm_map(current_cr3, current_addr, current_addr-PAGING_VIRTUAL_OFFSET,  flags);
-    }
 
-    //invalidate_tlb();
-    load_pagedir(current_cr3);
-    return addr;
+    /* since this is only used for kernel malloc
+     * there is no need to map the pages, as they
+     * are already identity mapped by stivale 
+     */
+
+    return pmm_alloc_blocks(pages);
 }
 
-int   liballoc_free(void * addr, int pages){
+int liballoc_free(void * addr, int pages){
     if(pages == 1)
         pmm_free_block((u64)addr);
     else pmm_free_blocks((u64)addr, pages);

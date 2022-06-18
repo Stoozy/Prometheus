@@ -16,8 +16,6 @@
 #define PAGING_KERNEL_OFFSET        0xffffffff80000000
 #define PAGING_VIRTUAL_OFFSET       0xffff800000000000
 
-#define SUCCESS     1
-
 extern void load_pagedir(PageTable *);
 extern void invalidate_tlb();
 extern u64 k_start;
@@ -33,40 +31,48 @@ static PageIndex vmm_get_page_index(uintptr_t vaddr){
     ret.pml1i = (vaddr & ((uintptr_t) 0x1ff << 12)) >> 12;
 
     return ret;
-
 }
 
 
 static uintptr_t * get_next_table(uintptr_t * table, u64 entry){
-    uintptr_t addr;
+    void* addr;
 
     if(table[entry] & PAGE_PRESENT){
-        addr = table[entry] & ~((uintptr_t) 0xfff);
+        addr = (void*)(table[entry] & ~((uintptr_t) 0xfff));
     }else{
-        addr = (uintptr_t)pmm_alloc_block();
-        if(addr == NULL){
-            // panic here 
-            for(;;);
-        }
-        table[entry] = addr | PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
+        addr = pmm_alloc_block();
+        memset(addr, 0, PAGE_SIZE);
+
+        kprintf("allocated block at 0x%x\n", addr);
+
+        if(addr == NULL)
+            for(;;); // panic here 
+        
+        table[entry] = (uintptr_t)addr | PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
     }
 
-    return (void *)addr;
+    return addr;
 }
 
 
 void vmm_map_page(PageTable * pml4, uintptr_t virt, uintptr_t phys, int flags){
     PageIndex indices = vmm_get_page_index(virt);
 
-    //kprintf("[VMM]  Got following indices for %llx PML4I: %d PML3I: %d PML2I: %d PML1I: %d\n", virt, indices.pml4i, indices.pml3i,  indices.pml2i, indices.pml1i);
-    uintptr_t * pml3 = get_next_table(pml4, indices.pml4i);
+    kprintf("[VMM]  Got following indices for %llx PML4I: %d PML3I: %d PML2I: %d PML1I: %d\n", virt, indices.pml4i, indices.pml3i,  indices.pml2i, indices.pml1i);
+    uintptr_t * pml3 = get_next_table((uintptr_t*)pml4, indices.pml4i);
     uintptr_t * pml2 = get_next_table(pml3, indices.pml3i);
     uintptr_t * pml1 = get_next_table(pml2, indices.pml2i);
-
     uintptr_t * p_pte = &pml1[indices.pml1i];
 
+
+
+    kprintf("[VMM] pml3 0x%x; pml2 0x%x; pml1 0x%x; p_pte : 0x%x;\n", pml3, pml2, pml1, p_pte);
+    kprintf("Entry val before 0x%x\n", *p_pte);
     *p_pte = phys | (flags & 0x7);
-    
+    kprintf("Phys address is 0x%x\n", phys);
+    kprintf("Flags value is %x\n", flags);
+    kprintf("Entry val after 0x%x\n", *p_pte);
+
     return;
 }
 
@@ -109,68 +115,6 @@ void * vmm_virt_to_phys(PageTable * cr3, void * virt_addr){
 }
 
 
-
-i32 vmm_map(PageTable * pml4, void * virt_addr, void* phys_addr, int flags){
-
-    vmm_map_page(pml4, virt_addr, phys_addr, flags);
-    return 1;
-#ifdef VMM_DEBUG
-    kprintf("[VMM]  Mapping 0x%x virt to 0x%x phys on CR3: 0x%x; Flags: %d\n", virt_addr, phys_addr, pml4, flags);
-#endif
-    PageIndex indexer = vmm_get_page_index((u64)virt_addr);
-    PageTableEntry PTE = pml4->entries[indexer.pml4i];
-
-    PageTable* PDP;
-    if (!PTE.present){
-        PDP = (PageTable*)pmm_alloc_block();
-        memset(PDP, 0, PAGE_SIZE);
-        PTE.address = (u64)PDP >> 12;
-        PTE.present = flags & PAGE_PRESENT;
-        PTE.rw = flags & PAGE_WRITE;
-        PTE.user = flags & PAGE_USER;
-        pml4->entries[indexer.pml4i] = PTE;
-    }
-    else PDP = (PageTable*)((u64)PTE.address << 12);
-
-    PTE = PDP->entries[indexer.pml3i];
-    PageTable* PD;
-    if (!PTE.present){
-        PD = (PageTable*)pmm_alloc_block();
-        memset(PD, 0, PAGE_SIZE);
-        PTE.address = (u64)PD >> 12;
-        PTE.present = flags & PAGE_PRESENT;
-        PTE.rw = flags  & PAGE_WRITE;
-        PTE.user = flags & PAGE_USER;
-        PDP->entries[indexer.pml3i] = PTE;
-    }
-    else PD = (PageTable*)((u64)PTE.address << 12);
-
-    PTE = PD->entries[indexer.pml2i];
-    PageTable* PT;
-    if (!PTE.present){
-        PT = (PageTable*)pmm_alloc_block();
-        memset(PT, 0, PAGE_SIZE);
-        PTE.address = (u64)PT >> 12;
-        PTE.present = flags & PAGE_PRESENT;
-        PTE.rw = flags & PAGE_WRITE;
-        PTE.user = flags & PAGE_USER;
-        PD->entries[indexer.pml2i] = PTE;
-    }
-    else PT = (PageTable*)((u64)PTE.address << 12);
-
-    PTE = PT->entries[indexer.pml1i];
-
-    PTE.address = (u64)phys_addr >> 12;
-    PTE.present = flags & PAGE_PRESENT;
-    PTE.rw = flags & PAGE_WRITE;
-    PTE.user = flags & PAGE_USER;
-
-    PT->entries[indexer.pml1i] = PTE;
-
-    return SUCCESS;
-
-} /* vmm_map */
-
 void vmm_map_range(
     PageTable * cr3, 
     void * virt_start, 
@@ -186,38 +130,26 @@ void vmm_map_range(
         kprintf("Range not page aligned");
         for(;;);
     }
-
-    kprintf("[MMAP] virt_start is 0x%x\n", virt_start);
-    kprintf("[MMAP] phys_start is 0x%x\n", phys_start);
-    kprintf("[MMAP] size is 0x%x\n", size);
-
     void * vaddr = virt_start;
     void * paddr = phys_start;
 
+    void * virt_end = virt_start + size;
+
+#ifdef VMM_DEBUG 
+    kprintf("[VMM] Mapping range");
+    kprintf("[VMM] virt_start is 0x%x\n", virt_start);
+    kprintf("[VMM] phys_start is 0x%x\n", phys_start);
+    kprintf("[VMM] size is 0x%x\n", size);
+    kprintf("[VMM] virt_end is 0x%x\n", size);
+#endif
+
     for(; vaddr < (virt_start+size); vaddr+=PAGE_SIZE, paddr+=PAGE_SIZE)
-        //vmm_map(cr3, vaddr, paddr, flags);
-        vmm_map_page(cr3, vaddr, paddr, flags);
+        vmm_map_page(cr3, (uintptr_t)vaddr, (uintptr_t)paddr, flags);
 
-
-    kprintf("[MMAP] Finished all mappings\n");
-
+    return;
 }
 
 
-PageTable * vmm_create_kernel_proc_pml4(void * stack_top){
-    PageTable * pml4 = pmm_alloc_block();
-
-    memset(pml4, 0x0, PAGE_SIZE);
-
-    int kflags =  PAGE_WRITE | PAGE_PRESENT;
-
-    /* map kernel only */
-    for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
-
-
-    return pml4;
-}
 
 PageTable * vmm_create_user_proc_pml4(void * stack_top){
     PageTable * pml4 = pmm_alloc_block();
@@ -226,29 +158,27 @@ PageTable * vmm_create_user_proc_pml4(void * stack_top){
 
     int uflags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
 
-    /*vmm_map(pml4, NULL, pmm_alloc_block(), PAGE_PRESENT | PAGE_WRITE | PAGE_USER);*/
-
     /* map framebuffer */
     for(u64 addr = (u64)get_framebuffer_addr(); 
         addr < ((u64)get_framebuffer_addr()+get_framebuffer_size()); addr+=PAGE_SIZE)
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
+        vmm_map_page(pml4, (void*)addr, (void*)addr-PAGING_VIRTUAL_OFFSET, uflags);
 
     /* map kernel as user accessible for now*/
     int kflags = PAGE_PRESENT | PAGE_WRITE;
     for(u64 addr = (u64)&k_start; addr < (u64)(&k_end)+PAGE_SIZE; addr+=PAGE_SIZE)
-        vmm_map(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
+        vmm_map_page(pml4, (void*)addr, (void*)addr-PAGING_KERNEL_OFFSET, kflags);
 
     
     for(int p= 0; p<8; p++) 
-        vmm_map(pml4, stack_top-(p*PAGE_SIZE), stack_top-(p*PAGE_SIZE), uflags);
+        vmm_map_page(pml4, stack_top-(p*PAGE_SIZE), stack_top-(p*PAGE_SIZE), uflags);
 
     LocalCpuData * lcd = get_cpu_struct(0); 
     /* map kernel stack */
     uintptr_t kstack_top = lcd->syscall_kernel_stack;
 
     kprintf("Kernel stack top 0x%x\n", kstack_top);
-    for(int p = 0; p<4; p++)
-        vmm_map(pml4, kstack_top-(p*PAGE_SIZE), kstack_top-(p*PAGE_SIZE), kflags);
+    for(int p = 0; p<8; p++)
+        vmm_map_page(pml4, kstack_top-(p*PAGE_SIZE), kstack_top-(p*PAGE_SIZE), kflags);
 
     return pml4;
 }
@@ -259,3 +189,5 @@ PageTable * vmm_get_current_cr3(){
     asm volatile (" mov %%cr3, %0" : "=r"(current_cr3));
     return current_cr3;
 }
+
+

@@ -9,21 +9,21 @@
 extern u64 k_start;
 extern u64 k_end;
 
-volatile u64     total_blocks = PMM_MAX_BITMAPS * PMM_BLOCKS_PER_BYTE; 
-volatile u64     total_bmaps; 
-volatile u64     free_blocks;
-volatile u64     used_blocks; 
-volatile u64     last_checked_block = 1; 
-volatile u8      mmap[PMM_MAX_BITMAPS]; /* max maps for a 64 GiB memory space (takes 2 KiB) */
+u64     total_blocks = PMM_MAX_BITMAPS * PMM_BLOCKS_PER_BYTE; 
+u64     total_bmaps; 
+u64     free_blocks;
+u64     used_blocks; 
+u64     last_checked_block = 1; 
+u8      mmap[PMM_MAX_BITMAPS]; /* max maps for a 64 GiB memory space (takes 2 KiB) */
 
 static void set_frame_used(u64 block){
-    u8 index = block/8;
+    u64 index = block/8;
     mmap[index]  |= (1 << (block % 8));
     return;
 }
 
 static void set_frame_free(u64 block){ 
-    u8 index = block/8;
+    u64 index = block/8;
     mmap[index] &= ~(1 << (block % 8));
     return;
 }
@@ -34,12 +34,12 @@ static bool is_block_used(u64 block){
     return mmap[index] & (1 << (block % 8));
 }
 
-bool pmm_is_block_free(u64 block){
+static bool is_block_free(u64 block){
     return !is_block_used(block);
 }
 
 
-void pmm_mark_region_used(void *  start_addr, void *  end_addr ){
+static void pmm_mark_region_used(void *  start_addr, void *  end_addr ){
 
     u64 start_block = (u64)start_addr / PMM_BLOCK_SIZE;
     u64 end_block =  ((u64)end_addr / PMM_BLOCK_SIZE) + 1; 
@@ -56,7 +56,7 @@ void pmm_mark_region_used(void *  start_addr, void *  end_addr ){
     return;
 }
 
-void pmm_init_region(void * addr, u64 size){
+static void pmm_init_region(void * addr, u64 size){
 
     kprintf("[PMM]  Address: 0x%x with size: %llu bytes.\n", addr, size);
 
@@ -216,10 +216,6 @@ void pmm_dump(){
             kprintf("Block #%d; Addr: 0x%x; Status: Free\n", i, i*PMM_BLOCK_SIZE );
     }
 
-    /*for(u64 i=0; i<total_bmaps; i++){
-    }
-    */
-
 }
 
 void pmm_init(struct stivale2_struct_tag_memmap * meminfo){
@@ -228,35 +224,27 @@ void pmm_init(struct stivale2_struct_tag_memmap * meminfo){
     used_blocks = total_blocks;
     free_blocks = 0;
 
-    /* set every block to used status */
-    memset((void*)&mmap[0], 0xff, total_bmaps);
+    /* set every block to free status */
+    memset((void*)&mmap[0], 0x00, total_bmaps);
 
 
-    /* Initializing different memory regions */
-
-    for(u64 i=0; i<meminfo->entries;++i){
-        if(meminfo->memmap[i].type == STIVALE2_MMAP_USABLE){
-            pmm_init_region((void*) meminfo->memmap[i].base, meminfo->memmap[i].length);
-        }
-    }
-
-    /* mark kernel and modules as used */
     for(u64 i=0; i<meminfo->entries; ++i){
-        if( meminfo->memmap[i].type == STIVALE2_MMAP_KERNEL_AND_MODULES ||
-            meminfo->memmap[i].type == STIVALE2_MMAP_FRAMEBUFFER ||
-            meminfo->memmap[i].type == STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE 
-          ){
-
-            if( meminfo->memmap[i].type == STIVALE2_MMAP_KERNEL_AND_MODULES ){
+        /* get start and end of kernel */
+        if( meminfo->memmap[i].type == STIVALE2_MMAP_KERNEL_AND_MODULES ){
                 k_start = meminfo->memmap[i].base;
                 k_end = k_start + meminfo->memmap[i].length;
-            }
+        }
 
+        /* mark region used if memory range is not usable */
+        if( !(meminfo->memmap[i].type == STIVALE2_MMAP_USABLE) ){
             kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",
-                (void*)meminfo->memmap[i].base, (void*)(meminfo->memmap[i].base + meminfo->memmap[i].length)
-            );
+            (void*)meminfo->memmap[i].base, (void*)(meminfo->memmap[i].base + meminfo->memmap[i].length));
             pmm_mark_region_used((void*)meminfo->memmap[i].base, (void*)(meminfo->memmap[i].base + meminfo->memmap[i].length));
         }
     }
 
+    /* set first 1MiB as used */
+    for(int i=0; i<256; i++){
+        set_frame_used(i);
+    }
 }

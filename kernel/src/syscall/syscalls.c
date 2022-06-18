@@ -58,7 +58,7 @@ void * sys_anon_allocate(size_t size){
     int flags =  PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
     for(u64 page = 0; page < blocks; page++){
         void * caddr = (void*)(ret + (page * PAGE_SIZE));
-        vmm_map(gp_current_process->cr3, caddr, caddr, flags);
+        vmm_map_page(gp_current_process->cr3, caddr, caddr, flags);
     }
 
     return ret;
@@ -134,14 +134,9 @@ int sys_write(int file, char *ptr, int len){
 #define MAP_ANONYMOUS 0x08
 
 
-void * sys_vm_map(
-    void * addr, 
-    size_t size, 
-    int prot, 
-    int flags,
-    int fd, 
-    off_t offset )
+void * sys_vm_map( void * addr, size_t size, int prot, int flags, int fd, off_t offset )
 {
+
     kprintf("[MMAP] Requesting %llu bytes\n", size);
     kprintf("[MMAP] Hint : 0x%llx\n", addr);
     kprintf("[MMAP] Size : 0x%llx\n", size);
@@ -165,7 +160,7 @@ void * sys_vm_map(
         void * phys_base = pmm_alloc_blocks(pages);
         if(phys_base == NULL){
             // out of memory
-            kprintf("Out of memory\n");
+            for(;;) kprintf("Out of memory\n");
             return NULL;
         }
 
@@ -188,6 +183,7 @@ void * sys_vm_map(
         asm("cli");
         vmm_map_range(gp_current_process->cr3, virt_base, phys_base, size, page_flags);
         load_pagedir(gp_current_process->cr3);
+
         kprintf("[MMAP] Returning 0x%x\n", virt_base);
 
         return virt_base;
@@ -208,6 +204,7 @@ int sys_fork(){
 }
 
 void syscall_dispatcher(Registers regs){
+
 #ifdef SYSCALL_DEBUG
     dump_regs(&regs);
 #endif
@@ -289,7 +286,7 @@ void sys_init(){
 
     wrmsr(EFER, rdmsr(EFER) | 1); // enable syscall
 
-    extern void enable_sce();
+    extern void enable_sce(); // syscall_entry.asm
     enable_sce();
 
     wrmsr(GSBASE, (u64)lcd); //  GSBase

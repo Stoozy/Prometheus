@@ -3,7 +3,6 @@
 
 global switch_to_process
 
-
 %macro popaq	0
     pop rdi    
     pop rsi    
@@ -29,6 +28,7 @@ switch_to_process:
     cmp rcx, rsi
     je .done
     
+
     ; set new cr3
     mov cr3, rsi
 

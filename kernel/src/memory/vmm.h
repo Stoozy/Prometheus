@@ -6,6 +6,7 @@
 #include "../typedefs.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 enum {
     PAGE_PRESENT    = 1 << 0, // same as 1
@@ -46,7 +47,7 @@ typedef struct {
 } __attribute__((packed)) PageTable;
 
 void *      vmm_virt_to_phys(PageTable * cr3, void * virt_addr);
-i32         vmm_map(PageTable * pml4, void * p_virtual, void * p_physical, int flags);
+void        vmm_map_page(PageTable * , uintptr_t , uintptr_t , int );
 PageTable * vmm_create_user_proc_pml4();
 PageTable * vmm_create_kernel_proc_pml4();
 PageTable * vmm_get_current_cr3();
@@ -57,8 +58,6 @@ void        vmm_map_range(
                 void * phys_start, 
                 size_t size,
                 int flags );
-
-void        vmm_init();
 
 #endif 
 

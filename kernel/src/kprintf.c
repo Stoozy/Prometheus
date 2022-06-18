@@ -149,7 +149,7 @@ int kprintf(const char* restrict format, ...) {
     
         }else if(*format == 'x'){
             format++;
-            u32 hex = va_arg(parameters, u32);
+            u64 hex = va_arg(parameters, u64);
 
             kprintf("%s", ulltoa(hex, &buf[0], 16));
 
