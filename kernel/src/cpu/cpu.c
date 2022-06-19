@@ -10,7 +10,7 @@ LocalCpuData cpus[MAX_CORES];
 void cpu_init(u8 id){
     kprintf("Initializing CPU #%lu\n", id);
 
-    void * addr = pmm_alloc_blocks(8) + 8 * PAGE_SIZE;
+    void * addr = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
 
     extern void panic();
     if(addr != NULL){

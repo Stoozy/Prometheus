@@ -22,7 +22,6 @@ void save_context(volatile ProcessControlBlock * proc, Registers * regs){
     *--stack = regs->rflags ; // rflags
     *--stack = regs->cs; // cs
     *--stack = (u64)regs->rip; // rip
-
     *--stack = (u64) regs->r8;
     *--stack = (u64) regs->r9;
     *--stack = (u64) regs->r10;
@@ -31,7 +30,6 @@ void save_context(volatile ProcessControlBlock * proc, Registers * regs){
     *--stack = (u64) regs->r13;
     *--stack = (u64) regs->r14;
     *--stack = (u64) regs->r15;
-
     *--stack = regs->rbp; // rbp
     *--stack = regs->rbx; // rbx
     *--stack = regs->rsi; // rsi
@@ -88,10 +86,10 @@ void schedule(Registers * regs){
 
     }
 
-
-    //load_pagedir(gp_current_process->cr3);
+#ifdef SCHEDULER_DEBUG
     kprintf("[SCHEDULER]    Switching to proc with %llx as cr3\n", gp_current_process->cr3);
-    // finally, switch
+#endif
+
     switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
 
 }

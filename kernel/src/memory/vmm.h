@@ -52,12 +52,14 @@ PageTable * vmm_create_user_proc_pml4();
 PageTable * vmm_create_kernel_proc_pml4();
 PageTable * vmm_get_current_cr3();
 
+void        vmm_switch_page_directory(PageTable *);
 void        vmm_map_range(
                 PageTable * cr3, 
                 void * virt_start, 
                 void * phys_start, 
                 size_t size,
                 int flags );
+
 
 #endif 
 

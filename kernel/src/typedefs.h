@@ -1,5 +1,4 @@
-#ifndef _TYPEDEFS_H
-#define _TYPEDEFS_H 1
+#pragma once
 
 #define _U64_PTR_MAX    0xffffffffffffffff
 
@@ -11,4 +10,3 @@ typedef unsigned long long u64;
 typedef int i32;
 typedef long long i64;
 
-#endif

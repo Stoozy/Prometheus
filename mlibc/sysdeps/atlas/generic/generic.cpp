@@ -187,7 +187,7 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags,
             : "rcx", "r11", "memory");
 
     *window = (void*)r15;
-    mlibc::infoLogger() << "[mlibc] Got vm_map return value " << r15 << frg::endlog;
+    mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window << frg::endlog;
 
     return 0;
 }

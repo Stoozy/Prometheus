@@ -14,7 +14,6 @@
 
 typedef long int off_t;
 
-extern void load_pagedir(PageTable *);
 extern PageTable * kernel_cr3;
 
 static inline uint64_t rdmsr(uint64_t msr){
@@ -72,8 +71,9 @@ int sys_exit(){
 int sys_open(const char *name, int flags, ...){
 
     FILE * f =  vfs_open(name, flags);
-
+    for(;;);
     extern ProcessControlBlock * gp_current_process;
+
     // error on overflow
     if(gp_current_process->fd_length > MAX_PROC_FDS)
         return -1;
@@ -141,7 +141,8 @@ void * sys_vm_map( void * addr, size_t size, int prot, int flags, int fd, off_t 
     kprintf("[MMAP] Hint : 0x%llx\n", addr);
     kprintf("[MMAP] Size : 0x%llx\n", size);
 
-    load_pagedir(kernel_cr3);
+    vmm_switch_page_directory(kernel_cr3);
+
     extern ProcessControlBlock * gp_current_process;
 
     kprintf("Current process at 0x%x\n", gp_current_process);
@@ -182,7 +183,7 @@ void * sys_vm_map( void * addr, size_t size, int prot, int flags, int fd, off_t 
 
         asm("cli");
         vmm_map_range(gp_current_process->cr3, virt_base, phys_base, size, page_flags);
-        load_pagedir(gp_current_process->cr3);
+        vmm_switch_page_directory(gp_current_process->cr3);
 
         kprintf("[MMAP] Returning 0x%x\n", virt_base);
 
@@ -221,10 +222,14 @@ void syscall_dispatcher(Registers regs){
         }
         case SYS_OPEN:{
             kprintf("[SYS]  OPEN CALLED\n");
-            register const char * fp asm("r8");
-            register int flags asm("r9");
-            register int * fd asm("r10");
-            register int ret asm("r15") = sys_open(fp, flags);
+
+            char * fp = regs.r8;
+            int flags = regs.r9;
+            int * fd =  regs.r10;
+
+            sys_open(fp, flags);
+            // return value
+            //*fd =  sys_open(fp, flags);
             
             break;
         }

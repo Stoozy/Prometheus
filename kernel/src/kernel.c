@@ -29,8 +29,9 @@
 
 #include "syscall/syscalls.h"
 
-extern u64 k_start;
-extern u64 k_end;
+u64 k_start;
+u64 k_end;
+u64 k_size; 
 
 extern void load_pagedir(PageTable *);
 extern void invalidate_tlb();
@@ -39,21 +40,6 @@ extern void gdt_init();
 // We are going to allocate our stack as an uninitialised array in .bss.
 volatile u8 stack[4096];
 volatile u8 user_stack[4096];
-
-
-
-//static struct stivale2_header_tag_terminal terminal_hdr_tag = {
-//    // All tags need to begin with an identifier and a pointer to the next tag.
-//    .tag = {
-//        // Identification constant defined in stivale2.h and the specification.
-//        .identifier = STIVALE2_HEADER_TAG_TERMINAL_ID,
-//        // If next is 0, it marks the end of the linked list of header tags.
-//        .next = 0
-//    },
-//    // The terminal header tag possesses a flags field, leave it as 0 for now
-//    // as it is unused.
-//    .flags = 0
-//};
 
 // We are now going to define a framebuffer header tag.
 // This tag tells the bootloader that we want a graphical framebuffer instead
@@ -65,7 +51,7 @@ static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
         .identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
         // Instead of 0, we now point to the previous header tag. The order in
         // which header tags are linked does not matter.
-        .next = (uint64_t)0
+        .next = 0
     },
     // We set all the framebuffer specifics to 0 as we want the bootloader
     // to pick the best it can.
@@ -164,6 +150,16 @@ void _start(struct stivale2_struct * boot_info) {
     struct stivale2_struct_tag_modules * modules_tag =
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
 
+    extern void kernelStart;
+    extern void kernelEnd;
+    k_start = (uint64_t)&kernelStart;
+    k_end = (uint64_t)&kernelEnd;
+    k_size = ((k_end-k_start) / PAGE_SIZE) * PAGE_SIZE;
+
+
+    kprintf("kernel start is 0x%x\n", k_start);
+    kprintf("kernel size is 0x%x\n", k_size);
+
     pmm_init(meminfo);
 
     gdt_init();
@@ -171,7 +167,6 @@ void _start(struct stivale2_struct * boot_info) {
 
     pit_init(1000);
 
-    u64 k_size = ((u64)&k_end - (u64)&k_start);
     FileSystem * tarfs = NULL;
     if(modules_tag == NULL){
         kprintf("[MAIN]   No modules found. Exiting.\n");

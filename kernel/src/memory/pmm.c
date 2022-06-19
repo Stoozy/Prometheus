@@ -6,9 +6,6 @@
 #include "../kprintf.h"
 #include "../stivale2.h"
 
-extern u64 k_start;
-extern u64 k_end;
-
 u64     total_blocks = PMM_MAX_BITMAPS * PMM_BLOCKS_PER_BYTE; 
 u64     total_bmaps; 
 u64     free_blocks;
@@ -87,10 +84,7 @@ static int pmm_get_first_free(){
     return -1;
 }
 
-/*
- * Get contiguous blocks
- *
- */
+
 static int pmm_get_first_free_chunk(u64 blocks){
     for(; last_checked_block<total_blocks; last_checked_block++){
         if(mmap[last_checked_block/8] != 0xff){
@@ -229,12 +223,6 @@ void pmm_init(struct stivale2_struct_tag_memmap * meminfo){
 
 
     for(u64 i=0; i<meminfo->entries; ++i){
-        /* get start and end of kernel */
-        if( meminfo->memmap[i].type == STIVALE2_MMAP_KERNEL_AND_MODULES ){
-                k_start = meminfo->memmap[i].base;
-                k_end = k_start + meminfo->memmap[i].length;
-        }
-
         /* mark region used if memory range is not usable */
         if( !(meminfo->memmap[i].type == STIVALE2_MMAP_USABLE) ){
             kprintf("[PMM]  Marking 0x%x to 0x%x as used (pmm_init)\n",

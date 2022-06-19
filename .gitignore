@@ -11,3 +11,5 @@
 .vscode/*.*
 limine
 ./kernel/src/*/*.o
+
+mlibc/.cache/*
