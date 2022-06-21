@@ -56,9 +56,9 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
             memcpy(ld_path, (elf_data+p_header->p_offset), p_header->p_filesz);
 
             kprintf("[ELF]  Got interpreter file path: %s\n", ld_path);
-            FILE * ld_file = vfs_open(ld_path, 0);
+            File * ld_file = vfs_open(ld_path, 0);
             u8 * ld_data = kmalloc(ld_file->size);
-            int br = vfs_read(ld_file, ld_file->size, ld_data);
+            int br = vfs_read(ld_file, ld_data, 0, ld_file->size);
 
             if(!(br != 0 && validate_elf(ld_data))) continue;
 
@@ -116,10 +116,10 @@ Auxval load_elf_segments(PageTable * vas, u8 * elf_data){
 
 
 ProcessControlBlock * create_elf_process(const char * path){
-    FILE * elf_file = vfs_open(path, 0);
+    File * elf_file = vfs_open(path, 0);
 
     u8 * elf_data = kmalloc(elf_file->size);
-    int br = vfs_read(elf_file, elf_file->size, elf_data);
+    int br = vfs_read(elf_file, elf_data, 0, elf_file->size);
 
     if(!validate_elf(elf_data)){
         return NULL;
@@ -153,7 +153,7 @@ ProcessControlBlock * create_elf_process(const char * path){
     *--stack = 0; // end argv
     *--stack = 0; // end envp
     *--stack = 0; // argc
-    uintptr_t sa = stack;
+    uintptr_t sa = (uintptr_t)stack;
     
     // Interrupt frame
     *--stack = 0x23; // ss

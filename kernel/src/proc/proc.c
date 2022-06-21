@@ -19,17 +19,25 @@ u64 g_procs = 0;
 
 PageTable * kernel_cr3;
 
-void unmap_fd_to_proc(ProcessControlBlock * proc, int file){
-    proc->fd_table[file] = NULL;
+void unmap_fd_from_proc(ProcessControlBlock * proc, int fd){
+    if(fd > MAX_PROC_FDS || fd < 0)
+        return;
+
+    proc->fd_table[fd] = NULL;
     --proc->fd_length;
+    return;
 }
 
-void map_fd_to_proc(ProcessControlBlock * proc, struct file * file_desc){
-    for(u8 fd_idx = 0; fd_idx < MAX_PROC_FDS; ++fd_idx){
-        if(proc->fd_table[fd_idx] == NULL)
-            proc->fd_table[fd_idx] = file_desc;
+int map_file_to_proc(ProcessControlBlock * proc, struct file * file){
+    for(uint64_t fd = 3; fd < MAX_PROC_FDS; ++fd){
+        if(proc->fd_table[fd] == NULL){
+            proc->fd_table[fd] = file;
+            ++proc->fd_length;
+            return fd;
+        }
     }
-    return;
+
+    return -1;
 }
 
 void kill_proc(ProcessControlBlock * proc){

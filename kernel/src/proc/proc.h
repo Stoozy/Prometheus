@@ -29,12 +29,12 @@ typedef struct process_control_block {
 } ProcessControlBlock;
 
 
-void unmap_fd_to_proc(ProcessControlBlock * proc, int file);
-void map_fd_to_proc(ProcessControlBlock * proc, struct file * file_desc);
-void multitasking_init();
-void kill_current_proc(void);
-void dump_list();
-void schedule();
+void    unmap_fd_from_proc(ProcessControlBlock * proc, int fd);
+int     map_file_to_proc(ProcessControlBlock * proc, struct file * file);
+void    multitasking_init();
+void    kill_current_proc(void);
+void    dump_list();
+void    schedule();
 
 ProcessControlBlock * create_process(void (void));
 void register_process(ProcessControlBlock *);

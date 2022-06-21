@@ -25,7 +25,7 @@ kernel/kernel.elf:
 	$(MAKE) -C kernel
 
 libc:
-	cd mlibc && mkdir build && meson . build --cross-file crossfile.ini && ninja -C build && yes | cp build/*.so $(SYSROOT)/lib
+	cd mlibc && mkdir build && meson . build --cross-file crossfile.ini && ninja -C build && yes | cp build/*.so $(SYSROOT)/lib && yes | cp build/sysdeps/atlas/crt1.o $(SYSROOT)/lib
 
 initrd: 
 	tar -C $(SYSROOT) -cvf initrd.tar lib fonts testfile hello

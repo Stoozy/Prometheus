@@ -88,6 +88,10 @@ syscall_entry:
 
     popaq
     mov rsp, [gs:0x8]       ; back to user stack
+
+    mov rbx, [gs:0x18]      ; back to process cr3
+    mov cr3, rbx      
+
     swapgs
 
     o64 sysret

@@ -81,28 +81,18 @@ int sys_clock_get(int clock, time_t *secs, long *nanos) {
 
 int sys_open(const char *path, int flags, int *fd) {
     register int syscall asm ("rsi")= SYS_OPEN;
+
     register const char * fp asm("r8") = path;
     register int _flags asm("r9") = flags;
-    register int * _fd asm("r10") = fd;
 
-    asm("syscall");
+    asm("syscall" 
+            : 
+            : "r" (fp), "r" (_flags)
+            : "rcx", "r11", "memory");
 
     register int ret asm ("r15");
     *fd = ret;
 
-
-    //int ret;
-    //int sys_errno;
-
-    //asm volatile ("syscall"
-    //        : "=a"(ret), "=d"(sys_errno)
-    //        : "a"(2), "D"(path), "S"(flags), "d"(0)
-    //        : "rcx", "r11");
-
-    //if (ret == -1)
-    //    return sys_errno;
-
-    //*fd = ret;
     return 0;
 }
 

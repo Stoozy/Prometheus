@@ -183,6 +183,7 @@ void _start(struct stivale2_struct * boot_info) {
             if(strcmp(module.string, "INITRAMFS") == 0){
                 kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
                 tarfs = tarfs_init((u8*)module.begin);
+                vfs_init(tarfs);
             }
 
         }
@@ -200,7 +201,7 @@ void _start(struct stivale2_struct * boot_info) {
         kprintf("[MAIN]   Framebuffer height: %d\n", framebuffer_tag->framebuffer_height);
         kprintf("[MAIN]   Framebuffer width: %d\n", framebuffer_tag->framebuffer_width);
 
-#define SSFN_CONSOLEBITMAP_TRUECOLOR
+        #define SSFN_CONSOLEBITMAP_TRUECOLOR
         ssfn_dst.ptr = (u8*)framebuffer_tag->framebuffer_addr;
         ssfn_dst.w = framebuffer_tag->framebuffer_width;
         ssfn_dst.h = framebuffer_tag->framebuffer_height;
@@ -212,16 +213,13 @@ void _start(struct stivale2_struct * boot_info) {
     }
 
 
-    if(tarfs != NULL)
-        vfs_register_fs(tarfs, 0);
-    else; // do something else;
 
 
     cli();
     //smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") : smp_init(smp_tag);
     sys_init();
 
-    ProcessControlBlock * hello_proc = create_elf_process("a0:hello");
+    ProcessControlBlock * hello_proc = create_elf_process("/hello");
     register_process(hello_proc);
     multitasking_init();
 

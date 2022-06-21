@@ -70,28 +70,37 @@ int sys_exit(){
 
 int sys_open(const char *name, int flags, ...){
 
-    FILE * f =  vfs_open(name, flags);
+    File * file =  vfs_open(name, flags);
+
+    if(file == NULL)
+        return -1;
+
     for(;;);
+
+    extern PageTable * kernel_cr3;
+    vmm_switch_page_directory(kernel_cr3);
     extern ProcessControlBlock * gp_current_process;
 
     // error on overflow
     if(gp_current_process->fd_length > MAX_PROC_FDS)
         return -1;
 
-    map_fd_to_proc(gp_current_process, f);
-    return gp_current_process->fd_length;
+    int fd = map_file_to_proc(gp_current_process, file);
+
+    return fd;
 }
 
-int sys_close(int file){
+int sys_close(int fd){
+    vmm_switch_page_directory(kernel_cr3);
     extern ProcessControlBlock * gp_current_process;
-    unmap_fd_to_proc(gp_current_process, file);
+    unmap_fd_from_proc(gp_current_process, fd);
     return 0;
 }
 
 int sys_read(int file, char *ptr, size_t len){
     extern ProcessControlBlock * gp_current_process;
-    FILE * f = gp_current_process->fd_table[file];
-    int bytes_read = vfs_read(f, (u64)len, (u8*)ptr);
+    File * f = gp_current_process->fd_table[file];
+    int bytes_read = vfs_read(f, (u8*)ptr,  f->position, len);
 
     return bytes_read;
 }
@@ -223,13 +232,10 @@ void syscall_dispatcher(Registers regs){
         case SYS_OPEN:{
             kprintf("[SYS]  OPEN CALLED\n");
 
-            char * fp = regs.r8;
+            char * fp = (char *)regs.r8;
             int flags = regs.r9;
-            int * fd =  regs.r10;
 
-            sys_open(fp, flags);
-            // return value
-            //*fd =  sys_open(fp, flags);
+            regs.r15 = sys_open(fp, flags);
             
             break;
         }
