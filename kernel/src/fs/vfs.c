@@ -14,12 +14,8 @@ static VfsNode * vfs_node_from_path(VfsNode * parent, const char * path){
 
     size_t len = strlen(path);
 
-    int i=len-1;
-    while(path[i] != '/'){
-        i--;
-    }
 
-    File * file = parent->file->fs->finddir(parent, &path[i+1]);
+    File * file = parent->file->fs->finddir(parent, &path[1]);
 
     if(file){
         VfsNode * new_node = kmalloc(sizeof(VfsNode));
