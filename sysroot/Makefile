@@ -17,7 +17,7 @@ all: hello
 
 hello:
 	$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBRARIES) lib/crt1.o -lc -o hello
-	patchelf hello --set-interpreter lib/ld.so
+	patchelf hello --set-interpreter /lib/ld.so
 
 clean:
 	rm -rf hello
