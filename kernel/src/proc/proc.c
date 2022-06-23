@@ -187,6 +187,6 @@ void multitasking_init(){
     kernel_cr3 = vmm_get_current_cr3();
     gp_current_process = gp_process_queue;
 
-    kprintf("Switching to process with 0x%llx cr3\n", gp_current_process->cr3);
-    switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+    kprintf("Switching to process with 0x%llx cr3\n", (void*)gp_current_process->cr3);
+    switch_to_process(gp_current_process->p_stack, (void*)gp_current_process->cr3);
 }

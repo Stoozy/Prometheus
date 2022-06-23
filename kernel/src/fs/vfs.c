@@ -148,7 +148,10 @@ bool vfs_mount(const char * src, const char * dst){
 
 
 void vfs_init(FileSystem * root_fs){
-    gp_root = kmalloc(sizeof(VfsNode));
+    gp_root =  kmalloc(sizeof(VfsNode));
+
+    kprintf("Got address %x from kmalloc\n",gp_root);
+    for(;;);
 
     gp_root->parent = NULL;
     gp_root->type = VFS_MOUNTPOINT;

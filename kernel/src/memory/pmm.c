@@ -5,6 +5,7 @@
 #include "../string/string.h"
 #include "../kprintf.h"
 #include "../stivale2.h"
+#include "../memory/vmm.h"
 
 u64     total_blocks = PMM_MAX_BITMAPS * PMM_BLOCKS_PER_BYTE; 
 u64     total_bmaps; 
@@ -160,7 +161,7 @@ void * pmm_alloc_block(){
     used_blocks++;
     free_blocks--;
 
-    return  (void*) addr;
+    return  (void*) (addr);
 }
 
 

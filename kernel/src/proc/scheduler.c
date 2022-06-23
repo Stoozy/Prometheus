@@ -87,9 +87,9 @@ void schedule(Registers * regs){
     }
 
 #ifdef SCHEDULER_DEBUG
-    kprintf("[SCHEDULER]    Switching to proc with %llx as cr3\n", gp_current_process->cr3);
+    kprintf("[SCHEDULER]    Switching to proc with %llx as cr3\n", (void*)gp_current_process->cr3);
 #endif
 
-    switch_to_process(gp_current_process->p_stack, gp_current_process->cr3);
+    switch_to_process(gp_current_process->p_stack, (void*)gp_current_process->cr3);
 
 }

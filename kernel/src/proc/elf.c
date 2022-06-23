@@ -125,7 +125,8 @@ ProcessControlBlock * create_elf_process(const char * path){
         return NULL;
     }
 
-	ProcessControlBlock * proc = kmalloc(sizeof(ProcessControlBlock));
+	//ProcessControlBlock * proc = (ProcessControlBlock*)pmm_alloc_block();
+	ProcessControlBlock * proc = (ProcessControlBlock*)(PAGING_VIRTUAL_OFFSET + kmalloc(sizeof(ProcessControlBlock)));
 
     proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
     kprintf("Process stack at 0x%x\n", proc->p_stack);
@@ -138,7 +139,7 @@ ProcessControlBlock * create_elf_process(const char * path){
 
     void * phys_start = pmm_alloc_blocks((elf_file->size / PAGE_SIZE) + 1);
     size_t pa_size = ((elf_file->size / PAGE_SIZE) + 1)  * PAGE_SIZE; 
-    vmm_map_range(proc->cr3, pa_virt_start, phys_start, pa_size,  PAGE_USER | PAGE_PRESENT | PAGE_WRITE);
+    //vmm_map_range(proc->cr3, pa_virt_start, phys_start, pa_size,  PAGE_USER | PAGE_PRESENT | PAGE_WRITE);
 
     Auxval aux = load_elf_segments(proc->cr3, elf_data);
 

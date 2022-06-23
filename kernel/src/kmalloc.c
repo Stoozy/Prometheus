@@ -33,18 +33,13 @@ void * liballoc_alloc(int pages){
     if(pages <= 0) 
         return NULL;
 
-    //void * addr = pmm_alloc_blocks(pages);
+    void * addr = pmm_alloc_blocks(pages);
 
 #ifdef ALLOCATOR_DEBUG
     kprintf("[ALLOCATOR]    Got %d pages at 0x%x\n", pages, addr);
 #endif
 
-    /* since this is only used for kernel malloc
-     * there is no need to map the pages, as they
-     * are already identity mapped by stivale 
-     */
-
-    return pmm_alloc_blocks(pages);
+    return (void*) (PAGING_VIRTUAL_OFFSET + addr); 
 }
 
 int liballoc_free(void * addr, int pages){

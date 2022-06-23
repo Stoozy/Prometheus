@@ -119,8 +119,7 @@ static void dump_array()
 			kprintf("%.2i(%i): ",i, l_completePages[i] );
 	
 			tag = l_kfreePages[ i ];
-			while ( tag != NULL )
-			{
+			while ( tag != NULL ){
 				if ( tag->split_left  != NULL  ) kprintf("*");
 				kprintf("%i", tag->real_size );
 				if ( tag->split_right != NULL  ) kprintf("*");

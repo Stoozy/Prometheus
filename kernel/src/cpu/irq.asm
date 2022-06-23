@@ -77,12 +77,12 @@ section .text
 
 hang:
     hlt
-    jmp hang
+    call hang
 
 dummy_irq:
 	pushaq
 	call dummy_handler 
-    jmp hang
+    call hang
 	;popaq
 	;iretq
  

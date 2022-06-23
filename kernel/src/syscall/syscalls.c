@@ -150,7 +150,6 @@ void * sys_vm_map( void * addr, size_t size, int prot, int flags, int fd, off_t 
     kprintf("[MMAP] Hint : 0x%llx\n", addr);
     kprintf("[MMAP] Size : 0x%llx\n", size);
 
-    vmm_switch_page_directory(kernel_cr3);
 
     extern ProcessControlBlock * gp_current_process;
 
@@ -191,7 +190,7 @@ void * sys_vm_map( void * addr, size_t size, int prot, int flags, int fd, off_t 
         kprintf("Virt base is %x\n", virt_base);
 
         asm("cli");
-        vmm_map_range(gp_current_process->cr3, virt_base, phys_base, size, page_flags);
+        vmm_map_range((void*)((u64)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET), virt_base, phys_base, size, page_flags);
         vmm_switch_page_directory(gp_current_process->cr3);
 
         kprintf("[MMAP] Returning 0x%x\n", virt_base);

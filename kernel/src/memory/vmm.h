@@ -8,6 +8,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PAGING_KERNEL_OFFSET        0xffffffff80000000
+#define PAGING_VIRTUAL_OFFSET       0xffff800000000000
+
 enum {
     PAGE_PRESENT    = 1 << 0, // same as 1
     PAGE_WRITE      = 1 << 1, // same as 2, binary 10

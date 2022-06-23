@@ -13,9 +13,6 @@
 #include "../config.h"
 #include "../cpu/cpu.h"
 
-#define PAGING_KERNEL_OFFSET        0xffffffff80000000
-#define PAGING_VIRTUAL_OFFSET       0xffff800000000000
-
 extern void load_pagedir(PageTable *);
 
 extern u64 k_start;
@@ -41,7 +38,7 @@ static uintptr_t * get_next_table(uintptr_t * table, u64 entry){
         addr = (void*)(table[entry] & ~((uintptr_t) 0xfff));
     }else{
         addr = pmm_alloc_block();
-        memset(addr, 0, PAGE_SIZE);
+        memset(PAGING_VIRTUAL_OFFSET + addr, 0, PAGE_SIZE);
 
         if(addr == NULL)
             for(;;); // panic here 
@@ -49,8 +46,10 @@ static uintptr_t * get_next_table(uintptr_t * table, u64 entry){
         table[entry] = (uintptr_t)addr | PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
     }
 
-    return addr;
+    return PAGING_VIRTUAL_OFFSET + addr;
 }
+
+
 
 
 void vmm_map_page(PageTable * pml4, uintptr_t virt, uintptr_t phys, int flags){
@@ -89,7 +88,7 @@ void vmm_map_range(
     void * virt_end = virt_start + size;
 
 #ifdef VMM_DEBUG 
-    kprintf("[VMM] Mapping range\n");
+    kprintf("[VMM] Mapping range on 0x%x\n", cr3);
     kprintf("[VMM] virt_start is 0x%x\n", virt_start);
     kprintf("[VMM] phys_start is 0x%x\n", phys_start);
     kprintf("[VMM] size is 0x%x\n", size);
@@ -104,40 +103,45 @@ void vmm_map_range(
 
 
 PageTable * vmm_create_user_proc_pml4(void * stack_top){
-    PageTable * pml4 = pmm_alloc_block();
-
+    PageTable * pml4 = (PageTable*)pmm_alloc_block();
     memset(pml4, 0x0, PAGE_SIZE);
+
+    PageTable * kcr3 = vmm_get_current_cr3();
+
+    for(int i=256; i<512; i++){
+        pml4->entries[i] = kcr3->entries[i];
+    }
 
     int uflags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
 
     /* map framebuffer */
 
-    void* fb_start = get_framebuffer_addr();
-    void* fb_end = fb_start + get_framebuffer_size();
+    //void* fb_start = get_framebuffer_addr();
+    //void* fb_end = fb_start + get_framebuffer_size();
 
-    size_t fb_size = ((get_framebuffer_size()) / PAGE_SIZE) * PAGE_SIZE;
-    kprintf("[VMM]  Mapping fb for userspace\n");
-    vmm_map_range(pml4, fb_start, fb_start-PAGING_VIRTUAL_OFFSET, fb_size, uflags);
+    //size_t fb_size = ((get_framebuffer_size()) / PAGE_SIZE) * PAGE_SIZE;
+    //kprintf("[VMM]  Mapping fb for userspace\n");
+    //vmm_map_range(pml4, fb_start, fb_start-PAGING_VIRTUAL_OFFSET, fb_size, uflags);
 
     /* kernel mapping */
     int kflags = PAGE_PRESENT | PAGE_WRITE;
-    extern u64 k_start, k_end, k_size;
+    //extern u64 k_start, k_end, k_size;
 
-    kprintf("[VMM]  Mapping kernel \n");
-    vmm_map_range(pml4, (void*)k_start , (void*)k_start-PAGING_KERNEL_OFFSET, k_size, kflags);
+    //kprintf("[VMM]  Mapping kernel \n");
+    //vmm_map_range(pml4, (void*)k_start , (void*)k_start-PAGING_KERNEL_OFFSET, k_size, kflags);
     
     /* mapping stacks */
-    void * stack_base = stack_top-(8*PAGE_SIZE);
     size_t stack_size = 8*PAGE_SIZE;
+    void * stack_base = stack_top-(stack_size);
     kprintf("[VMM]  Mapping userspace stack \n");
     vmm_map_range(pml4, stack_base, stack_base, stack_size, uflags);
 
 
-    LocalCpuData * lcd = get_cpu_struct(0); 
+    //LocalCpuData * lcd = get_cpu_struct(0); 
     /* map kernel stack */
-    void* kstack_base = ((void*)lcd->syscall_kernel_stack) - stack_size;
-    kprintf("[VMM]  Mapping kernel stack 0x%x\n", kstack_base);
-    vmm_map_range(pml4, kstack_base, kstack_base, stack_size, kflags);
+    //void* kstack_base = ((void*)lcd->syscall_kernel_stack) - stack_size;
+    //kprintf("[VMM]  Mapping kernel stack 0x%x\n", kstack_base);
+    //vmm_map_range(pml4, kstack_base, kstack_base, stack_size, kflags);
 
     return pml4;
 }

@@ -2,6 +2,7 @@
 #include "../typedefs.h"
 #include "../kprintf.h"
 #include "../memory/pmm.h"
+#include "../memory/vmm.h"
 
 #define MAX_CORES   255
 
@@ -14,7 +15,7 @@ void cpu_init(u8 id){
 
     extern void panic();
     if(addr != NULL){
-        cpus[id].syscall_kernel_stack = (u64*)addr; 
+        cpus[id].syscall_kernel_stack = (u64*)(PAGING_VIRTUAL_OFFSET+addr); 
         kprintf("kernel stack at 0x%x\n", addr);
     }else {
         kprintf("OUT OF MEMORY\n");
