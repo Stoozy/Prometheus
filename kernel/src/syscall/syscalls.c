@@ -71,14 +71,11 @@ int sys_exit(){
 int sys_open(const char *name, int flags, ...){
 
     File * file =  vfs_open(name, flags);
+    kprintf("Got file %s with size %d bytes\n",  file->name, file->size);
 
     if(file == NULL)
         return -1;
 
-    for(;;);
-
-    extern PageTable * kernel_cr3;
-    vmm_switch_page_directory(kernel_cr3);
     extern ProcessControlBlock * gp_current_process;
 
     // error on overflow
@@ -99,7 +96,9 @@ int sys_close(int fd){
 
 int sys_read(int file, char *ptr, size_t len){
     extern ProcessControlBlock * gp_current_process;
-    File * f = gp_current_process->fd_table[file];
+    struct file * f = gp_current_process->fd_table[file];
+    vfs_dump();
+    //kprintf("File ptr %x. Name %s. Device %x\n", f, f->name, f->device);
     int bytes_read = vfs_read(f, (u8*)ptr,  f->position, len);
 
     return bytes_read;
@@ -234,7 +233,14 @@ void syscall_dispatcher(Registers regs){
             char * fp = (char *)regs.r8;
             int flags = regs.r9;
 
-            regs.r15 = sys_open(fp, flags);
+            int fd = sys_open(fp, flags);
+            if(fd != -1){
+                kprintf("Got FD #%d\n", fd);
+                regs.r15 = fd;
+            }else{
+                kprintf("Couldn't open file\n");
+                for(;;);
+            }
             
             break;
         }
@@ -244,19 +250,24 @@ void syscall_dispatcher(Registers regs){
         }
         case SYS_READ:{
             kprintf("[SYS]  READ CALLED\n");
-            register int fd asm("r8");
-            register char * buf asm("r9");
-            register size_t count asm("r10");
-            register int ret asm("r15") = sys_read(fd, buf, count);
+
+            int fd = regs.r8;
+            char * buf =  (char*)regs.r9;
+            size_t count = regs.r10;
+
+            regs.r15 = sys_read(fd, buf, count);
+
             break;
 
         }
         case SYS_WRITE:{
             kprintf("[SYS]  WRITE CALLED\n");
-            register int file asm("r8");
-            register char * ptr asm("r9");
-            register int len asm("r10");
-            register int ret asm("r15") = sys_write(file, ptr, len);
+            int file = regs.r8;
+            char * ptr = (char*)regs.r9;
+            int len = regs.r10;
+
+            regs.r15 = sys_write(file, ptr, len);
+
             break;
         }
         case SYS_LOG_LIBC: {

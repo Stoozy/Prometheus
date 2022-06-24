@@ -46,30 +46,17 @@ int sys_anon_allocate(size_t size, void **pointer) {
 }
 
 int sys_anon_free(void *pointer, size_t size) {
-    //int unused_return;
-    //int sys_errno;
-
-	//asm volatile ("syscall"
-    //        : "=a"(unused_return), "=d"(sys_errno)
-	//		: "a"(11), "D"(pointer), "S"(size)
-	//		: "rcx", "r11");
-
-    //if (unused_return)
-    //    return sys_errno;
-
+    // TODO
     return 0;
 }
 
 #ifndef MLIBC_BUILDING_RTDL
 void sys_exit(int status) {
+    // TODO
     register int syscall asm("rsi") = SYS_EXIT;
     register int code asm("r8") = status;
     asm("syscall");
 
-    //asm volatile ("syscall" :
-    //        : "a"(12), "D"(status)
-    //        : "rcx", "r11", "rdx");
-    
 }
 #endif
 
@@ -82,16 +69,18 @@ int sys_clock_get(int clock, time_t *secs, long *nanos) {
 int sys_open(const char *path, int flags, int *fd) {
     register int syscall asm ("rsi")= SYS_OPEN;
 
-    register const char * fp asm("r8") = path;
-    register int _flags asm("r9") = flags;
+    register const char * r8 asm("r8") = path;
+    register int r9 asm("r9") = flags;
 
+    register int r15 asm ("r15");
     asm("syscall" 
-            : 
-            : "r" (fp), "r" (_flags)
+            : "=r"(r15)
+            : "r" (r9), "r"(r8)
             : "rcx", "r11", "memory");
 
-    register int ret asm ("r15");
-    *fd = ret;
+    int res = r15;
+    mlibc::infoLogger() << "[mlibc] Got vm_map return value " << res << frg::endlog;
+    *fd = r15;
 
     return 0;
 }
@@ -100,28 +89,25 @@ int sys_close(int fd) {
     int ret;
     int sys_errno;
 
-    // TODO
-    //asm volatile ("syscall"
-    //        : "=a"(ret), "=d"(sys_errno)
-    //        : "a"(3), "D"(fd)
-    //        : "rcx", "r11");
-
-    //if (ret == -1)
-    //    return sys_errno;
-
     return 0;
 }
 
 int sys_read(int fd, void *buf, size_t count, ssize_t *bytes_read) {
 
     register int syscall asm("rsi") = SYS_READ;
-    register int _fd asm("r8") = fd;
-    register char * _buf asm("r9") = (char*)buf;
-    register size_t _count asm("r10") = count;
-    asm("syscall");
+    register int r8 asm("r8") = fd;
+    register char * r9 asm("r9") = (char*)buf;
+    register size_t r10 asm("r10") = count;
 
-    register size_t br asm("r15");
-    *bytes_read = br;
+    register size_t r15 asm("r15");
+    asm("syscall"
+            : "=r" (r15)
+            :  "r"(r8) , "r"(r9), "r"(r10)
+            : "rcx", "r11");
+
+
+    *bytes_read = r15;
+    mlibc::infoLogger() << "[mlibc] SYS_READ read " << *bytes_read << " bytes" <<  frg::endlog;
 
     return 0;
 }
@@ -143,18 +129,7 @@ int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written) {
 
 int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
     // TODO
-    //off_t ret;
-    //int sys_errno;
-
-    //asm volatile ("syscall"
-    //        : "=a"(ret), "=d"(sys_errno)
-    //        : "a"(8), "D"(fd), "S"(offset), "d"(whence)
-    //        : "rcx", "r11");
-
-    //if (ret == -1)
-    //    return sys_errno;
-
-    //*new_offset = ret;
+    
     return 0;
 }
 
@@ -173,7 +148,10 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags,
     register void *  r15 asm("r15");
 
     asm volatile("syscall" 
-            : "=r"(r15) : "r" (rsi), "r" (r8),  "r" (r9), "r" (r10) , "r" (r12) , "r" (r13), "r" (r14)
+            : "=r"(r15) 
+            : "r" (rsi), "r" (r8),  
+                "r" (r9), "r" (r10) , 
+                "r" (r12) , "r" (r13), "r" (r14)
             : "rcx", "r11", "memory");
 
     *window = (void*)r15;
@@ -254,18 +232,6 @@ int sys_sleep(time_t *secs, long *nanos) {
 }
 
 int sys_fork(pid_t *child) {
-    pid_t ret;
-    int sys_errno;
-
-    asm volatile ("syscall"
-            : "=a"(ret), "=d"(sys_errno)
-            : "a"(57)
-            : "rcx", "r11");
-
-    if (ret == -1)
-        return sys_errno;
-
-    *child = ret;
     return 0;
 }
 
