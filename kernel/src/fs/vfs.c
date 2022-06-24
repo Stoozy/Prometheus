@@ -12,7 +12,7 @@ static VfsNode * vfs_node_from_path(VfsNode * parent, const char * path){
     kprintf("[VFS]  Getting node from path %s\n", path);
     kprintf("[VFS]  Parent is %s\n", parent->file->name);
 
-    size_t len = strlen(path);
+    size_t len = __builtin_strlen(path);
 
 
     File * file = parent->file->fs->finddir(parent, &path[1]);
@@ -42,7 +42,7 @@ static VfsNode * vfs_node_from_path(VfsNode * parent, const char * path){
 
 File * vfs_open(const char * filename , int flags){
     kprintf("[VFS]  Called open on %s\n", filename);
-    VfsNode * node = vfs_node_from_path(gp_root,filename);
+    VfsNode * node = vfs_node_from_path(gp_root, filename);
 
     if(node)
         return node->file;
@@ -146,12 +146,26 @@ bool vfs_mount(const char * src, const char * dst){
     return true;
 }
 
+static void _vfs_rec_dump(VfsNode * node){
+    kprintf("Found %s\n", node->file->name);
+
+    if(node->type == VFS_DIRECTORY || node->type == VFS_MOUNTPOINT){
+        kprintf("Is a directory. Iterating directory...\n");
+        if(node->children)
+            _vfs_rec_dump(node->children);
+    }
+
+    if(node->next)
+        _vfs_rec_dump(node->next);
+}
+
+void vfs_dump(){
+    _vfs_rec_dump(gp_root);
+}
+
 
 void vfs_init(FileSystem * root_fs){
     gp_root =  kmalloc(sizeof(VfsNode));
-
-    kprintf("Got address %x from kmalloc\n",gp_root);
-    for(;;);
 
     gp_root->parent = NULL;
     gp_root->type = VFS_MOUNTPOINT;
@@ -161,7 +175,6 @@ void vfs_init(FileSystem * root_fs){
 
     gp_root->file = kmalloc(sizeof(File));
     gp_root->file->name = kmalloc(2);
-
     gp_root->file->name[0] = '/';
     gp_root->file->name[1] = '\0';
     

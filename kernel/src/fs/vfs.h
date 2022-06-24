@@ -91,6 +91,8 @@ typedef struct open_list_node {
 } VfsOpenListNode;
 
 
+void vfs_dump();
+
 bool vfs_mount(const char * src, const char * dst);
 
 File * vfs_open(const char * filename , int flags);
