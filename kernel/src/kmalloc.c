@@ -1,50 +1,38 @@
-#include "kmalloc.h"
-#include "kprintf.h"
-#include "liballoc.h"
 #include "memory/pmm.h"
 #include "memory/vmm.h"
-#include "string/string.h"
+#include "kprintf.h"
 
-#define PAGING_VIRTUAL_OFFSET       0xffff800000000000
+#include <stddef.h>
 
-extern void acquire_lock(volatile u32*);
-extern void release_lock(volatile u32*);
 
-volatile u32 lock = 0;   // initiallly free
+void * placement_address = NULL;
+void * heap_end = NULL;
 
-extern void invalidate_tlb();
-extern void load_pagedir(PageTable *);
+// dummy allocator for now
 
-void print_spin_wait(){
-    kprintf("[ALLOCATOR SPINLOCK]   Spinlock waiting...\n");
+void * kmalloc(size_t size){
+    if(placement_address + size > heap_end){
+        kprintf("Reached end of heap memory\n");
+        for(;;); /* out of memory */
+    }
+
+    void * tmp = placement_address;
+    placement_address += size;
+
+    return tmp;
 }
 
-int liballoc_lock(){
-    acquire_lock(&lock);
-    return 0;
+void kfree(void * ptr){
+    /* TODO */
 }
 
-int liballoc_unlock(){
-    release_lock(&lock);
-    return 0;
-}
 
-void * liballoc_alloc(int pages){
-    if(pages <= 0) 
-        return NULL;
+void kmalloc_init(size_t heap_size){
 
-    void * addr = pmm_alloc_blocks(pages);
+    int blocks = heap_size/PAGE_SIZE;
+    placement_address = (void*)(PAGING_VIRTUAL_OFFSET + pmm_alloc_blocks(blocks));
 
-#ifdef ALLOCATOR_DEBUG
-    kprintf("[ALLOCATOR]    Got %d pages at 0x%x\n", pages, addr);
-#endif
+    heap_end = placement_address + heap_size;
 
-    return (void*) (PAGING_VIRTUAL_OFFSET + addr); 
-}
-
-int liballoc_free(void * addr, int pages){
-    if(pages == 1)
-        pmm_free_block((u64)addr);
-    else pmm_free_blocks((u64)addr, pages);
-    return 0;
+    return;
 }
