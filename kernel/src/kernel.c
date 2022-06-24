@@ -10,13 +10,13 @@
 
 #include "memory/pmm.h"
 #include "memory/vmm.h"
+#include "kmalloc.h"
 
 #include "drivers/serial.h"
 #include "drivers/video.h"
 #include "drivers/pit.h"
 
 #include "util.h"
-#include "kmalloc.h"
 #include "kprintf.h"
 
 #include "proc/proc.h"
@@ -161,6 +161,8 @@ void _start(struct stivale2_struct * boot_info) {
     kprintf("kernel size is 0x%x\n", k_size);
 
     pmm_init(meminfo);
+
+    kmalloc_init(0xff0000);
 
     gdt_init();
     idt_init();

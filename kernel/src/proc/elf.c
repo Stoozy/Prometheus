@@ -6,7 +6,6 @@
 #include "../memory/vmm.h"
 #include "../string/string.h"
 #include "../proc/proc.h"
-#include "../kmalloc.h"
 #include "../fs/vfs.h"
 #include "../kprintf.h"
 #include "../config.h"

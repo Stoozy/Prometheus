@@ -125,6 +125,7 @@ u64 ustar_read(struct file *file, size_t size, u8 *buffer){
     kprintf("[TARFS] File data: %s\n", sof);
     if(tar_fp){
         kprintf("[TARFS] Valid file\n");
+        kprintf("Copying data over to %x\n", buffer);
         memcpy(buffer, sof, size);
         return size;
     }
@@ -163,6 +164,7 @@ struct file * ustar_finddir(VfsNode * dir, const char * name){
     if(file){
         kprintf("[TARFS]    Found %s\n", file->name);
         struct file * vfs_file = kmalloc(sizeof(struct file));
+        vfs_file->name = file->name;
         vfs_file->inode = (u64)((void*)file);
         vfs_file->size = ustar_decode_filesize(file);
         vfs_file->position = 0; 
