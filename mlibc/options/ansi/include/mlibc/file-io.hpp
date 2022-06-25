@@ -37,7 +37,7 @@ public:
 
 	int read(char *buffer, size_t max_size, size_t *actual_size);
 	int write(const char *buffer, size_t max_size, size_t *actual_size);
-	void unget(char c);
+	int unget(char c);
 
 	int update_bufmode(buffer_mode mode);
 
@@ -81,6 +81,8 @@ struct fd_file : abstract_file {
 	int fd();
 
 	int close() override;
+
+	static int parse_modestring(const char *mode);
 
 protected:
 	int determine_type(stream_type *type) override;

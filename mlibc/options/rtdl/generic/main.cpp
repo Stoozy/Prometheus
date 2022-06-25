@@ -7,6 +7,7 @@
 #include <abi-bits/auxv.h>
 #include <mlibc/debug.hpp>
 #include <mlibc/rtdl-sysdeps.hpp>
+#include <mlibc/rtdl-abi.hpp>
 #include <mlibc/stack_protector.hpp>
 #include <internal-config.h>
 #include "linker.hpp"
@@ -22,6 +23,7 @@ extern HIDDEN void *_GLOBAL_OFFSET_TABLE_[];
 extern HIDDEN Elf64_Dyn _DYNAMIC[];
 #endif
 
+bool secureRequired;
 uintptr_t *entryStack;
 frg::manual_box<ObjectRepository> initialRepository;
 frg::manual_box<Scope> globalScope;
@@ -101,7 +103,9 @@ extern "C" void *lazyRelocate(SharedObject *object, unsigned int rel_index) {
 }
 
 extern "C" [[ gnu::visibility("default") ]] void *__rtdl_allocateTcb() {
-	return allocateTcb();
+	auto tcb = allocateTcb();
+	initTlsObjects(tcb, globalScope->_objects, false);
+	return tcb;
 }
 
 extern "C" {
@@ -176,7 +180,6 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 
 	// Find the auxiliary vector by skipping args and environment.
 	auto aux = entryStack;
-
 	aux += *aux + 1; // First, we skip argc and all args.
 	__ensure(!*aux);
 	aux++;
@@ -198,12 +201,12 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 			case AT_ENTRY: entry_pointer = reinterpret_cast<void *>(*value); break;
 			case AT_EXECFN: execfn = reinterpret_cast<const char *>(*value); break;
 			case AT_RANDOM: stack_entropy = reinterpret_cast<void*>(*value); break;
+			case AT_SECURE: secureRequired = reinterpret_cast<uintptr_t>(*value); break;
 		}
 
 		aux += 2;
 	}
 	globalDebugInterface.base = reinterpret_cast<void*>(ldso_base);
-
 #else
 	auto ehdr = reinterpret_cast<Elf64_Ehdr*>(__ehdr_start);
 	phdr_pointer = reinterpret_cast<void*>((uintptr_t)ehdr->e_phoff + (uintptr_t)ehdr);
@@ -211,13 +214,12 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	phdr_count = ehdr->e_phnum;
 	entry_pointer = reinterpret_cast<void*>(ehdr->e_entry);
 #endif
-    __ensure(phdr_pointer);
+	__ensure(phdr_pointer);
 	__ensure(entry_pointer);
 
 	if(logStartup)
 		mlibc::infoLogger() << "ldso: Executable PHDRs are at " << phdr_pointer
 				<< frg::endlog;
-    
 
 	// perform the initial dynamic linking
 	initialRepository.initialize();
@@ -226,7 +228,6 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 
 	// Add the dynamic linker, as well as the exectuable to the repository.
 #ifndef MLIBC_STATIC_BUILD
-
 	auto ldso_soname = reinterpret_cast<const char *>(ldso_base + strtab_offset + soname_str);
 	auto ldso = initialRepository->injectObjectFromDts(ldso_soname,
 		frg::string<MemoryAllocator> { getAllocator() },
@@ -241,7 +242,6 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	// so we have to set the ldso path after loading both.
 	ldso->path = executableSO->interpreterPath;
 
-    mlibc::infoLogger() << "Got ldso->path" << ldso->path << frg::endlog;
 #else
 	executableSO = initialRepository->injectStaticObject(execfn,
 			frg::string<MemoryAllocator>{ execfn, getAllocator() },
@@ -276,22 +276,17 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	if(logEntryExit)
 		mlibc::infoLogger() << "Leaving ld.so, jump to "
 				<< (void *)executableSO->entry << frg::endlog;
-
 	return executableSO->entry;
 }
-
-// the layout of this structure is dictated by the ABI
-struct __abi_tls_entry {
-	SharedObject *object;
-	uint64_t offset;
-};
-
-static_assert(sizeof(__abi_tls_entry) == 16, "Bad __abi_tls_entry size");
 
 const char *lastError;
 
 extern "C" [[ gnu::visibility("default") ]] uintptr_t *__dlapi_entrystack() {
 	return entryStack;
+}
+
+extern "C" [[ gnu::visibility("default") ]] int __dlapi_secure_required() {
+	return secureRequired;
 }
 
 extern "C" [[ gnu::visibility("default") ]]

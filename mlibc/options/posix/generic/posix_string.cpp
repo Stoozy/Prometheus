@@ -29,6 +29,27 @@ char *strndup(const char *string, size_t max_size) {
 	return new_string;
 }
 
+char *stpcpy(char *__restrict dest, const char *__restrict src) {
+	auto n = strlen(src);
+	memcpy(dest, src, n + 1);
+	return dest + n;
+}
+
+char *stpncpy(char *__restrict dest, const char *__restrict src, size_t n) {
+	size_t nulls, copied, srcLen = strlen(src);
+	if (n >= srcLen) {
+		nulls = n - srcLen;
+		copied = srcLen;
+	} else {
+		nulls = 0;
+		copied = n;
+	}
+
+	memcpy(dest, src, copied);
+	memset(dest + srcLen, 0, nulls);
+	return dest + n - nulls;
+}
+
 size_t strnlen(const char *s, size_t n) {
 	size_t len = 0;
 	while(len < n && s[len])
@@ -121,7 +142,34 @@ char *strndupa(const char *, size_t) {
 	__builtin_unreachable();
 }
 
-void *memrchr(const void *, int, size_t) {
-	__ensure(!"Not implemented");
-	__builtin_unreachable();
+// This implementation was taken from musl
+void *memrchr(const void *m, int c, size_t n) {
+	const unsigned char *s = (const unsigned char *)m;
+	c = (unsigned char)c;
+	while(n--) {
+		if(s[n] == c)
+			return (void *)(s + n);
+	}
+	return 0;
+}
+
+// BSD extensions.
+// Taken from musl
+size_t strlcpy(char *d, const char *s, size_t n) {
+	char *d0 = d;
+
+	if(!n--)
+		goto finish;
+	for(; n && (*d=*s); n--, s++, d++);
+	*d = 0;
+finish:
+	return d-d0 + strlen(s);
+}
+
+size_t strlcat(char *d, const char *s, size_t n) {
+	size_t l = strnlen(d, n);
+	if(l == n) {
+		return l + strlen(s);
+	}
+	return l + strlcpy(d + l, s, n - l);
 }

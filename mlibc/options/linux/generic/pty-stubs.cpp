@@ -15,12 +15,15 @@
 int openpty(int *mfd, int *sfd, char *name, const struct termios *ios, const struct winsize *win) {
 	__ensure(!name);
 	__ensure(!ios);
-	__ensure(!win);
+
+	if (win) {
+		mlibc::infoLogger() << "mlibc: openpty ignores win argument" << frg::endlog;
+	}
 
 	// FIXME: Close the master FD if the slave open fails.
 
 	int ptmx_fd;
-	if(int e = mlibc::sys_open("/dev/ptmx", O_RDWR | O_NOCTTY, &ptmx_fd); e) {
+	if(int e = mlibc::sys_open("/dev/ptmx", O_RDWR | O_NOCTTY, 0, &ptmx_fd); e) {
 		errno = e;
 		return -1;
 	}
@@ -30,7 +33,7 @@ int openpty(int *mfd, int *sfd, char *name, const struct termios *ios, const str
 		return -1;
 
 	int pts_fd;
-	if(int e = mlibc::sys_open(spath, O_RDWR | O_NOCTTY, &pts_fd); e) {
+	if(int e = mlibc::sys_open(spath, O_RDWR | O_NOCTTY, 0, &pts_fd); e) {
 		errno = e;
 		return -1;
 	}

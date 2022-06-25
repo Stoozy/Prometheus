@@ -16,13 +16,19 @@ const int SYS_READ          = 3;
 const int SYS_WRITE         = 4;
 const int SYS_LOG_LIBC      = 5;
 const int SYS_VM_MAP        = 6;
-const int SYS_ANON_ALLOC    = 7;
+const int SYS_SEEK          = 7;
 
 
 void sys_libc_log(const char *message) {
     register int syscall asm("rsi") = SYS_LOG_LIBC;
     register const char * msg  asm("r8") = message;
-    asm("syscall");
+
+    register int r15 asm("r15");
+    asm("syscall" 
+            : "=r"(r15)  
+            : "r" (syscall), "r"(msg) 
+            : "rcx", "r11", "memory");
+
 }
 
 void sys_libc_panic() {
@@ -33,7 +39,8 @@ void sys_libc_panic() {
 }
 
 int sys_tcb_set(void *pointer) {
-    // TODO
+   
+    sys_libc_log("[mlibc]   Calling sys_tcb_set\n");
     return -1;
 }
 
@@ -47,12 +54,14 @@ int sys_anon_allocate(size_t size, void **pointer) {
 
 int sys_anon_free(void *pointer, size_t size) {
     // TODO
+    sys_libc_log("[mlibc]   Calling sys_anon_free\n");
     return 0;
 }
 
 #ifndef MLIBC_BUILDING_RTDL
 void sys_exit(int status) {
     // TODO
+    sys_libc_log("[mlibc]   Calling sys_exit\n");
     register int syscall asm("rsi") = SYS_EXIT;
     register int code asm("r8") = status;
     asm("syscall");
@@ -62,11 +71,14 @@ void sys_exit(int status) {
 
 #ifndef MLIBC_BUILDING_RTDL
 int sys_clock_get(int clock, time_t *secs, long *nanos) {
+    sys_libc_log("[mlibc]   Calling sys_clock_get\n");
     return 0;
 }
 #endif
 
-int sys_open(const char *path, int flags, int *fd) {
+int sys_open(const char *path, int flags, int mode, int *fd) {
+
+    sys_libc_log("[mlibc]   Calling sys_open\n");
     register int syscall asm ("rsi")= SYS_OPEN;
 
     register const char * r8 asm("r8") = path;
@@ -79,7 +91,7 @@ int sys_open(const char *path, int flags, int *fd) {
             : "rcx", "r11", "memory");
 
     int res = r15;
-    mlibc::infoLogger() << "[mlibc] Got vm_map return value " << res << frg::endlog;
+    mlibc::infoLogger() << "[mlibc] Sys open got fd # " << res << frg::endlog;
     *fd = r15;
 
     return 0;
@@ -94,6 +106,8 @@ int sys_close(int fd) {
 
 int sys_read(int fd, void *buf, size_t count, ssize_t *bytes_read) {
 
+    sys_libc_log("[mlibc]   Calling sys_tcb_set\n");
+
     register int syscall asm("rsi") = SYS_READ;
     register int r8 asm("r8") = fd;
     register char * r9 asm("r9") = (char*)buf;
@@ -102,7 +116,7 @@ int sys_read(int fd, void *buf, size_t count, ssize_t *bytes_read) {
     register size_t r15 asm("r15");
     asm("syscall"
             : "=r" (r15)
-            :  "r"(r8) , "r"(r9), "r"(r10)
+            : "r"(syscall), "r"(r8) , "r"(r9), "r"(r10)
             : "rcx", "r11");
 
 
@@ -114,6 +128,10 @@ int sys_read(int fd, void *buf, size_t count, ssize_t *bytes_read) {
 
 #ifndef MLIBC_BUILDING_RTDL
 int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written) {
+
+
+    sys_libc_log("[mlibc]   Calling sys_write\n");
+
     register int syscall asm("rsi") = SYS_WRITE;
     register int _fd asm("r8") = fd;
     register char * _buf asm("r9") = (char*)buf;
@@ -128,14 +146,32 @@ int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written) {
 
 
 int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
-    // TODO
+    sys_libc_log("[mlibc]   Calling sys_seek\n");
     
+    register int syscall asm("rsi") = SYS_SEEK;
+
+    register int r8 asm("r8") = fd;
+    register off_t r9 asm("r9") = offset;
+    register int r10 asm("r10") = whence;
+    register int r15 asm("r15");
+
+    asm ("syscall"
+            : "=r" (r15)
+            : "r"(syscall), "r"(r8), "r"(r9) , "r"(r10)
+            : "rcx", "r11");
+
+
+    *new_offset = r15;
+    mlibc::infoLogger() << "[mlibc] SYS_SEEK new offset " << *new_offset << " bytes" <<  frg::endlog;
+
     return 0;
 }
 
 int sys_vm_map(void *hint, size_t size, int prot, int flags,
 		int fd, off_t offset, void **window) {
     __ensure(flags & MAP_ANONYMOUS);
+
+    sys_libc_log("[mlibc]   Calling sys_vm_map\n");
 
     register int rsi asm("rsi") = SYS_VM_MAP;
     register void* r8 asm("r8") = hint;
@@ -149,47 +185,36 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags,
 
     asm volatile("syscall" 
             : "=r"(r15) 
-            : "r" (rsi), "r" (r8),  
+            :   "r" (rsi), "r" (r8),  
                 "r" (r9), "r" (r10) , 
                 "r" (r12) , "r" (r13), "r" (r14)
             : "rcx", "r11", "memory");
 
     *window = (void*)r15;
-    mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window << frg::endlog;
+    //mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window << frg::endlog;
 
     return 0;
 }
 
 int sys_vm_unmap(void *pointer, size_t size) {
     // TODO
+    sys_libc_log("[mlibc]   Calling sys_vm_unmap\n");
     return sys_anon_free(pointer, size);
 }
 
-int sys_futex_wait(int *pointer, int expected, const struct timespec *time) {
-    // TODO
-    //uint64_t err;
-    //asm volatile ("syscall"
-    //        : "=d"(err)
-    //        : "a"(66), "D"(pointer), "S"(expected)
-    //        : "rcx", "r11");
 
-    //if (err) {
-    //    return -1;
-    //}
+int sys_futex_wait(int *pointer, int expected, const struct timespec *time) {
+
+    sys_libc_log("[mlibc]   Calling sys_vm_unmap\n");
+    // TODO
 
 	return 0;
 }
 
 int sys_futex_wake(int *pointer) {
-    //uint64_t err;
-    //asm volatile ("syscall"
-    //        : "=d"(err)
-    //        : "a"(65), "D"(pointer)
-    //        : "rcx", "r11");
 
-    //if (err) {
-    //    return -1;
-    //}
+    sys_libc_log("[mlibc]   Calling sys_futex_wake\n");
+
 
 	return 0;
 }
@@ -239,30 +264,21 @@ int sys_execve(const char *path, char *const argv[], char *const envp[]) {
     int ret;
     int sys_errno;
 
-    asm volatile ("syscall"
-            : "=a"(ret), "=d"(sys_errno)
-            : "a"(59), "D"(path), "S"(argv), "d"(envp)
-            : "rcx", "r11");
-
-    if (sys_errno != 0)
-        return sys_errno;
-
+    /* TODO */
     return 0;
 }
 
 pid_t sys_getpid() {
     pid_t pid;
-    asm volatile ("syscall" : "=a"(pid)
-            : "a"(5)
-            : "rcx", "r11", "rdx");
+
+    /* TODO */
     return pid;
 }
 
 pid_t sys_getppid() {
     pid_t ppid;
-    asm volatile ("syscall" : "=a"(ppid)
-            : "a"(14)
-            : "rcx", "r11", "rdx");
+
+    /* TODO */
     return ppid;
 }
 

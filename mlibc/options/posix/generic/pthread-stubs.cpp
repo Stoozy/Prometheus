@@ -732,6 +732,16 @@ int pthread_mutexattr_setpshared(pthread_mutexattr_t *, int) {
 	__builtin_unreachable();
 }
 
+int pthread_mutexattr_getprotocol(const pthread_mutexattr_t *__restrict, int *__restrict) {
+	__ensure(!"Not implemented");
+	__builtin_unreachable();
+}
+
+int pthread_mutexattr_setprotocol(pthread_mutexattr_t *, int) {
+	__ensure(!"Not implemented");
+	__builtin_unreachable();
+}
+
 // pthread_mutex functions
 int pthread_mutex_init(pthread_mutex_t *__restrict mutex,
 		const pthread_mutexattr_t *__restrict attr) {
@@ -820,17 +830,13 @@ int pthread_mutex_trylock(pthread_mutex_t *mutex) {
 		}
 	} else {
 		// If this (recursive) mutex is already owned by us, increment the recursion level.
-        if((expected & mutex_owner_mask) == this_tid()) {
-            if(!(mutex->__mlibc_flags & mutexRecursive)) {
-                if (mutex->__mlibc_flags & mutexErrorCheck)
-                    return EDEADLK;
-                else
-                    mlibc::panicLogger() << "mlibc: pthread_mutex deadlock detected!"
-                        << frg::endlog;
-            }
-            ++mutex->__mlibc_recursion;
-            return 0;
-        }
+		if((expected & mutex_owner_mask) == this_tid()) {
+			if(!(mutex->__mlibc_flags & mutexRecursive)) {
+				return EBUSY;
+			}
+			++mutex->__mlibc_recursion;
+			return 0;
+		}
 	}
 
 	return EBUSY;

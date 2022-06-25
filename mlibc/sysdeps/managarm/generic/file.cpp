@@ -25,8 +25,10 @@
 #include <sys/timerfd.h>
 #include <sys/signalfd.h>
 #include <sys/sysmacros.h>
+#include <linux/kd.h>
 #include <linux/input.h>
 #include <linux/cdrom.h>
+#include <linux/vt.h>
 #include <drm/drm.h>
 #include <drm/drm_fourcc.h>
 
@@ -462,6 +464,8 @@ int sys_fcntl(int fd, int request, va_list args, int *result) {
 		resp.ParseFromArray(recv_resp->data, recv_resp->length);
 		if(resp.error() == managarm::posix::Errors::NO_SUCH_FD)
 			return EBADF;
+		else if(resp.error() == managarm::posix::Errors::ILLEGAL_ARGUMENTS)
+			return EINVAL;
 		__ensure(resp.error() == managarm::posix::Errors::SUCCESS);
 		*result = static_cast<int>(resp.error());
 		return 0;
@@ -632,7 +636,7 @@ int sys_fcntl(int fd, int request, va_list args, int *result) {
 }
 
 int sys_open_dir(const char *path, int *handle) {
-	return sys_open(path, 0, handle);
+	return sys_open(path, 0, 0, handle);
 }
 
 int sys_read_entries(int fd, void *buffer, size_t max_size, size_t *bytes_read) {
@@ -720,6 +724,8 @@ int sys_ttyname(int fd, char *buf, size_t size) {
 	managarm::posix::SvrResponse<MemoryAllocator> resp(getSysdepsAllocator());
 	resp.ParseFromArray(recv_resp->data, recv_resp->length);
 	if(resp.error() ==  managarm::posix::Errors::BAD_FD) {
+		return EBADF;
+	}else if(resp.error() == managarm::posix::Errors::NOT_A_TTY) {
 		return ENOTTY;
 	}else{
 		__ensure(resp.error() == managarm::posix::Errors::SUCCESS);
@@ -2733,10 +2739,14 @@ int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 
 		managarm::fs::SvrResponse<MemoryAllocator> resp(getSysdepsAllocator());
 		resp.ParseFromArray(recv_resp.data(), recv_resp.length());
-		__ensure(resp.error() == managarm::fs::Errors::SUCCESS);
 
-		*result = resp.result();
-		return 0;
+		if(resp.error() == managarm::fs::Errors::ILLEGAL_ARGUMENT) {
+			return EINVAL;
+		}else{
+			__ensure(resp.error() == managarm::fs::Errors::SUCCESS);
+			*result = resp.result();
+			return 0;
+		}
 	}
 	case DRM_IOCTL_MODE_CURSOR: {
 		auto param = reinterpret_cast<drm_mode_cursor *>(arg);
@@ -2904,6 +2914,16 @@ int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 		resp.ParseFromArray(recv_resp.data(), recv_resp.length());
 
 		*result = resp.result();
+		return 0;
+	}
+	case DRM_IOCTL_MODE_LIST_LESSEES: {
+		mlibc::infoLogger() << "\e[35mmlibc: DRM_IOCTL_MODE_LIST_LESSEES"
+				" is not implemented correctly\e[39m" << frg::endlog;
+		return EINVAL;
+	}
+	case DRM_IOCTL_MODE_SETGAMMA: {
+		mlibc::infoLogger() << "\e[35mmlibc: DRM_IOCTL_MODE_SETGAMMA"
+				" is not implemented correctly\e[39m" << frg::endlog;
 		return 0;
 	}
 	case TCGETS: {
@@ -3576,6 +3596,46 @@ int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 
 		*result = resp.result();
 		return 0;
+	}else if(request == KDSETMODE) {
+		auto param = reinterpret_cast<unsigned int *>(arg);
+		mlibc::infoLogger() << "\e[35mmlibc: KD_SETMODE(" << frg::hex_fmt(param) << ") is a no-op" << frg::endlog;
+
+		*result = 0;
+		return 0;
+	}else if(request == KDGETMODE) {
+		auto param = reinterpret_cast<unsigned int *>(arg);
+		mlibc::infoLogger() << "\e[35mmlibc: KD_GETMODE is a no-op" << frg::endlog;
+		*param = 0;
+
+		*result = 0;
+		return 0;
+	}else if(request == KDSKBMODE) {
+		auto param = reinterpret_cast<long>(arg);
+		mlibc::infoLogger() << "\e[35mmlibc: KD_SKBMODE(" << frg::hex_fmt(param) << ") is a no-op" << frg::endlog;
+
+		*result = 0;
+		return 0;
+	}else if(request == VT_SETMODE) {
+		// auto param = reinterpret_cast<struct vt_mode *>(arg);
+		mlibc::infoLogger() << "\e[35mmlibc: VT_SETMODE is a no-op" << frg::endlog;
+
+		*result = 0;
+		return 0;
+	}else if(request == VT_GETSTATE) {
+		auto param = reinterpret_cast<struct vt_stat *>(arg);
+
+		param->v_active = 0;
+		param->v_signal = 0;
+		param->v_state = 0;
+
+		mlibc::infoLogger() << "\e[35mmlibc: VT_GETSTATE is a no-op" << frg::endlog;
+
+		*result = 0;
+		return 0;
+	}else if(request == VT_ACTIVATE || request == VT_WAITACTIVE) {
+		mlibc::infoLogger() << "\e[35mmlibc: VT_ACTIVATE/VT_WAITACTIVE are no-ops" << frg::endlog;
+		*result = 0;
+		return 0;
 	}
 
 	mlibc::infoLogger() << "mlibc: Unexpected ioctl with"
@@ -3586,7 +3646,7 @@ int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 	__builtin_unreachable();
 }
 
-int sys_open(const char *path, int flags, int *fd) {
+int sys_open(const char *path, int flags, mode_t mode, int *fd) {
 	return sys_openat(AT_FDCWD, path, flags, fd);
 }
 
@@ -3605,6 +3665,8 @@ int sys_openat(int dirfd, const char *path, int flags, int *fd) {
 
 	if(flags & __MLIBC_O_CLOEXEC)
 		proto_flags |= managarm::posix::OpenFlags::OF_CLOEXEC;
+	if(flags & __MLIBC_O_NOCTTY)
+		proto_flags |= managarm::posix::OpenFlags::OF_NOCTTY;
 
 	if(flags & __MLIBC_O_RDONLY)
 		proto_flags |= managarm::posix::OpenFlags::OF_RDONLY;
@@ -3913,6 +3975,56 @@ int sys_pread(int fd, void *buf, size_t n, off_t off, ssize_t *bytes_read) {
 		__ensure(resp.error() == managarm::fs::Errors::SUCCESS);
 		HEL_CHECK(recv_data->error);
 		*bytes_read = recv_data->length;
+		return 0;
+	}
+}
+
+int sys_pwrite(int fd, const void *buf, size_t n, off_t off, ssize_t *bytes_written) {
+	SignalGuard sguard;
+
+	auto handle = getHandleForFd(fd);
+	if (!handle)
+		return EBADF;
+
+	managarm::fs::CntRequest<MemoryAllocator> req(getSysdepsAllocator());
+	req.set_req_type(managarm::fs::CntReqType::PT_PWRITE);
+	req.set_fd(fd);
+	req.set_size(n);
+	req.set_offset(off);
+
+	frg::string<MemoryAllocator> ser(getSysdepsAllocator());
+	req.SerializeToString(&ser);
+
+	auto [offer, send_head, send_tail, imbue_creds, recv_resp] = exchangeMsgsSync(
+		handle,
+		helix_ng::offer(
+			helix_ng::sendBragiHeadTail(req, getSysdepsAllocator()),
+			helix_ng::imbueCredentials(),
+			helix_ng::recvInline()
+		)
+	);
+
+	HEL_CHECK(offer.error());
+	HEL_CHECK(send_head.error());
+	HEL_CHECK(imbue_creds.error());
+	HEL_CHECK(recv_resp.error());
+
+	managarm::fs::SvrResponse<MemoryAllocator> resp(getSysdepsAllocator());
+	resp.ParseFromArray(recv_resp.data(), recv_resp.length());
+	if(resp.error() == managarm::fs::Errors::ILLEGAL_ARGUMENT) {
+		return EINVAL;
+	}else if(resp.error() == managarm::fs::Errors::WOULD_BLOCK) {
+		return EAGAIN;
+	}else if(resp.error() == managarm::fs::Errors::NO_SPACE_LEFT) {
+		return ENOSPC;
+	}else if(resp.error() == managarm::fs::Errors::SEEK_ON_PIPE) {
+		return ESPIPE;
+	}else if(resp.error() == managarm::fs::Errors::ILLEGAL_OPERATION_TARGET) {
+		return EINVAL;
+	}else{
+		__ensure(resp.error() == managarm::fs::Errors::SUCCESS);
+		HEL_CHECK(send_tail.error());
+		*bytes_written = n;
 		return 0;
 	}
 }
@@ -4303,8 +4415,12 @@ int sys_ftruncate(int fd, size_t size) {
 
 	managarm::fs::SvrResponse<MemoryAllocator> resp(getSysdepsAllocator());
 	resp.ParseFromArray(recv_resp->data, recv_resp->length);
-	__ensure(resp.error() == managarm::fs::Errors::SUCCESS);
-	return 0;
+	if(resp.error() == managarm::fs::Errors::ILLEGAL_OPERATION_TARGET) {
+		return EINVAL;
+	} else {
+		__ensure(resp.error() == managarm::fs::Errors::SUCCESS);
+		return 0;
+	}
 }
 
 int sys_fallocate(int fd, off_t offset, size_t size) {
@@ -4671,6 +4787,29 @@ int sys_memfd_create(const char *name, int flags, int *fd) {
 	*fd = resp.fd();
 
 	__ensure(resp.error() == managarm::posix::Errors::SUCCESS);
+	return 0;
+}
+
+int sys_uname(struct utsname *buf) {
+	__ensure(buf);
+	mlibc::infoLogger() << "\e[31mmlibc: uname() returns static information\e[39m" << frg::endlog;
+	strcpy(buf->sysname, MLIBC_SYSTEM_NAME);
+	strcpy(buf->nodename, "?");
+	strcpy(buf->release, "?");
+	strcpy(buf->version, "?");
+#if defined(__x86_64__)
+	strcpy(buf->machine, "x86_64");
+#elif defined (__aarch64__)
+	strcpy(buf->machine, "aarch64");
+#else
+#	error Unknown architecture
+#endif
+
+	return 0;
+}
+
+int sys_madvise(void *addr, size_t length, int advice) {
+	mlibc::infoLogger() << "mlibc: sys_madvise is a stub!" << frg::endlog;
 	return 0;
 }
 

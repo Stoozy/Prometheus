@@ -11,6 +11,7 @@
 #include "cxx-syscall.hpp"
 
 #define STUB_ONLY { __ensure(!"STUB_ONLY function was called"); __builtin_unreachable(); }
+#define UNUSED(x) (void)(x);
 
 #define NR_read 0
 #define NR_write 1
@@ -24,14 +25,25 @@
 #define NR_sigaction 13
 #define NR_rt_sigprocmask 14
 #define NR_ioctl 16
+#define NR_access 21
 #define NR_pipe 22
 #define NR_select 23
 #define NR_nanosleep 35
+#define NR_setitimer 38
 #define NR_getpid 39
 #define NR_socket 41
 #define NR_connect 42
+#define NR_accept 43
 #define NR_sendmsg 46
 #define NR_recvmsg 47
+#define NR_shutdown 48
+#define NR_bind 49
+#define NR_listen 50
+#define NR_getsockname 51
+#define NR_getpeername 52
+#define NR_socketpair 53
+#define NR_setsockopt 54
+#define NR_getsockopt 55
 #define NR_clone 56
 #define NR_fork 57
 #define NR_execve 59
@@ -46,20 +58,26 @@
 #define NR_unlink 87
 #define NR_symlink 88
 #define NR_readlink 89
+#define NR_getrlimit 97
 #define NR_getuid 102
 #define NR_getgid 104
 #define NR_geteuid 107
 #define NR_getegid 108
 #define NR_rt_sigsuspend 130
 #define NR_sigaltstack 131
+#define NR_getpriority 140
+#define NR_setpriority 141
 #define NR_arch_prctl 158
+#define NR_setrlimit 160
 #define NR_sys_futex 202
 #define NR_clock_gettime 228
 #define NR_exit_group 231
 #define NR_tgkill 234
+#define NR_mkdirat 258
 #define NR_newfstatat 262
 #define NR_unlinkat 263
 #define NR_pselect6 270
+#define NR_accept4 288
 #define NR_dup3 292
 #define NR_pipe2 293
 
@@ -95,9 +113,8 @@ int sys_anon_free(void *pointer, size_t size) {
 	return sys_vm_unmap(pointer, size);
 }
 
-int sys_open(const char *path, int flags, int *fd) {
-        // TODO: pass mode in sys_open() sysdep
-	auto ret = do_cp_syscall(NR_open, path, flags, 0666);
+int sys_open(const char *path, int flags, mode_t mode, int *fd) {
+	auto ret = do_cp_syscall(NR_open, path, flags, mode);
 	if(int e = sc_error(ret); e)
 		return e;
 	*fd = sc_int_result<int>(ret);
@@ -151,7 +168,12 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags,
 	*window = sc_ptr_result<void>(ret);
 	return 0;
 }
-int sys_vm_unmap(void *pointer, size_t size) STUB_ONLY
+
+int sys_vm_unmap(void *pointer, size_t size) {
+	UNUSED(pointer);
+	UNUSED(size);
+	STUB_ONLY
+}
 
 // All remaining functions are disabled in ldso.
 #ifndef MLIBC_BUILDING_RTDL
@@ -270,7 +292,7 @@ int sys_sleep(time_t *secs, long *nanos) {
 		.tv_sec = *secs,
 		.tv_nsec = *nanos
 	};
-	struct timespec rem = {0};
+	struct timespec rem = {};
 
 	auto ret = do_cp_syscall(NR_nanosleep, &req, &rem);
         if (int e = sc_error(ret); e)
@@ -296,6 +318,15 @@ int sys_isatty(int fd) {
         return 1;
 }
 
+int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
+	auto ret = do_syscall(NR_ioctl, fd, request, arg);
+	if (int e = sc_error(ret); e)
+		return e;
+	if (result)
+		*result = sc_int_result<unsigned long>(ret);
+	return 0;
+}
+
 int sys_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
         auto ret = do_cp_syscall(NR_connect, sockfd, addr, addrlen);
         if (int e = sc_error(ret); e)
@@ -304,7 +335,7 @@ int sys_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 }
 
 int sys_pselect(int nfds, fd_set *readfds, fd_set *writefds,
-                fd_set *exceptfds, struct timeval *timeout, const sigset_t sigmask, int *num_events) {
+                fd_set *exceptfds, const struct timespec *timeout, const sigset_t *sigmask, int *num_events) {
         // The Linux kernel really wants 7 arguments, even tho this is not supported
         // To fix that issue, they use a struct as the last argument.
         // See the man page of pselect and the glibc source code
@@ -393,6 +424,88 @@ int sys_before_cancellable_syscall(ucontext_t *uct) {
 
 int sys_tgkill(int tgid, int tid, int sig) {
 	auto ret = do_syscall(NR_tgkill, tgid, tid, sig);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_tcgetattr(int fd, struct termios *attr) {
+	auto ret = do_syscall(NR_ioctl, fd, TCGETS, attr);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_tcsetattr(int fd, int optional_action, const struct termios *attr) {
+	int req;
+
+	switch (optional_action) {
+		case TCSANOW: req = TCSETS; break;
+		case TCSADRAIN: req = TCSETSW; break;
+		case TCSAFLUSH: req = TCSETSF; break;
+		default: return EINVAL;
+	}
+
+	auto ret = do_syscall(NR_ioctl, fd, req, attr);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_access(const char *path, int mode) {
+	auto ret = do_syscall(NR_access, path, mode);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_accept(int fd, int *newfd, struct sockaddr *addr_ptr, socklen_t *addr_length) {
+	auto ret = do_syscall(NR_accept, fd, addr_ptr, addr_length, 0, 0, 0);
+	if (int e = sc_error(ret); e)
+		return e;
+	*newfd = fd;
+	return 0;
+}
+
+int sys_bind(int fd, const struct sockaddr *addr_ptr, socklen_t addr_length) {
+	auto ret = do_syscall(NR_bind, fd, addr_ptr, addr_length, 0, 0, 0);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_setsockopt(int fd, int layer, int number, const void *buffer, socklen_t size) {
+	auto ret = do_syscall(NR_setsockopt, fd, layer, number, buffer, size, 0);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_listen(int fd, int backlog) {
+	auto ret = do_syscall(NR_listen, fd, backlog, 0, 0, 0, 0);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_getpriority(int which, id_t who, int *value) {
+	auto ret = do_syscall(NR_getpriority, which, who);
+	if (int e = sc_error(ret); e) {
+		return e;
+	}
+	*value = 20 - sc_int_result<int>(ret);
+	return 0;
+}
+
+int sys_setpriority(int which, id_t who, int prio) {
+	auto ret = do_syscall(NR_setpriority, which, who, prio);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_setitimer(int which, const struct itimerval *new_value, struct itimerval *old_value) {
+	auto ret = do_syscall(NR_setitimer, which, new_value, old_value);
 	if (int e = sc_error(ret); e)
 		return e;
 	return 0;
@@ -487,8 +600,15 @@ int sys_sigaltstack(const stack_t *ss, stack_t *oss) {
 	return 0;
 }
 
-int sys_mkdir(const char *path) {
-	auto ret = do_syscall(NR_mkdir, path, S_IRWXU | S_IRWXG | S_IRWXO);
+int sys_mkdir(const char *path, mode_t mode) {
+	auto ret = do_syscall(NR_mkdir, path, mode);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_mkdirat(int dirfd, const char *path, mode_t mode) {
+	auto ret = do_syscall(NR_mkdirat, dirfd, path, mode);
 	if (int e = sc_error(ret); e)
 		return e;
 	return 0;
@@ -520,6 +640,20 @@ int sys_readlink(const char *path, void *buf, size_t bufsiz, ssize_t *len) {
 	if (int e = sc_error(ret); e)
 		return e;
 	*len = sc_int_result<ssize_t>(ret);
+	return 0;
+}
+
+int sys_getrlimit(int resource, struct rlimit *limit) {
+	auto ret = do_syscall(NR_getrlimit, resource, limit);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int sys_setrlimit(int resource, const struct rlimit *limit) {
+	auto ret = do_syscall(NR_setrlimit, resource, limit);
+	if (int e = sc_error(ret); e)
+		return e;
 	return 0;
 }
 

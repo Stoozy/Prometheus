@@ -32,6 +32,11 @@ struct in6_addr {
 #define s6_addr16 __in6_union.__s6_addr16
 #define s6_addr32 __in6_union.__s6_addr32
 
+struct in6_pktinfo {
+	struct in6_addr ipi6_addr;
+	uint32_t ipi6_ifindex;
+};
+
 struct sockaddr_in6 {
 	sa_family_t sin6_family;
 	in_port_t sin6_port;
@@ -59,6 +64,12 @@ struct ip_mreq_source {
 	struct in_addr imr_sourceaddr;
 };
 
+struct ip_mreqn {
+	struct in_addr imr_multiaddr;
+	struct in_addr imr_address;
+	int imr_ifindex;
+};
+
 struct in_pktinfo {
 	unsigned int ipi_ifindex;
 	struct in_addr ipi_spec_dst;
@@ -84,6 +95,8 @@ struct group_source_req {
 #define IPPROTO_RAW 4
 #define IPPROTO_TCP 5
 #define IPPROTO_UDP 6
+#define IPPROTO_IGMP 7
+#define IPPROTO_IPIP 8
 #define IPPROTO_ESP 50
 #define IPPROTO_AH 51
 
@@ -103,28 +116,39 @@ struct group_source_req {
 #define IPV6_MULTICAST_LOOP 5
 #define IPV6_UNICAST_HOPS 6
 #define IPV6_V6ONLY 7
+#define IPV6_PMTUDISC_DONT 8
+#define IPV6_PMTUDISC_DO 9
+#define IPV6_MTU_DISCOVER 23
 #define IPV6_RECVERR 25
 #define IPV6_RECVPKTINFO 49
 #define IPV6_PKTINFO 50
 #define IPV6_RECVHOPLIMIT 51
 #define IPV6_HOPLIMIT 52
+#define IPV6_TCLASS 67
 
 #define IP_TOS 1
 #define IP_TTL 2
 #define IP_OPTIONS 4
 #define IP_PKTINFO 8
+#define IP_MTU_DISCOVER 10
 #define IP_RECVERR 11
 #define IP_RECVTTL 12
 
+#define IP_DEFAULT_MULTICAST_TTL  1
 #define IP_MULTICAST_IF           32
 #define IP_MULTICAST_TTL          33
 #define IP_MULTICAST_LOOP         34
 #define IP_ADD_MEMBERSHIP         35
 #define IP_DROP_MEMBERSHIP        36
+#define IP_UNBLOCK_SOURCE         37
+#define IP_BLOCK_SOURCE           38
 #define IP_ADD_SOURCE_MEMBERSHIP  39
 #define IP_DROP_SOURCE_MEMBERSHIP 40
 #define MCAST_JOIN_SOURCE_GROUP   46
 #define MCAST_LEAVE_SOURCE_GROUP  47
+
+#define IP_PMTUDISC_DONT 0
+#define IP_PMTUDISC_DO   2
 
 #define IPV6_ADD_MEMBERSHIP  IPV6_JOIN_GROUP
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP

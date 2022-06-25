@@ -1,10 +1,12 @@
 ansi_test_cases = [
+	'alloc',
 	'sscanf',
 	'sprintf',
 	'snprintf',
 	'utf8',
 	'strtol',
 	'abs',
+	'longjmp',
 	'strverscmp',
 	'strftime',
 	'strchr',
@@ -12,17 +14,23 @@ ansi_test_cases = [
 	'wcsrtombs',
 	'wmemcmp',
 	'time',
+	'timegm',
+	'ungetc',
 	'wcsdup',
-	'wcsncasecmp'
+	'wcsncasecmp',
+	'fopen'
 ]
 
 bsd_test_cases = [
-	'ns_get_put'
+	'ns_get_put',
+	'reallocarray',
+	'strl'
 ]
 
 posix_test_cases = [
 	'inet_ntop',
 	'inet_pton',
+	'access',
 	'pthread_rwlock',
 	'pthread_cond',
 	'pthread_create',
@@ -31,7 +39,9 @@ posix_test_cases = [
 	'pthread_cleanup',
 	'pthread_kill',
 	'pthread_key',
+	'pthread_thread_local',
 	'pwd',
+	'fdopen',
 	'getaddrinfo',
 	'getdelim',
 	'getnameinfo',
@@ -39,6 +49,7 @@ posix_test_cases = [
 	'getservbyport',
 	'grp',
 	'dprintf',
+	'posix_memalign',
 	'posix_spawn',
 	'index',
 	'rindex',
@@ -48,9 +59,17 @@ posix_test_cases = [
 	'system', # This test should be in the ANSI tests, but it depends on sys/wait.h
 	'sigsuspend',
 	'sigaltstack',
+	'string',
 	'realpath',
 	'ffs',
-	'getcwd'
+	'getcwd',
+	'memrchr',
+	'wordexp',
+	'rlimits',
+	'accept4',
+	'setpriority',
+	'alarm',
+	'timer'
 ]
 
 posix_fail_test_cases = [

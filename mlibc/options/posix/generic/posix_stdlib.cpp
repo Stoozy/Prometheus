@@ -158,9 +158,8 @@ int mkostemp(char *pattern, int flags) {
 //		mlibc::infoLogger() << "mlibc: mkstemp candidate is "
 //				<< (const char *)pattern << frg::endlog;
 
-		// TODO: Add a mode argument to sys_open().
 		int fd;
-		if(int e = mlibc::sys_open(pattern, O_RDWR | O_CREAT | O_EXCL | flags, /*S_IRUSR | S_IWUSR,*/ &fd); !e) {
+		if(int e = mlibc::sys_open(pattern, O_RDWR | O_CREAT | O_EXCL | flags, S_IRUSR | S_IWUSR, &fd); !e) {
 			return fd;
 		}else if(e != EEXIST) {
 			errno = e;
@@ -194,7 +193,7 @@ char *mkdtemp(char *pattern) {
 	// TODO: Do an exponential search.
 	for(size_t i = 0; i < 999999; i++) {
 		__ensure(sprintf(pattern + (n - 6), "%06zu", i) == 6);
-		if(int e = mlibc::sys_mkdir(pattern); !e) {
+		if(int e = mlibc::sys_mkdir(pattern, S_IRWXU); !e) {
 			return pattern;
 		}else if(e != EEXIST) {
 			errno = e;
@@ -429,7 +428,7 @@ char *ptsname(int fd) {
 
 int posix_openpt(int flags) {
 	int fd;
-	if(int e = mlibc::sys_open("/dev/ptmx", flags, &fd); e) {
+	if(int e = mlibc::sys_open("/dev/ptmx", flags, 0, &fd); e) {
 		errno = e;
 		return -1;
 	}
@@ -470,8 +469,25 @@ int getloadavg(double *, int) {
 	__builtin_unreachable();
 }
 
+extern "C" int __dlapi_secure_required(void); 
+
 char *secure_getenv(const char *name) {
-	// We don't have a secure execution environment.
-	mlibc::infoLogger() << "mlibc: Secure environment setting is ignored, falling back to unsafe default" << frg::endlog;
-	return getenv(name);
+	if (__dlapi_secure_required())
+		return NULL;
+	else
+		return getenv(name);
+}
+
+void *reallocarray(void *ptr, size_t m, size_t n) {
+	if(n && m > -1 / n) {
+		errno = ENOMEM;
+		return 0;
+	}
+
+	return realloc(ptr, m * n);
+}
+
+char *canonicalize_file_name(const char *) {
+	__ensure(!"Not implemented");
+	__builtin_unreachable();
 }

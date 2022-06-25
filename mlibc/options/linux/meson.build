@@ -22,6 +22,8 @@ libc_sources += files(
 	'generic/utmpx.cpp',
 	'generic/linux-unistd.cpp',
 	'generic/malloc.cpp',
+	'generic/sys-fsuid.cpp',
+	'generic/ifaddrs.cpp',
 )
 
 if not no_headers
@@ -45,6 +47,10 @@ if not no_headers
 		subdir: 'net'
 	)
 	install_headers(
+		'include/netpacket/packet.h',
+		subdir: 'netpacket'
+	)
+	install_headers(
 		'include/sys/epoll.h',
 		'include/sys/inotify.h',
 		'include/sys/mount.h',
@@ -58,6 +64,7 @@ if not no_headers
 		'include/sys/timerfd.h',
 		'include/sys/eventfd.h',
 		'include/sys/reboot.h',
+		'include/sys/fsuid.h',
 		subdir: 'sys'
 	)
 endif

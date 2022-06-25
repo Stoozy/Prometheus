@@ -18,6 +18,7 @@
 #include <stdarg.h>
 #include <sys/socket.h>
 #include <sys/resource.h>
+#include <sys/utsname.h>
 #include <sys/select.h>
 #include <sys/statvfs.h>
 #include <sys/statfs.h>
@@ -38,7 +39,7 @@ int sys_futex_wake(int *pointer);
 [[noreturn, gnu::weak]] void sys_thread_exit();
 int sys_clock_get(int clock, time_t *secs, long *nanos);
 
-int sys_open(const char *pathname, int flags, int *fd);
+int sys_open(const char *pathname, int flags, mode_t mode, int *fd);
 [[gnu::weak]] int sys_flock(int fd, int options);
 
 [[gnu::weak]] int sys_open_dir(const char *path, int *handle);
@@ -49,6 +50,7 @@ int sys_read(int fd, void *buf, size_t count, ssize_t *bytes_read);
 
 int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written);
 [[gnu::weak]] int sys_pread(int fd, void *buf, size_t n, off_t off, ssize_t *bytes_read);
+[[gnu::weak]] int sys_pwrite(int fd, const void *buf, size_t n, off_t off, ssize_t *bytes_read);
 
 int sys_seek(int fd, off_t offset, int whence, off_t *new_offset);
 int sys_close(int fd);
@@ -97,11 +99,14 @@ int sys_close(int fd);
 		fd_set *except_set, const struct timespec *timeout, const sigset_t *sigmask, int *num_events);
 [[gnu::weak]] int sys_getrusage(int scope, struct rusage *usage);
 [[gnu::weak]] int sys_getrlimit(int resource, struct rlimit *limit);
+[[gnu::weak]] int sys_setrlimit(int resource, const struct rlimit *limit);
+[[gnu::weak]] int sys_getpriority(int which, id_t who, int *value);
+[[gnu::weak]] int sys_setpriority(int which, id_t who, int prio);
 [[gnu::weak]] int sys_getcwd(char *buffer, size_t size);
 [[gnu::weak]] int sys_chdir(const char *path);
 [[gnu::weak]] int sys_fchdir(int fd);
 [[gnu::weak]] int sys_chroot(const char *path);
-[[gnu::weak]] int sys_mkdir(const char *path);
+[[gnu::weak]] int sys_mkdir(const char *path, mode_t mode);
 [[gnu::weak]] int sys_mkdirat(int dirfd, const char *path, mode_t mode);
 [[gnu::weak]] int sys_link(const char *old_path, const char *new_path);
 [[gnu::weak]] int sys_linkat(int olddirfd, const char *old_path, int newdirfd, const char *new_path, int flags);
@@ -147,7 +152,7 @@ int sys_vm_unmap(void *pointer, size_t size);
 [[gnu::weak]] int sys_sigaction(int, const struct sigaction *__restrict,
 		struct sigaction *__restrict);
 [[gnu::weak]] int sys_kill(int, int);
-[[gnu::weak]] int sys_accept(int fd, int *newfd);
+[[gnu::weak]] int sys_accept(int fd, int *newfd, struct sockaddr *addr_ptr, socklen_t *addr_length);
 [[gnu::weak]] int sys_bind(int fd, const struct sockaddr *addr_ptr, socklen_t addr_length);
 [[gnu::weak]] int sys_connect(int fd, const struct sockaddr *addr_ptr, socklen_t addr_length);
 [[gnu::weak]] int sys_sockname(int fd, struct sockaddr *addr_ptr, socklen_t max_addr_length,
@@ -169,9 +174,11 @@ int sys_vm_unmap(void *pointer, size_t size);
 [[gnu::weak]] int sys_setgroups(size_t size, const gid_t *list);
 [[gnu::weak]] int sys_statfs(const char *path, struct statfs *buf);
 [[gnu::weak]] int sys_memfd_create(const char *name, int flags, int *fd);
+[[gnu::weak]] int sys_madvise(void *addr, size_t length, int advice);
 
 [[gnu::weak]] int sys_getitimer(int which, struct itimerval *curr_value);
 [[gnu::weak]] int sys_setitimer(int which, const struct itimerval *new_value, struct itimerval *old_value);
+[[gnu::weak]] int sys_uname(struct utsname *buf);
 
 } //namespace mlibc
 

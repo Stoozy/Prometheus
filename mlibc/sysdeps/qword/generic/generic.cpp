@@ -122,7 +122,7 @@ int sys_clock_get(int clock, time_t *secs, long *nanos) {
 }
 #endif
 
-int sys_open(const char *path, int flags, int *fd) {
+int sys_open(const char *path, int flags, mode_t mode, int *fd) {
     int ret;
     int sys_errno;
 
@@ -213,9 +213,7 @@ int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
 int sys_vm_map(void *hint, size_t size, int prot, int flags,
 		int fd, off_t offset, void **window) {
     __ensure(flags & MAP_ANONYMOUS);
-
     void *res;
-
     size_t size_in_pages = (size + 4096 - 1) / 4096;
     asm volatile ("syscall" : "=a"(res)
             : "a"(6), "D"(hint), "S"(size_in_pages)
@@ -292,7 +290,7 @@ int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags, struct stat
 		return do_fstat(fd, statbuf);
 	} else if (fsfdt == fsfd_target::path) {
 _stat:
-		int e = sys_open(path, 0/*O_RDONLY*/, &fd);
+		int e = sys_open(path, 0/*O_RDONLY*/, 0, &fd);
 		if (e)
 			return e;
 		e = do_fstat(fd, statbuf);
@@ -374,7 +372,7 @@ int sys_futex_wake(int *pointer) {
 #ifndef MLIBC_BUILDING_RTDL
 
 int sys_open_dir(const char *path, int *handle) {
-	return sys_open(path, 0, handle);
+	return sys_open(path, 0, 0, handle);
 }
 int sys_read_entries(int handle, void *buffer, size_t max_size, size_t *bytes_read) {
     int ret;
@@ -399,7 +397,7 @@ int sys_read_entries(int handle, void *buffer, size_t max_size, size_t *bytes_re
 
 int sys_access(const char *path, int mode) {
 	int fd;
-	if(int e = sys_open(path, O_RDWR, &fd); e)
+	if(int e = sys_open(path, O_RDWR, 0, &fd); e)
 		return e;
 	sys_close(fd);
 	return 0;
@@ -563,7 +561,7 @@ int sys_socket(int family, int type, int protocol, int *fd) {
     return 0;
 }
 int sys_socketpair(int domain, int type_and_flags, int proto, int *fds) STUB_ONLY
-int sys_accept(int fd, int *newfd) STUB_ONLY
+int sys_accept(int fd, int *newfd, struct sockaddr *addr_ptr, socklen_t *addr_length) STUB_ONLY
 int sys_bind(int fd, const struct sockaddr *addr_ptr, socklen_t addr_length) {
     int ret;
     int sys_errno;

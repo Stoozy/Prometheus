@@ -7,6 +7,7 @@
 #include <bits/size_t.h>
 #include <bits/ssize_t.h>
 #include <bits/off_t.h>
+#include <abi-bits/access.h>
 #include <abi-bits/uid_t.h>
 #include <abi-bits/gid_t.h>
 #include <abi-bits/pid_t.h>
@@ -27,6 +28,7 @@ extern "C" {
 #define _POSIX_SPAWN _POSIX_VERSION
 #define _POSIX_THREADS _POSIX_VERSION
 #define _POSIX_THREAD_SAFE_FUNCTIONS _POSIX_VERSION
+#define _POSIX_MONOTONIC_CLOCK 0
 
 #ifdef __MLIBC_CRYPT_OPTION
 #define _XOPEN_CRYPT 1
@@ -34,11 +36,6 @@ extern "C" {
 
 // MISSING: additional _POSIX and _XOPEN feature macros
 // MISSING: _POSIX_TIMESTAMP_RESOLUTION and _POSIX2_SYMLINKS
-
-#define F_OK 1
-#define R_OK 2
-#define W_OK 4
-#define X_OK 8
 
 #define _CS_PATH 0
 #define _CS_POSIX_V6_WIDTH_RESTRICTED_ENVS 1
@@ -120,6 +117,8 @@ extern "C" {
 #define _SC_HOST_NAME_MAX 14
 #define _SC_LINE_MAX 15
 #define _SC_XOPEN_CRYPT 16
+#define _SC_NPROCESSORS_CONF 17
+#define _SC_SYMLOOP_MAX 18
 
 #define STDERR_FILENO 2
 #define STDIN_FILENO 0

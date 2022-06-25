@@ -62,10 +62,16 @@ typedef struct __mlibc_cpu_set cpu_set_t;
 
 int sched_getaffinity(pid_t pid, size_t cpusetsize, cpu_set_t *mask);
 
+int sched_get_priority_max(int policy);
+int sched_get_priority_min(int policy);
+
 int unshare(int flags);
 
 int __mlibc_cpu_isset(int cpu, cpu_set_t *set);
 int __mlibc_cpu_count(cpu_set_t *set);
+
+// Linux extension
+int clone(int (*)(void *), void *, int, void *, ...);
 
 #ifdef __cplusplus
 }

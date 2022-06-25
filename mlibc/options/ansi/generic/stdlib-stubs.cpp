@@ -184,6 +184,17 @@ void srand(unsigned int s) {
 
 void *aligned_alloc(size_t alignment, size_t size) {
 	void *ptr;
+
+	// alignment must be a power of two, and size % alignment must be 0
+	if (alignment & (alignment - 1) || size & (alignment - 1)) {
+		errno = EINVAL;
+		return nullptr;
+	}
+
+	// posix_memalign requires that the alignment is a multiple of sizeof(void *)
+	if (alignment < sizeof(void *))
+		alignment = sizeof(void *);
+
 	int ret = posix_memalign(&ptr, alignment, size);
 	if (ret) {
 		errno = ret;
@@ -379,8 +390,9 @@ void qsort(void *base, size_t count, size_t size,
 }
 
 void qsort_r(void *, size_t, size_t,
-		int (*compar)(const void *, const void *, void *),
+		int (*compare)(const void *, const void *, void *),
 		void *) {
+	(void) compare;
 	__ensure(!"Not implemented");
 	__builtin_unreachable();
 }

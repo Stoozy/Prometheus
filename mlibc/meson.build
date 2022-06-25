@@ -1,15 +1,17 @@
-project('mlibc')
+project('mlibc', default_options: ['warning_level=2', 'cpp_std=c++20'], version: '2.3.0')
 
 fs = import('fs')
 
 rtdl_include_dirs = [
 	include_directories('options/internal/include'),
+	include_directories('options/internal' / host_machine.cpu_family() + '-include'),
 	include_directories('options/rtdl/include'),
 ]
 libc_include_dirs = [
 	include_directories('options/internal/include'),
 	include_directories('options/elf/include'),
 	include_directories('options/lsb/include'),
+	include_directories('options/rtdl/include'),
 	include_directories('options/internal' / host_machine.cpu_family() + '-include')
 ]
 
@@ -37,21 +39,24 @@ internal_conf = configuration_data()
 mlibc_conf = configuration_data()
 
 if not headers_only
-	cxxshim_dep = subproject('cxxshim').get_variable('cxxshim_dep')
+	cxxshim_dep = dependency('cxxshim', fallback: ['cxxshim', 'cxxshim_dep'])
 	libc_deps += cxxshim_dep
 	rtdl_deps += cxxshim_dep
-	frigg_dep = subproject('frigg',
-		default_options: ['frigg_no_install=true']).get_variable('frigg_dep')
+
+	frigg_dep = dependency(
+		'frigg',
+		default_options: ['frigg_no_install=true'],
+		fallback: ['frigg', 'frigg_dep'],
+	)
 	libc_deps += frigg_dep
 	rtdl_deps += frigg_dep
 
 	add_languages('c', 'cpp')
 	c_compiler = meson.get_compiler('c')
 
+	add_project_arguments('-Wno-unused-function', language: ['c', 'cpp'])
 	add_project_arguments('-nostdinc', '-fno-builtin', language: ['c', 'cpp'])
-	add_project_arguments('-std=c++20', language: 'cpp')
 	add_project_arguments('-fno-rtti', '-fno-exceptions', language: 'cpp')
-	add_project_arguments('-Wall', '-Wextra', language: ['c', 'cpp'])
 	add_project_link_arguments('-nostdlib', language: ['c', 'cpp'])
 
 	searchdirs = run_command(c_compiler.cmd_array(), '-print-search-dirs',
@@ -115,6 +120,11 @@ elif host_machine.system() == 'qword'
 	rtdl_include_dirs += include_directories('sysdeps/qword/include')
 	libc_include_dirs += include_directories('sysdeps/qword/include')
 	subdir('sysdeps/qword')
+elif host_machine.system() == 'ironclad'
+	# disable_linux_option = true
+	rtdl_include_dirs += include_directories('sysdeps/ironclad/include')
+	libc_include_dirs += include_directories('sysdeps/ironclad/include')
+	subdir('sysdeps/ironclad')
 elif host_machine.system() == 'sigma'
 	#disable_linux_option = true
 	rtdl_include_dirs += include_directories('sysdeps/sigma/include')
@@ -137,7 +147,6 @@ elif host_machine.system() == 'atlas'
 	rtdl_include_dirs += include_directories('sysdeps/atlas/include')
 	libc_include_dirs += include_directories('sysdeps/atlas/include')
 	subdir('sysdeps/atlas')
-
 else
 	error('No sysdeps defined for OS: ' + host_machine.system())
 endif
@@ -224,7 +233,6 @@ internal_sources = [
 	'options/internal/gcc/initfini.cpp',
 	'options/internal/gcc-extra/cxxabi.cpp',
 	'options/internal' / host_machine.cpu_family() / 'setjmp.S',
-	'options/internal' / host_machine.cpu_family() / 'thread.cpp',
 ]
 
 if not static
@@ -314,15 +322,15 @@ if not headers_only
 				link_whole: libc_sublibs,
 				install: true)
 
-		shared_library('dl', 'libdl/src/dummy.cpp', install: true)
-		shared_library('pthread', 'libpthread/src/dummy.cpp', install: true)
-		shared_library('rt', 'librt/src/dummy.cpp', install: true)
-		shared_library('util', 'libutil/src/dummy.cpp', install: true)
-		shared_library('m', 'libm/src/dummy.cpp', install: true)
+		shared_library('dl', 'dummy-libs/libdl/src/dummy.cpp', install: true)
+		shared_library('pthread', 'dummy-libs/libpthread/src/dummy.cpp', install: true)
+		shared_library('rt', 'dummy-libs/librt/src/dummy.cpp', install: true)
+		shared_library('util', 'dummy-libs/libutil/src/dummy.cpp', install: true)
+		shared_library('m', 'dummy-libs/libm/src/dummy.cpp', install: true)
 		if not disable_crypt_option
-			shared_library('crypt', 'libcrypt/src/dummy.cpp', install: true)
+			shared_library('crypt', 'dummy-libs/libcrypt/src/dummy.cpp', install: true)
 		endif
-		shared_library('resolv', 'libresolv/src/dummy.cpp', install: true)
+		shared_library('resolv', 'dummy-libs/libresolv/src/dummy.cpp', install: true)
 	else
 		ldso_lib = static_library('ld', rtdl_sources,
 				name_prefix: '',
@@ -346,14 +354,14 @@ if not headers_only
 				link_whole: [libc_sublibs, ldso_lib],
 				install: true)
 
-		static_library('pthread', 'libpthread/src/dummy.cpp', install: true)
-		static_library('rt', 'librt/src/dummy.cpp', install: true)
-		static_library('util', 'libutil/src/dummy.cpp', install: true)
-		static_library('m', 'libm/src/dummy.cpp', install: true)
+		static_library('pthread', 'dummy-libs/libpthread/src/dummy.cpp', install: true)
+		static_library('rt', 'dummy-libs/librt/src/dummy.cpp', install: true)
+		static_library('util', 'dummy-libs/libutil/src/dummy.cpp', install: true)
+		static_library('m', 'dummy-libs/libm/src/dummy.cpp', install: true)
 		if not disable_crypt_option
-			static_library('crypt', 'libcrypt/src/dummy.cpp', install: true)
+			static_library('crypt', 'dummy-libs/libcrypt/src/dummy.cpp', install: true)
 		endif
-		static_library('resolv', 'libresolv/src/dummy.cpp', install: true)
+		static_library('resolv', 'dummy-libs/libresolv/src/dummy.cpp', install: true)
 	endif
 endif
 

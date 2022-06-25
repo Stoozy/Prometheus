@@ -92,10 +92,16 @@
 #define SCNu32 "u"
 #define SCNu64 "lu"
 #define SCNuMAX "lu"
+#define SCNx16 "hx"
 #define SCNx32 "x"
 #define SCNx64 "lx"
 #define SCNxMAX "lx"
+#define SCNi8 "hhi"
 
+#define SCNi8 "hhi"
+#define SCNi64 "li"
+
+#define SCNd32 "d"
 #define SCNd64 "ld"
 
 #ifdef __cplusplus

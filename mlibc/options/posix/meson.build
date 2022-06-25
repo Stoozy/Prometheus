@@ -43,7 +43,7 @@ libc_sources += files(
 	'generic/sys-times.cpp',
 	'generic/sys-time-stubs.cpp',
 	'generic/sys-uio.cpp',
-	'generic/sys-utsname-stubs.cpp',
+	'generic/sys-utsname.cpp',
 	'generic/sys-wait-stubs.cpp',
 	'generic/termios-stubs.cpp',
 	'generic/unistd-stubs.cpp',
@@ -53,6 +53,8 @@ libc_sources += files(
 	'generic/search.cpp',
 	'generic/sys-msg.cpp',
 	'generic/sys-sem.cpp',
+	'generic/sys-ipc.cpp',
+	'generic/wordexp-stubs.cpp',
 	'musl-generic/fnmatch.cpp',
 	'musl-generic/glob.cpp',
 )
@@ -84,6 +86,7 @@ if not no_headers
 		'include/unistd.h',
 		'include/utime.h',
 		'include/ucontext.h',
+		'include/wordexp.h',
 		'include/semaphore.h',
 	)
 	install_headers(

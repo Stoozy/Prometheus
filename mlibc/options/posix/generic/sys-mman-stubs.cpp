@@ -148,4 +148,24 @@ int memfd_create(const char *name, unsigned int flags) {
 
 	return ret;
 }
+
+int madvise(void *addr, size_t length, int advice) {
+	if(!mlibc::sys_madvise) {
+		MLIBC_MISSING_SYSDEP();
+		errno = ENOSYS;
+		return -1;
+	}
+
+	if(int e = mlibc::sys_madvise(addr, length, advice)) {
+		errno = e;
+		return -1;
+	}
+
+	return 0;
+}
+
+int mincore(void *, size_t, unsigned char *) {
+	__ensure(!"Not implemented");
+	__builtin_unreachable();
+}
 #endif

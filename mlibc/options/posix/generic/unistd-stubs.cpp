@@ -15,9 +15,11 @@
 #include <mlibc/posix-sysdeps.hpp>
 #include <mlibc/thread.hpp>
 
-unsigned int alarm(unsigned int) {
-	__ensure(!"Not implemented");
-	__builtin_unreachable();
+unsigned int alarm(unsigned int seconds) {
+	struct itimerval it = {}, old = {};
+	it.it_value.tv_sec = seconds;
+	setitimer(ITIMER_REAL, &it, &old);
+	return old.it_value.tv_sec + !! old.it_value.tv_usec;
 }
 
 int chdir(const char *path) {
@@ -123,9 +125,24 @@ int execle(const char *path, const char *arg0, ...) {
 	return execve(path, argv, envp);
 }
 
-int execlp(const char *, const char *, ...) {
-	__ensure(!"Not implemented");
-	__builtin_unreachable();
+// This function is taken from musl
+int execlp(const char *file, const char *argv0, ...) {
+	int argc;
+	va_list ap;
+	va_start(ap, argv0);
+	for(argc = 1; va_arg(ap, const char *); argc++);
+	va_end(ap);
+	{
+		int i;
+		char *argv[argc + 1];
+		va_start(ap, argv0);
+		argv[0] = (char *)argv0;
+		for(i = 1; i < argc; i++)
+			argv[i] = va_arg(ap, char *);
+		argv[i] = NULL;
+		va_end(ap);
+		return execvp(file, argv);
+	}
 }
 
 int execv(const char *path, char *const argv[]) {
@@ -292,18 +309,16 @@ int ftruncate(int fd, off_t size) {
 }
 
 char *getcwd(char *buffer, size_t size) {
-	/* In order to support glibc's extension of allocating buffer if none is given, we have this
-	   buffer to use as needed. We do not respect the size passed, which glibc does, but musl
-	   doesn't do. This should be fine, as this behavior is an extension anyways and thus not part
-	   of the spec. */
-	char alt_buffer[PATH_MAX];
+	if (buffer) {
+		if (size == 0) {
+			errno = EINVAL;
+			return NULL;
+		}
+	} else if (!buffer) {
+		if (size == 0)
+			size = PATH_MAX;
 
-	if(!buffer) {
-		buffer = alt_buffer;
-		size = PATH_MAX;
-	} else if(!size) {
-		errno = EINVAL;
-		return NULL;
+		buffer = (char *)malloc(size);
 	}
 
 	if(!mlibc::sys_getcwd) {
@@ -311,11 +326,13 @@ char *getcwd(char *buffer, size_t size) {
 		errno = ENOSYS;
 		return NULL;
 	}
+
 	if(int e = mlibc::sys_getcwd(buffer, size); e) {
 		errno = e;
 		return NULL;
 	}
-	return (buffer == alt_buffer) ? strdup(buffer) : buffer;
+
+	return buffer;
 }
 
 int getgroups(int size, gid_t list[]) {
@@ -588,9 +605,19 @@ ssize_t pread(int fd, void *buf, size_t n, off_t off) {
 	return num_read;
 }
 
-ssize_t pwrite(int, const void *, size_t, off_t) {
-	__ensure(!"Not implemented");
-	__builtin_unreachable();
+ssize_t pwrite(int fd, const void *buf, size_t n, off_t off) {
+	ssize_t num_written;
+
+	if(!mlibc::sys_pwrite) {
+		MLIBC_MISSING_SYSDEP();
+		errno = ENOSYS;
+		return -1;
+	}
+	if(int e = mlibc::sys_pwrite(fd, buf, n, off, &num_written); e) {
+		errno = e;
+		return -1;
+	}
+	return num_written;
 }
 
 ssize_t readlink(const char *__restrict path, char *__restrict buffer, size_t max_size) {
@@ -804,6 +831,10 @@ unsigned long sysconf(int number) {
 #else
 			return -1;
 #endif
+		case _SC_NPROCESSORS_CONF:
+			// TODO: actually return a proper value for _SC_NPROCESSORS_CONF
+			mlibc::infoLogger() << "\e[31mmlibc: sysconf(_SC_NPROCESSORS_CONF) unconditionally returns 1\e[39m" << frg::endlog;
+			return 1;
 		default:
 			mlibc::panicLogger() << "\e[31mmlibc: sysconf() call is not implemented, number: " << number << "\e[39m" << frg::endlog;
 			__builtin_unreachable();
