@@ -20,7 +20,7 @@ INCLUDEDIR:=./include
 
 .PHONY: all clean install
 
-all: $(LIBC) 
+all: $(LIBC) install
 
 $(LIBC): $(NASM_OBJS) $(AS_OBJS) $(C_OBJS)
 	$(AR) rcs $@ $(NASM_OBJS) $(C_OBJS)  
@@ -38,4 +38,5 @@ install:
 	cp $(LIBC) $(AS_OBJS) $(SYSROOT)/lib
 
 clean:
+
 	rm -rf $(NASM_OBJS) $(C_OBJS) $(AS_OBJS) $(LIBC)

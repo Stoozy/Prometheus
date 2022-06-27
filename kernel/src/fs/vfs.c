@@ -73,8 +73,8 @@ void vfs_close(File * file){
 ssize_t vfs_read(File * file, u8 * buffer, size_t off, size_t size){
     kprintf("[VFS]  Called read on %s\n", file->name);
     if(file){
-        file->position += off;
         size_t bytes = file->fs->read(file, size, buffer);
+        file->position += size;
         return bytes;
     }
 

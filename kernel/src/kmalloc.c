@@ -5,8 +5,8 @@
 #include <stddef.h>
 
 
-void * placement_address = NULL;
-void * heap_end = NULL;
+uintptr_t placement_address = PAGING_VIRTUAL_OFFSET;
+uintptr_t heap_end = NULL;
 
 // dummy allocator for now
 
@@ -30,7 +30,7 @@ void kfree(void * ptr){
 void kmalloc_init(size_t heap_size){
 
     int blocks = heap_size/PAGE_SIZE;
-    placement_address = (void*)(PAGING_VIRTUAL_OFFSET + pmm_alloc_blocks(blocks));
+    placement_address += (uintptr_t)pmm_alloc_blocks(blocks);
 
     heap_end = placement_address + heap_size;
 

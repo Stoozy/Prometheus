@@ -10,16 +10,22 @@ INC_PARAMS=$(foreach d, $(INC_DIRS), -I$d)
 LIBRARIES=$(shell pwd)/lib
 
 
+# mlibc
 CFLAGS= -fPIC -shared -no-pie -nostartfiles -nostdlib -LD_LIBRARY_PATH=lib/
+
+# Custom libc
+#
+#CFLAGS= -O0 -fPIC -static -nostartfiles -nostdlib
 
 .PHONY: all clean 
 all: hello 
 
 hello:
-	$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBRARIES) lib/crt1.o -lc -o hello
-	patchelf hello --set-interpreter /lib/ld.so
+	$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBRARIES) lib/crt0.o lib/crti.o -lc -o hello
+
+	#$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBRARIES) lib/crt1.o  -lc -o hello
+#	patchelf --set-interpreter /lib/ld.so hello
 
 clean:
 	rm -rf hello
-
 

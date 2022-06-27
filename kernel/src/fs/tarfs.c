@@ -116,17 +116,21 @@ void ustar_close(struct file * f){
 
 u64 ustar_read(struct file *file, size_t size, u8 *buffer){
     // TODO:
-    // return bytes read
     
     kprintf("[TARFS] Called read\n");
 
     UstarFile * tar_fp = (UstarFile*) file->inode;
     u8 * sof = ((u8*)(tar_fp))+512;
     kprintf("[TARFS] File data: %s\n", sof);
+
+    u8 * begin = sof + file->position;
+    
     if(tar_fp){
         kprintf("[TARFS] Valid file\n");
         kprintf("Copying data over to %x\n", buffer);
-        memcpy(buffer, sof, size);
+
+        memcpy(buffer, begin, size);
+
         return size;
     }
 

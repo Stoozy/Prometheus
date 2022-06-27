@@ -1,0 +1,10 @@
+display_library: x, options="gui_debug"
+
+cpu: model=ryzen, count=2, ips=10000000
+
+vgaromimage: file=/usr/share/bochs/VGABIOS-lgpl-latest
+
+ata0-master: type=cdrom, path=disk.iso, status=inserted
+boot:cdrom
+
+com1: enabled=1, mode=file, dev=/dev/pts/3
