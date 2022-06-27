@@ -123,7 +123,6 @@ int sys_write(int file, char *ptr, int len) {
 
   for (int i = 0; i < len; ++i)
     kprintf("%c", ptr[i]);
-  kprintf("\n");
   return len;
 
   //}
@@ -263,7 +262,6 @@ void syscall_dispatcher(Registers regs) {
     break;
   }
   case SYS_WRITE: {
-    // kprintf("[SYS]  WRITE CALLED\n");
     int file = regs.r8;
     char *ptr = (char *)regs.r9;
     int len = regs.r10;
