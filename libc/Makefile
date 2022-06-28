@@ -35,7 +35,7 @@ $(LIBC): $(NASM_OBJS) $(AS_OBJS) $(C_OBJS)
 	$(CC)  $(CFLAGS)  -I$(INCLUDEDIR) $(CFLAGS) -c $< -o $@
 
 install:
-	cp $(LIBC) $(AS_OBJS) $(SYSROOT)/lib
+	cp $(LIBC) $(AS_OBJS) $(SYSROOT)/lib && cp $(INCLUDEDIR)/*.* $(SYSROOT)/include
 
 clean:
 

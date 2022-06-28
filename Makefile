@@ -31,7 +31,7 @@ libc:
 	#cd mlibc && mkdir build && meson . build --cross-file crossfile.ini && ninja -C build && yes | cp build/*.so $(SYSROOT)/lib && yes | cp build/sysdeps/atlas/crt1.o $(SYSROOT)/lib
 
 initrd: 
-	tar -C $(SYSROOT) -cvf initrd.tar lib fonts hello
+	tar -C $(SYSROOT) -cvf initrd.tar lib fonts bin
 
 
 $(ISO_IMAGE): limine kernel/kernel.elf initrd
