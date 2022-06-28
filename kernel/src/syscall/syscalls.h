@@ -26,5 +26,6 @@ typedef unsigned long long caddr_t;
 #define SYS_LOG_LIBC 5
 #define SYS_VM_MAP 6
 #define SYS_SEEK 7
+#define SYS_TCB_SET 8
 
 void sys_init();

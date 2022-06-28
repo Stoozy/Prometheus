@@ -95,13 +95,6 @@ int sys_read(int file, char *ptr, size_t len) {
 }
 
 int sys_write(int file, char *ptr, int len) {
-  // if(file == 1){
-  //  trying to print out to stdout
-  //  output to serial for now...
-
-  // FIXME: should probably start
-  // at the file position instead
-
 #ifdef SYSCALL_DEBUG
   kprintf("Called SYS_WRITE File: %d Buffer addr: 0x%x Length: %d\n", file, ptr,
           len);
@@ -110,13 +103,6 @@ int sys_write(int file, char *ptr, int len) {
     kprintf("%c", ptr[i]);
   kprintf("\n");
   return len;
-  //}
-
-  // extern ProcessControlBlock * gp_current_process;
-  // FILE * f = gp_current_process->fd_table[file];
-  // int bytes_written = vfs_write(f, (u64)len, (u8*)ptr);
-
-  // return bytes_written;
 }
 
 /* snatched from mlibc/vm-flags.h */
@@ -214,10 +200,16 @@ off_t sys_seek(int fd, off_t offset, int whence) {
         gp_current_process->fd_table[fd]->size + offset;
     break;
   default:
+    kprintf("[SYS_SEEK] Whence is none\n");
     break;
   }
 
   return gp_current_process->fd_table[fd]->position;
+}
+
+int sys_tcb_set(void *ptr) {
+  wrmsr(FSBASE, (uint64_t)ptr);
+  return 0;
 }
 
 int sys_execve(char *name, char **argv, char **env) { return -1; }
@@ -309,6 +301,12 @@ void syscall_dispatcher(Registers regs) {
     int whence = regs.r10;
     regs.r15 = sys_seek(fd, off, whence);
 
+    break;
+  }
+  case SYS_TCB_SET: {
+    kprintf("[SYS]  TCB_SET CALLED\n");
+    void *ptr = regs.r8;
+    regs.r15 = sys_tcb_set(ptr);
     break;
   }
   default: {

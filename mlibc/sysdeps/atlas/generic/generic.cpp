@@ -15,6 +15,7 @@
 #define SYS_LOG_LIBC 5
 #define SYS_VM_MAP 6
 #define SYS_SEEK 7
+#define SYS_TCB_SET 8
 
 #define SYSCALL_NA0(call)                                                      \
   ({                                                                           \
@@ -120,9 +121,12 @@ void sys_libc_panic() {
 }
 
 int sys_tcb_set(void *pointer) {
-  // TODO
+  register int ret asm("r15");
+  SYSCALL_NA1(SYS_TCB_SET, pointer);
 
-  return -1;
+  int r = ret;
+  mlibc::infoLogger() << "Got tcb_set return " << r << frg::endlog;
+  return ret;
 }
 
 int sys_anon_allocate(size_t size, void **pointer) {
@@ -140,7 +144,7 @@ int sys_anon_free(void *pointer, size_t size) {
 
 #ifndef MLIBC_BUILDING_RTDL
 void sys_exit(int status) {
-  int ret;
+  register int ret asm("r15");
   SYSCALL_NA1(SYS_EXIT, status);
 }
 #endif
