@@ -139,12 +139,17 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
 
     int pages = (size / PAGE_SIZE) + 1;
     void *phys_base = pmm_alloc_blocks(pages);
+
+
+
     if (phys_base == NULL) {
       // out of memory
       for (;;)
         kprintf("Out of memory\n");
       return NULL;
     }
+
+    memset(PAGING_VIRTUAL_OFFSET + phys_base, 0, pages * PAGE_SIZE);
 
     void *virt_base = NULL;
     if (flags & MAP_FIXED) {
@@ -166,7 +171,8 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
     vmm_map_range(
         (void *)((u64)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET),
         virt_base, phys_base, size, page_flags);
-    vmm_switch_page_directory(gp_current_process->cr3);
+
+    //vmm_switch_page_directory(gp_current_process->cr3);
 
     kprintf("[MMAP] Returning 0x%x\n", virt_base);
 
