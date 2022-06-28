@@ -13,3 +13,6 @@ limine
 ./kernel/src/*/*.o
 
 mlibc/.cache/*
+
+sysroot/lib/*.so
+initrd.tar

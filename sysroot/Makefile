@@ -10,7 +10,7 @@ INC_PARAMS=$(foreach d, $(INC_DIRS), -I$d)
 LIBRARIES=$(shell pwd)/lib
 
 
-CFLAGS= -fPIC -shared -no-pie -nostartfiles -nostdlib -LD_LIBRARY_PATH=lib/
+CFLAGS= -fPIC -shared -no-pie -nostartfiles -LD_LIBRARY_PATH=lib/
 
 .PHONY: all clean 
 all: hello 
