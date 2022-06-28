@@ -1,4 +1,7 @@
 #include <stdio.h>
 #include <sysdeps/syscalls.h>
 
-int putchar(int c) { sys_write(0, c, 1); }
+int _putchar(char c) {
+  sys_write(0, &c, 1);
+  return 0;
+}
