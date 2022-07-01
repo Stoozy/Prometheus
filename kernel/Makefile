@@ -25,10 +25,10 @@ INTERNALCFLAGS  :=       \
 	-mno-80387           \
 	-mno-mmx             \
 	-mno-3dnow           \
-	-mno-sse             \
-	-mno-sse2            \
 	-mno-red-zone		 \
 	-mcmodel=large		\
+	#-mno-sse             \
+	#-mno-sse2            \
 	
 
 CFILES := $(shell find ./ -type f -name '*.c')
