@@ -12,6 +12,9 @@
 
 extern void load_pagedir(PageTable *);
 
+#define MMAP_BASE 0xC000000000
+#define LD_BASE 0xA000000
+
 u8 validate_elf(u8 *elf) {
   if (elf[0] != 0x7f || elf[1] != 'E' || elf[2] != 'L' || elf[3] != 'F') {
     /* invalid elf header */
@@ -20,8 +23,6 @@ u8 validate_elf(u8 *elf) {
 
   return 1;
 }
-
-#define LD_BASE 0xA000000
 
 Auxval load_elf_segments(PageTable *vas, u8 *elf_data) {
   kprintf("[ELF]  Load elf segments called with %x vas and %x elf buffer\n",
@@ -127,6 +128,7 @@ ProcessControlBlock *create_elf_process(const char *path) {
                               kmalloc(sizeof(ProcessControlBlock)));
 
   proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
+  memset(proc->p_stack, 0, 8 * PAGE_SIZE);
   kprintf("Process stack at 0x%x\n", proc->p_stack);
 
   proc->cr3 = vmm_create_user_proc_pml4(proc->p_stack);
@@ -182,7 +184,7 @@ ProcessControlBlock *create_elf_process(const char *path) {
   *--stack = 0; // rdi
 
   proc->p_stack = stack;
-  proc->mmap_base = 0xB000000;
+  proc->mmap_base = MMAP_BASE;
   proc->next = 0;
 
   return proc;

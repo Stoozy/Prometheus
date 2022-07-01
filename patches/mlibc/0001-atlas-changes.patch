@@ -1,0 +1,884 @@
+From ffe7183f3dd8ae9d072199c32794a4d290d8751c Mon Sep 17 00:00:00 2001
+From: Stoozy <mahinsemail@gmail.com>
+Date: Thu, 30 Jun 2022 00:28:16 -0400
+Subject: [PATCH] atlas changes
+
+---
+ meson.build                                  |   6 +
+ sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
+ sysdeps/atlas/generic/entry.cpp              |  34 ++
+ sysdeps/atlas/generic/generic.cpp            | 326 +++++++++++++++++++
+ sysdeps/atlas/generic/thread.cpp             |  44 +++
+ sysdeps/atlas/generic/thread_entry.S         |   9 +
+ sysdeps/atlas/include/abi-bits/abi.h         |   1 +
+ sysdeps/atlas/include/abi-bits/access.h      |   1 +
+ sysdeps/atlas/include/abi-bits/auxv.h        |   1 +
+ sysdeps/atlas/include/abi-bits/blkcnt_t.h    |   1 +
+ sysdeps/atlas/include/abi-bits/blksize_t.h   |   1 +
+ sysdeps/atlas/include/abi-bits/dev_t.h       |   1 +
+ sysdeps/atlas/include/abi-bits/epoll.h       |   1 +
+ sysdeps/atlas/include/abi-bits/errno.h       |   1 +
+ sysdeps/atlas/include/abi-bits/fcntl.h       |   1 +
+ sysdeps/atlas/include/abi-bits/gid_t.h       |   1 +
+ sysdeps/atlas/include/abi-bits/in.h          |   1 +
+ sysdeps/atlas/include/abi-bits/ino_t.h       |   1 +
+ sysdeps/atlas/include/abi-bits/limits.h      |   1 +
+ sysdeps/atlas/include/abi-bits/mode_t.h      |   1 +
+ sysdeps/atlas/include/abi-bits/nlink_t.h     |   1 +
+ sysdeps/atlas/include/abi-bits/packet.h      |   1 +
+ sysdeps/atlas/include/abi-bits/pid_t.h       |   1 +
+ sysdeps/atlas/include/abi-bits/poll.h        |   1 +
+ sysdeps/atlas/include/abi-bits/ptrace.h      |   1 +
+ sysdeps/atlas/include/abi-bits/reboot.h      |   1 +
+ sysdeps/atlas/include/abi-bits/resource.h    |   1 +
+ sysdeps/atlas/include/abi-bits/seek-whence.h |   1 +
+ sysdeps/atlas/include/abi-bits/signal.h      |   1 +
+ sysdeps/atlas/include/abi-bits/socket.h      |   1 +
+ sysdeps/atlas/include/abi-bits/stat.h        |   1 +
+ sysdeps/atlas/include/abi-bits/termios.h     |   1 +
+ sysdeps/atlas/include/abi-bits/time.h        |   1 +
+ sysdeps/atlas/include/abi-bits/uid_t.h       |   1 +
+ sysdeps/atlas/include/abi-bits/utsname.h     |   1 +
+ sysdeps/atlas/include/abi-bits/vm-flags.h    |   1 +
+ sysdeps/atlas/include/abi-bits/wait.h        |   1 +
+ sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
+ sysdeps/atlas/meson.build                    |  59 ++++
+ 39 files changed, 526 insertions(+)
+ create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
+ create mode 100644 sysdeps/atlas/generic/entry.cpp
+ create mode 100644 sysdeps/atlas/generic/generic.cpp
+ create mode 100644 sysdeps/atlas/generic/thread.cpp
+ create mode 100644 sysdeps/atlas/generic/thread_entry.S
+ create mode 120000 sysdeps/atlas/include/abi-bits/abi.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/access.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/auxv.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/blkcnt_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/blksize_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/dev_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/epoll.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/errno.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/fcntl.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/gid_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/in.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/ino_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/limits.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/mode_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/nlink_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/packet.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/pid_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/poll.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/ptrace.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/reboot.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/resource.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/seek-whence.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/signal.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/socket.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/stat.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/termios.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/time.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/uid_t.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/utsname.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/vm-flags.h
+ create mode 120000 sysdeps/atlas/include/abi-bits/wait.h
+ create mode 100644 sysdeps/atlas/include/mlibc/thread-entry.hpp
+ create mode 100644 sysdeps/atlas/meson.build
+
+diff --git a/meson.build b/meson.build
+index f5d9df09..e31fcd1e 100644
+--- a/meson.build
++++ b/meson.build
+@@ -135,6 +135,12 @@ elif host_machine.system() == 'dripos'
+ 	rtdl_include_dirs += include_directories('sysdeps/dripos/include')
+ 	libc_include_dirs += include_directories('sysdeps/dripos/include')
+ 	subdir('sysdeps/dripos')
++elif host_machine.system() == 'atlas'
++	disable_linux_option = true
++	rtdl_include_dirs += include_directories('sysdeps/atlas/include')
++	libc_include_dirs += include_directories('sysdeps/atlas/include')
++	subdir('sysdeps/atlas')
++
+ else
+ 	error('No sysdeps defined for OS: ' + host_machine.system())
+ endif
+diff --git a/sysdeps/atlas/crt-x86_64/crt0.S b/sysdeps/atlas/crt-x86_64/crt0.S
+new file mode 100644
+index 00000000..0a0a4a0c
+--- /dev/null
++++ b/sysdeps/atlas/crt-x86_64/crt0.S
+@@ -0,0 +1,7 @@
++
++.section .text
++.global _start
++_start:
++    mov $main, %rdi
++    call __mlibc_entry
++
+diff --git a/sysdeps/atlas/generic/entry.cpp b/sysdeps/atlas/generic/entry.cpp
+new file mode 100644
+index 00000000..ee7a794b
+--- /dev/null
++++ b/sysdeps/atlas/generic/entry.cpp
+@@ -0,0 +1,34 @@
++
++#include <stdint.h>
++#include <stdlib.h>
++#include <bits/ensure.h>
++#include <mlibc/elf/startup.h>
++
++// defined by the POSIX library
++void __mlibc_initLocale();
++
++extern "C" uintptr_t *__dlapi_entrystack();
++
++extern char **environ;
++static mlibc::exec_stack_data __mlibc_stack_data;
++
++struct LibraryGuard {
++	LibraryGuard();
++};
++
++static LibraryGuard guard;
++
++LibraryGuard::LibraryGuard() {
++	__mlibc_initLocale();
++
++	// Parse the exec() stack.
++	mlibc::parse_exec_stack(__dlapi_entrystack(), &__mlibc_stack_data);
++	mlibc::set_startup_data(__mlibc_stack_data.argc, __mlibc_stack_data.argv,
++			__mlibc_stack_data.envp);
++}
++
++extern "C" void __mlibc_entry(int (*main_fn)(int argc, char *argv[], char *env[])) {
++	auto result = main_fn(__mlibc_stack_data.argc, __mlibc_stack_data.argv, environ);
++	exit(result);
++}
++
+diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
+new file mode 100644
+index 00000000..c2acfc91
+--- /dev/null
++++ b/sysdeps/atlas/generic/generic.cpp
+@@ -0,0 +1,326 @@
++#include <bits/ensure.h>
++#include <dirent.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <limits.h>
++#include <mlibc/all-sysdeps.hpp>
++#include <mlibc/debug.hpp>
++#include <mlibc/thread-entry.hpp>
++
++#define SYS_EXIT 0
++#define SYS_OPEN 1
++#define SYS_CLOSE 2
++#define SYS_READ 3
++#define SYS_WRITE 4
++#define SYS_LOG_LIBC 5
++#define SYS_VM_MAP 6
++#define SYS_SEEK 7
++#define SYS_TCB_SET 8
++
++#define SYSCALL_NA0(call)                                                      \
++  ({                                                                           \
++    register uint64_t syscall asm("rsi") = call;                               \
++    register auto r8 asm("r8") = (arg0);                                       \
++    asm volatile("syscall"                                                     \
++                 : "=r"(ret)                                                   \
++                 : "r"(syscall)                                                \
++                 : "rcx", "r11", "memory");                                    \
++  });
++
++#define SYSCALL_NA1(call, arg0)                                                \
++  ({                                                                           \
++    register uint64_t syscall asm("rsi") = call;                               \
++    register auto r8 asm("r8") = (arg0);                                       \
++    asm volatile("syscall"                                                     \
++                 : "=r"(ret)                                                   \
++                 : "r"(syscall), "r"(r8)                                       \
++                 : "rcx", "r11", "memory");                                    \
++  });
++
++#define SYSCALL_NA2(call, arg0, arg1)                                          \
++  ({                                                                           \
++    register uint64_t syscall asm("rsi") = call;                               \
++    register auto r8 asm("r8") = (arg0);                                       \
++    register auto r9 asm("r9") = (arg1);                                       \
++    asm volatile("syscall"                                                     \
++                 : "=r"(ret)                                                   \
++                 : "r"(syscall), "r"(r8), "r"(r9)                              \
++                 : "rcx", "r11", "memory");                                    \
++  });
++
++#define SYSCALL_NA3(call, arg0, arg1, arg2)                                    \
++  ({                                                                           \
++    register uint64_t syscall asm("rsi") = call;                               \
++    register auto r8 asm("r8") = (arg0);                                       \
++    register auto r9 asm("r9") = (arg1);                                       \
++    register auto r10 asm("r10") = (arg2);                                     \
++    asm volatile("syscall"                                                     \
++                 : "=r"(ret)                                                   \
++                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10)                    \
++                 : "rcx", "r11", "memory");                                    \
++  });
++
++#define SYSCALL_NA4(call, arg0, arg1, arg2, arg3)                              \
++  ({                                                                           \
++    register uint64_t syscall asm("rsi") = call;                               \
++    register auto r8 asm("r8") = (arg0);                                       \
++    register auto r9 asm("r9") = (arg1);                                       \
++    register auto r10 asm("r10") = (arg2);                                     \
++    register auto r12 asm("r12") = (arg3);                                     \
++    asm volatile("syscall"                                                     \
++                 : "=r"(ret)                                                   \
++                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10), "r"(r12)          \
++                 : "rcx", "r11", "memory");                                    \
++  });
++
++#define SYSCALL_NA5(call, arg0, arg1, arg2, arg3, arg4)                        \
++  ({                                                                           \
++    register uint64_t syscall asm("rsi") = call;                               \
++    register auto r8 asm("r8") = (arg0);                                       \
++    register auto r9 asm("r9") = (arg1);                                       \
++    register auto r10 asm("r10") = (arg2);                                     \
++    register auto r12 asm("r12") = (arg3);                                     \
++    register auto r13 asm("r13") = (arg4);                                     \
++    asm volatile("syscall"                                                     \
++                 : "=r"(ret)                                                   \
++                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10), "r"(r12),         \
++                   "r"(r13),                                                   \
++                 : "rcx", "r11", "memory");                                    \
++  });
++
++#define SYSCALL_NA6(call, arg0, arg1, arg2, arg3, arg4, arg5)                  \
++  ({                                                                           \
++    register uint64_t syscall asm("rsi") = call;                               \
++    register auto r8 asm("r8") = (arg0);                                       \
++    register auto r9 asm("r9") = (arg1);                                       \
++    register auto r10 asm("r10") = (arg2);                                     \
++    register auto r12 asm("r12") = (arg3);                                     \
++    register auto r13 asm("r13") = (arg4);                                     \
++    register auto r14 asm("r14") = (arg5);                                     \
++    asm volatile("syscall"                                                     \
++                 : "=r"(ret)                                                   \
++                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10), "r"(r12),         \
++                   "r"(r13), "r"(r14)                                          \
++                 : "rcx", "r11", "memory");                                    \
++  });
++
++namespace mlibc {
++
++void sys_libc_log(const char *message) {
++  register int ret asm("r15");
++
++  SYSCALL_NA1(SYS_LOG_LIBC, message);
++
++  return;
++}
++
++void sys_libc_panic() {
++  mlibc::infoLogger() << "\e[31mmlibc: panic!" << frg::endlog;
++  for (;;)
++    ;
++}
++
++int sys_tcb_set(void *pointer) {
++  register int ret asm("r15");
++  SYSCALL_NA1(SYS_TCB_SET, pointer);
++
++  int r = ret;
++  mlibc::infoLogger() << "Got tcb_set return " << r << frg::endlog;
++  return ret;
++}
++
++int sys_anon_allocate(size_t size, void **pointer) {
++
++  int errno = sys_vm_map(NULL, size, PROT_EXEC | PROT_READ | PROT_WRITE,
++                         MAP_ANONYMOUS, -1, 0, pointer);
++
++  return errno;
++}
++
++int sys_anon_free(void *pointer, size_t size) {
++  // TODO
++  return 0;
++}
++
++#ifndef MLIBC_BUILDING_RTDL
++void sys_exit(int status) {
++  register int ret asm("r15");
++  SYSCALL_NA1(SYS_EXIT, status);
++}
++#endif
++
++#ifndef MLIBC_BUILDING_RTDL
++int sys_clock_get(int clock, time_t *secs, long *nanos) { return 0; }
++#endif
++
++int sys_open(const char *path, int flags, int mode, int *fd) {
++  register int ret asm("r15");
++  SYSCALL_NA2(SYS_OPEN, path, flags);
++
++  *fd = ret;
++  mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd
++                      << frg::endlog;
++
++  return 0;
++}
++
++int sys_close(int fd) {
++  int ret;
++  int sys_errno;
++
++  return 0;
++}
++
++int sys_read(int fd, void *buf, size_t count, ssize_t *bytes_read) {
++  register size_t ret asm("r15");
++  SYSCALL_NA3(SYS_READ, fd, buf, count);
++
++  if (ret >= 0) {
++    *bytes_read = ret;
++  } else {
++    return -1;
++  }
++
++  mlibc::infoLogger() << "[mlibc] SYS_READ read " << *bytes_read << " bytes"
++                      << frg::endlog;
++
++  return 0;
++}
++
++#ifndef MLIBC_BUILDING_RTDL
++int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written) {
++  register size_t ret asm("r15");
++
++  SYSCALL_NA3(SYS_WRITE, fd, buf, count);
++
++  if (ret >= 0)
++    *bytes_written = ret;
++  else
++    return -1;
++
++  return 0;
++}
++#endif
++
++int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
++  // TODO
++
++  register off_t ret asm("r15");
++  SYSCALL_NA3(SYS_SEEK, fd, offset, whence);
++
++  *new_offset = ret;
++
++  return 0;
++}
++
++int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd,
++               off_t offset, void **window) {
++  __ensure(flags & MAP_ANONYMOUS);
++
++  register void *ret asm("r15");
++  SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
++
++  *window = ret;
++  mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window
++                      << frg::endlog;
++
++  return 0;
++}
++
++int sys_vm_unmap(void *pointer, size_t size) {
++  // TODO
++  return sys_anon_free(pointer, size);
++}
++
++int sys_futex_wait(int *pointer, int expected, const struct timespec *time) {
++  // TODO
++  // uint64_t err;
++  // asm volatile ("syscall"
++  //        : "=d"(err)
++  //        : "a"(66), "D"(pointer), "S"(expected)
++  //        : "rcx", "r11");
++
++  // if (err) {
++  //     return -1;
++  // }
++
++  return 0;
++}
++
++int sys_futex_wake(int *pointer) {
++  // uint64_t err;
++  // asm volatile ("syscall"
++  //         : "=d"(err)
++  //         : "a"(65), "D"(pointer)
++  //         : "rcx", "r11");
++
++  // if (err) {
++  //     return -1;
++  // }
++
++  return 0;
++}
++
++// All remaining functions are disabled in ldso.
++#ifndef MLIBC_BUILDING_RTDL
++
++int sys_clone(void *entry, void *user_arg, void *tcb, pid_t *tid_out) {
++  void *sp = prepare_stack(entry, user_arg, tcb);
++  int tid;
++
++  asm volatile("syscall"
++               : "=a"(tid)
++               : "a"(67), "D"(__mlibc_start_thread), "S"(sp), "d"(tcb)
++               : "rcx", "r11");
++
++  if (tid_out)
++    *tid_out = tid;
++
++  return 0;
++}
++
++void sys_thread_exit() {
++  asm volatile("syscall" : : "a"(68) : "rcx", "r11");
++  __builtin_trap();
++}
++
++int sys_sleep(time_t *secs, long *nanos) {
++  long ms = (*nanos / 1000000) + (*secs * 1000);
++  asm volatile("syscall" : : "a"(6), "D"(ms) : "rcx", "r11");
++  *secs = 0;
++  *nanos = 0;
++  return 0;
++}
++
++int sys_fork(pid_t *child) { return 0; }
++
++int sys_execve(const char *path, char *const argv[], char *const envp[]) {
++  int ret;
++  int sys_errno;
++
++  asm volatile("syscall"
++               : "=a"(ret), "=d"(sys_errno)
++               : "a"(59), "D"(path), "S"(argv), "d"(envp)
++               : "rcx", "r11");
++
++  if (sys_errno != 0)
++    return sys_errno;
++
++  return 0;
++}
++
++pid_t sys_getpid() {
++  pid_t pid;
++  asm volatile("syscall" : "=a"(pid) : "a"(5) : "rcx", "r11", "rdx");
++  return pid;
++}
++
++pid_t sys_getppid() {
++  pid_t ppid;
++  asm volatile("syscall" : "=a"(ppid) : "a"(14) : "rcx", "r11", "rdx");
++  return ppid;
++}
++
++#endif // MLIBC_BUILDING_RTDL
++
++} // namespace mlibc
+diff --git a/sysdeps/atlas/generic/thread.cpp b/sysdeps/atlas/generic/thread.cpp
+new file mode 100644
+index 00000000..35e7a9be
+--- /dev/null
++++ b/sysdeps/atlas/generic/thread.cpp
+@@ -0,0 +1,44 @@
++#include <mlibc/thread-entry.hpp>
++#include <mlibc/all-sysdeps.hpp>
++#include <mlibc/tcb.hpp>
++#include <bits/ensure.h>
++#include <sys/mman.h>
++#include <stdint.h>
++#include <stddef.h>
++
++extern "C" void __mlibc_enter_thread(void *entry, void *user_arg, Tcb *tcb) {
++	// Wait until our parent sets up the TID.
++	while(!__atomic_load_n(&tcb->tid, __ATOMIC_RELAXED))
++		mlibc::sys_futex_wait(&tcb->tid, 0, nullptr);
++
++	if(mlibc::sys_tcb_set(tcb))
++		__ensure(!"sys_tcb_set() failed");
++
++	void *(*func)(void *) = reinterpret_cast<void *(*)(void *)>(entry);
++	auto result = func(user_arg);
++
++	auto self = reinterpret_cast<Tcb *>(tcb);
++
++	self->returnValue = result;
++	__atomic_store_n(&self->didExit, 1, __ATOMIC_RELEASE);
++	mlibc::sys_futex_wake(&self->didExit);
++
++	mlibc::sys_thread_exit();
++}
++
++namespace mlibc {
++
++void *prepare_stack(void *entry, void *user_arg, void *tcb) {
++	uintptr_t *sp = reinterpret_cast<uintptr_t *>(reinterpret_cast<uintptr_t>(
++			mmap(nullptr, 0x200000,
++				PROT_READ | PROT_WRITE,
++				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)
++			) + 0x200000);
++
++	*--sp = reinterpret_cast<uintptr_t>(tcb);
++	*--sp = reinterpret_cast<uintptr_t>(user_arg);
++	*--sp = reinterpret_cast<uintptr_t>(entry);
++	return sp;
++}
++
++} //namespace mlibc
+diff --git a/sysdeps/atlas/generic/thread_entry.S b/sysdeps/atlas/generic/thread_entry.S
+new file mode 100644
+index 00000000..ac321e6f
+--- /dev/null
++++ b/sysdeps/atlas/generic/thread_entry.S
+@@ -0,0 +1,9 @@
++
++.section .text
++.global __mlibc_start_thread
++__mlibc_start_thread:
++	pop %rdi
++	pop %rsi
++	pop %rdx
++	call __mlibc_enter_thread
++
+diff --git a/sysdeps/atlas/include/abi-bits/abi.h b/sysdeps/atlas/include/abi-bits/abi.h
+new file mode 120000
+index 00000000..c9458601
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/abi.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/abi.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/access.h b/sysdeps/atlas/include/abi-bits/access.h
+new file mode 120000
+index 00000000..171f75f8
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/access.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/access.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/auxv.h b/sysdeps/atlas/include/abi-bits/auxv.h
+new file mode 120000
+index 00000000..0f144153
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/auxv.h
+@@ -0,0 +1 @@
++../../../../abis/lemon/auxv.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/blkcnt_t.h b/sysdeps/atlas/include/abi-bits/blkcnt_t.h
+new file mode 120000
+index 00000000..e9d9f1b4
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/blkcnt_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/blkcnt_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/blksize_t.h b/sysdeps/atlas/include/abi-bits/blksize_t.h
+new file mode 120000
+index 00000000..c6dfb6e0
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/blksize_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/blksize_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/dev_t.h b/sysdeps/atlas/include/abi-bits/dev_t.h
+new file mode 120000
+index 00000000..0c1143b9
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/dev_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/dev_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/epoll.h b/sysdeps/atlas/include/abi-bits/epoll.h
+new file mode 120000
+index 00000000..9efc3a05
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/epoll.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/epoll.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/errno.h b/sysdeps/atlas/include/abi-bits/errno.h
+new file mode 120000
+index 00000000..589859fb
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/errno.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/errno.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/fcntl.h b/sysdeps/atlas/include/abi-bits/fcntl.h
+new file mode 120000
+index 00000000..ea5323ad
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/fcntl.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/fcntl.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/gid_t.h b/sysdeps/atlas/include/abi-bits/gid_t.h
+new file mode 120000
+index 00000000..6a772180
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/gid_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/gid_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/in.h b/sysdeps/atlas/include/abi-bits/in.h
+new file mode 120000
+index 00000000..b58c683f
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/in.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/in.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/ino_t.h b/sysdeps/atlas/include/abi-bits/ino_t.h
+new file mode 120000
+index 00000000..10d644e7
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/ino_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/ino_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/limits.h b/sysdeps/atlas/include/abi-bits/limits.h
+new file mode 120000
+index 00000000..1aa58942
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/limits.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/limits.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/mode_t.h b/sysdeps/atlas/include/abi-bits/mode_t.h
+new file mode 120000
+index 00000000..29d77331
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/mode_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/mode_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/nlink_t.h b/sysdeps/atlas/include/abi-bits/nlink_t.h
+new file mode 120000
+index 00000000..7618c27f
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/nlink_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/nlink_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/packet.h b/sysdeps/atlas/include/abi-bits/packet.h
+new file mode 120000
+index 00000000..47067e21
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/packet.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/packet.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/pid_t.h b/sysdeps/atlas/include/abi-bits/pid_t.h
+new file mode 120000
+index 00000000..3fd26a7f
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/pid_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/pid_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/poll.h b/sysdeps/atlas/include/abi-bits/poll.h
+new file mode 120000
+index 00000000..ab989c75
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/poll.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/poll.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/ptrace.h b/sysdeps/atlas/include/abi-bits/ptrace.h
+new file mode 120000
+index 00000000..f391fb72
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/ptrace.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/ptrace.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/reboot.h b/sysdeps/atlas/include/abi-bits/reboot.h
+new file mode 120000
+index 00000000..77013a41
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/reboot.h
+@@ -0,0 +1 @@
++../../../../abis/linux/reboot.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/resource.h b/sysdeps/atlas/include/abi-bits/resource.h
+new file mode 120000
+index 00000000..3e59c750
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/resource.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/resource.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/seek-whence.h b/sysdeps/atlas/include/abi-bits/seek-whence.h
+new file mode 120000
+index 00000000..d22e9933
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/seek-whence.h
+@@ -0,0 +1 @@
++../../../../abis/lemon/x86_64/seek-whence.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/signal.h b/sysdeps/atlas/include/abi-bits/signal.h
+new file mode 120000
+index 00000000..b20e5119
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/signal.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/signal.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/socket.h b/sysdeps/atlas/include/abi-bits/socket.h
+new file mode 120000
+index 00000000..f1dc016e
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/socket.h
+@@ -0,0 +1 @@
++../../../../abis/linux/socket.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/stat.h b/sysdeps/atlas/include/abi-bits/stat.h
+new file mode 120000
+index 00000000..82642c3c
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/stat.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/stat.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/termios.h b/sysdeps/atlas/include/abi-bits/termios.h
+new file mode 120000
+index 00000000..cfcfe763
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/termios.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/termios.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/time.h b/sysdeps/atlas/include/abi-bits/time.h
+new file mode 120000
+index 00000000..97f3d52d
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/time.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/time.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/uid_t.h b/sysdeps/atlas/include/abi-bits/uid_t.h
+new file mode 120000
+index 00000000..1113eba6
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/uid_t.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/uid_t.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/utsname.h b/sysdeps/atlas/include/abi-bits/utsname.h
+new file mode 120000
+index 00000000..17b993fe
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/utsname.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/utsname.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/vm-flags.h b/sysdeps/atlas/include/abi-bits/vm-flags.h
+new file mode 120000
+index 00000000..f1a985e6
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/vm-flags.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/vm-flags.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/abi-bits/wait.h b/sysdeps/atlas/include/abi-bits/wait.h
+new file mode 120000
+index 00000000..6d911c7f
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/wait.h
+@@ -0,0 +1 @@
++../../../../abis/mlibc/wait.h
+\ No newline at end of file
+diff --git a/sysdeps/atlas/include/mlibc/thread-entry.hpp b/sysdeps/atlas/include/mlibc/thread-entry.hpp
+new file mode 100644
+index 00000000..2dd88a64
+--- /dev/null
++++ b/sysdeps/atlas/include/mlibc/thread-entry.hpp
+@@ -0,0 +1,10 @@
++#pragma once
++
++#include <mlibc/tcb.hpp>
++
++extern "C" void __mlibc_start_thread(void);
++extern "C" void __mlibc_enter_thread(void *entry, void *user_arg, Tcb *tcb);
++
++namespace mlibc {
++	void *prepare_stack(void *entry, void *user_arg, void *tcb);
++}
+diff --git a/sysdeps/atlas/meson.build b/sysdeps/atlas/meson.build
+new file mode 100644
+index 00000000..a1a39d3e
+--- /dev/null
++++ b/sysdeps/atlas/meson.build
+@@ -0,0 +1,59 @@
++
++rtdl_sources += files(
++	'generic/generic.cpp'
++)
++
++libc_sources += files(
++	'generic/entry.cpp',
++	'generic/generic.cpp',
++	'generic/thread.cpp',
++	'generic/thread_entry.S'
++)
++
++if not no_headers
++	install_headers(
++		'include/abi-bits/abi.h',
++		'include/abi-bits/auxv.h',
++		'include/abi-bits/seek-whence.h',
++		'include/abi-bits/vm-flags.h',
++		'include/abi-bits/errno.h',
++		'include/abi-bits/fcntl.h',
++		'include/abi-bits/in.h',
++		'include/abi-bits/resource.h',
++		'include/abi-bits/signal.h',
++		'include/abi-bits/stat.h',
++		'include/abi-bits/socket.h',
++		'include/abi-bits/termios.h',
++		'include/abi-bits/time.h',
++		'include/abi-bits/blkcnt_t.h',
++		'include/abi-bits/blksize_t.h',
++		'include/abi-bits/dev_t.h',
++		'include/abi-bits/gid_t.h',
++		'include/abi-bits/ino_t.h',
++		'include/abi-bits/mode_t.h',
++		'include/abi-bits/nlink_t.h',
++		'include/abi-bits/pid_t.h',
++		'include/abi-bits/uid_t.h',
++		'include/abi-bits/access.h',
++		'include/abi-bits/wait.h',
++		'include/abi-bits/limits.h',
++		'include/abi-bits/utsname.h',
++		'include/abi-bits/ptrace.h',
++		'include/abi-bits/poll.h',
++		'include/abi-bits/epoll.h',
++		'include/abi-bits/packet.h',
++		subdir: 'abi-bits'
++	)
++endif
++
++if not headers_only
++	crt = custom_target('crt0',
++		build_by_default: true,
++		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
++		input: 'crt-x86_64/crt0.S',
++		output: 'crt0.o',
++		install: true,
++		install_dir: get_option('libdir')
++	)
++endif
++
+-- 
+2.36.1
+

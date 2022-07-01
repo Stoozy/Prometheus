@@ -1,0 +1,25 @@
+From 61d31162b32acd179631cd94628d7642623df7a2 Mon Sep 17 00:00:00 2001
+From: Stoozy <stoozy@proton.me>
+Date: Wed, 29 Jun 2022 13:41:12 -0400
+Subject: [PATCH] atlas changes
+
+---
+ lib/config.sub | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/config.sub b/lib/config.sub
+index dba16e84c..4bb581635 100755
+--- a/lib/config.sub
++++ b/lib/config.sub
+@@ -1728,7 +1728,7 @@ case $os in
+ 	     | hpux* | unos* | osf* | luna* | dgux* | auroraux* | solaris* \
+ 	     | sym* |  plan9* | psp* | sim* | xray* | os68k* | v88r* \
+ 	     | hiux* | abug | nacl* | netware* | windows* \
+-	     | os9* | macos* | osx* | ios* \
++	     | os9* | macos* | osx* | ios*  | atlas* \
+ 	     | mpw* | magic* | mmixware* | mon960* | lnews* \
+ 	     | amigaos* | amigados* | msdos* | newsos* | unicos* | aof* \
+ 	     | aos* | aros* | cloudabi* | sortix* | twizzler* \
+-- 
+2.36.1
+

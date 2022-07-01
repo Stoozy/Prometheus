@@ -25,7 +25,15 @@ kernel/kernel.elf:
 	$(MAKE) -C kernel
 
 libc:
-	cd mlibc && mkdir build && meson . build --cross-file crossfile.ini && ninja -C build && yes | cp build/*.so $(SYSROOT)/lib && yes | cp build/sysdeps/atlas/crt1.o $(SYSROOT)/lib
+	git clone https://github.com/managarm/mlibc.git --depth=1
+	cd mlibc ; git reset  90d146c --hard; \
+	git am ../patches/mlibc/0001-atlas-changes.patch; \
+	meson . build --cross-file ../crossfile.ini; \
+	ninja -C build; \
+	yes | cp build/*.so $(SYSROOT)/lib && yes | cp build/sysdeps/atlas/crt0.o $(SYSROOT)/lib ; \
+
+	
+	#cd mlibc && mkdir build && meson . build --cross-file crossfile.ini && ninja -C build && yes | cp build/*.so $(SYSROOT)/lib && yes | cp build/sysdeps/atlas/crt0.o $(SYSROOT)/lib
 
 initrd: 
 	tar -C $(SYSROOT) -cvf initrd.tar lib fonts testfile hello
@@ -48,4 +56,4 @@ clean:
 	rm -f $(ISO_IMAGE) 
 	rm -rf initrd.tar
 	$(MAKE) -C kernel clean
-	rm -rf mlibc/build
+	rm -rf mlibc
