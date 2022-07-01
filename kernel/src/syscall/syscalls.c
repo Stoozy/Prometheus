@@ -183,9 +183,10 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
   return NULL;
 }
 
+#define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
-#define SEEK_SET 3
+
 off_t sys_seek(int fd, off_t offset, int whence) {
   extern ProcessControlBlock *gp_current_process;
   kprintf("[SYS_SEEK] FD is %d. Offset is %d. Whence is %d\n", fd, offset,
