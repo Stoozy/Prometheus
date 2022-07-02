@@ -28,7 +28,9 @@ global dummy_irq
     push r13
     push r14
     push r15
+
     push rbp
+
     push rcx
     push rbx
     push rax
@@ -42,7 +44,9 @@ global dummy_irq
     pop rax
     pop rbx    
     pop rcx    
+
     pop rbp    
+
     pop r15
     pop r14
     pop r13

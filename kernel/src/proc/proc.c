@@ -4,6 +4,7 @@
 #include <kmalloc.h>
 #include <kprintf.h>
 #include <memory/pmm.h>
+#include <proc/elf.h>
 #include <proc/proc.h>
 #include <string/string.h>
 
@@ -178,12 +179,15 @@ void register_process(ProcessControlBlock *new_pcb) {
 
 void multitasking_init() {
   // save kernel page tables
-
   kernel_cr3 = vmm_get_current_cr3();
+  ProcessControlBlock *hello_proc = create_elf_process("/bin/hello");
+  register_process(hello_proc);
+
   gp_current_process = gp_process_queue;
 
-  kprintf("Switching to process with 0x%llx cr3\n",
-          (void *)gp_current_process->cr3);
+  // kprintf("Switching to process with 0x%llx cr3\n",
+  // (void *)gp_current_process->cr3);
   switch_to_process(gp_current_process->p_stack,
                     (void *)gp_current_process->cr3);
+  return;
 }

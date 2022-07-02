@@ -216,10 +216,6 @@ void _start(struct stivale2_struct *boot_info) {
   // smp_init(smp_tag);
   sys_init();
 
-  ProcessControlBlock *hello_proc = create_elf_process("/bin/hello");
-  register_process(hello_proc);
+  // jump to userspace
   multitasking_init();
-
-  // We're done, just hang...
-  hang();
 }

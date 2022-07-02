@@ -16,11 +16,12 @@ void save_context(volatile ProcessControlBlock *proc, Registers *regs) {
   proc->p_stack = (void *)regs->rsp;
 
   u64 *stack = proc->p_stack;
-  *--stack = regs->ss;           // ss
-  *--stack = (u64)proc->p_stack; // rsp
-  *--stack = regs->rflags;       // rflags
-  *--stack = regs->cs;           // cs
-  *--stack = (u64)regs->rip;     // rip
+  *--stack = regs->ss;
+  *--stack = (u64)proc->p_stack;
+  *--stack = regs->rflags;
+  *--stack = regs->cs;
+
+  *--stack = (u64)regs->rip;
   *--stack = (u64)regs->r8;
   *--stack = (u64)regs->r9;
   *--stack = (u64)regs->r10;
@@ -29,8 +30,12 @@ void save_context(volatile ProcessControlBlock *proc, Registers *regs) {
   *--stack = (u64)regs->r13;
   *--stack = (u64)regs->r14;
   *--stack = (u64)regs->r15;
+
   *--stack = regs->rbp; // rbp
+
+  *--stack = regs->rcx; // rbx
   *--stack = regs->rbx; // rbx
+  *--stack = regs->rax; // rbx
   *--stack = regs->rsi; // rsi
   *--stack = regs->rdi; // rdi
 
@@ -70,7 +75,7 @@ void schedule(Registers *regs) {
 
 #ifdef SCHEDULER_DEBUG
     kprintf("[SCHEDULER] Switching to head:\n");
-    dump_regs(gp_current_process->p_stack);
+    dump_regs((Registers *)gp_current_process->p_stack);
 #endif
 
   } else if (gp_current_process->next != NULL) {

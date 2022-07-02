@@ -164,11 +164,10 @@ ProcessControlBlock *create_elf_process(const char *path) {
   uintptr_t sa = (uintptr_t)stack;
 
   // Interrupt frame
-  *--stack = 0x23;  // ss
-  *--stack = sa;    // rsp
-  *--stack = 0x202; // rflags
-  *--stack = 0x2b;  // cs
-
+  *--stack = 0x23;              // ss
+  *--stack = sa;                // rsp
+  *--stack = 0x202;             // rflags
+  *--stack = 0x2b;              // cs
   *--stack = (u64)aux.ld_entry; // rip
 
   *--stack = 0; // r8
@@ -180,7 +179,9 @@ ProcessControlBlock *create_elf_process(const char *path) {
   *--stack = 0;
   *--stack = 0; // r15
   *--stack = 0; // rbp
-  *--stack = 0; // rdx
+  *--stack = 0; // rcx
+  *--stack = 0; // rbx
+  *--stack = 0; // rax
   *--stack = 0; // rsi
   *--stack = 0; // rdi
 
