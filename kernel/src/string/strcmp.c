@@ -1,14 +1,14 @@
-#include "string.h"
+#include <string.h>
 
 // Function to implement strcmp function
-int strcmp(const char *a, const char *b)
-{
-    while (*a){
-        if (*a != *b) break;
- 
-        a++;
-        b++;
-    }
- 
-    return *(const unsigned char*)a - *(const unsigned char*)b;
+int strcmp(const char *a, const char *b) {
+  while (*a) {
+    if (*a != *b)
+      break;
+
+    a++;
+    b++;
+  }
+
+  return *(const unsigned char *)a - *(const unsigned char *)b;
 }

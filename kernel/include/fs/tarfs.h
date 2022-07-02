@@ -1,7 +1,7 @@
 #pragma once
 
 #include <typedefs.h>
-#include "vfs.h"
+#include <fs/vfs.h>
 
 #define USTAR_TYPE_NORMAL       0x0
 #define USTAR_TYPE_HARDLINK     0x1
