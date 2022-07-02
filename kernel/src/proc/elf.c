@@ -3,6 +3,7 @@
 
 #include <config.h>
 #include <fs/vfs.h>
+#include <kmalloc.h>
 #include <kprintf.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
@@ -124,9 +125,9 @@ ProcessControlBlock *create_elf_process(const char *path) {
 
   // ProcessControlBlock * proc = (ProcessControlBlock*)pmm_alloc_block();
   ProcessControlBlock *proc =
-      (ProcessControlBlock *)(PAGING_VIRTUAL_OFFSET +
-                              kmalloc(sizeof(ProcessControlBlock)));
+      (ProcessControlBlock *)(kmalloc(sizeof(ProcessControlBlock)));
 
+  memset(proc, 0, sizeof(ProcessControlBlock));
   proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
   memset(proc->p_stack, 0, 8 * PAGE_SIZE);
   kprintf("Process stack at 0x%x\n", proc->p_stack);
