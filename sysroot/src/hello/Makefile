@@ -7,19 +7,23 @@ INC_DIRS= ../mlibc/options/ansi/include \
 		  ../mlibc/sysdeps/atlas/include	\
 		  ../mlibc/build/	\
 INC_PARAMS=$(foreach d, $(INC_DIRS), -I$d)
-LIBRARIES=$(shell pwd)/lib
+
+BINDIR= $(SYSROOT)/bin
+LIBDIR= $(SYSROOT)/lib
+
+BINARY=$(BINDIR)/hello
 
 
-CFLAGS= -fPIC -shared -no-pie -nostartfiles -LD_LIBRARY_PATH=lib/
+CFLAGS= -fPIC -shared -no-pie -nostartfiles -nostdlib -LD_LIBRARY_PATH=$(LIBDIR)
 
 .PHONY: all clean 
-all: hello 
+all:  $(BINARY)
 
-hello:
-	$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBRARIES) lib/crt1.o -lc -o hello
-	patchelf hello --set-interpreter /lib/ld.so
+$(BINARY):
+	$(CC) $(CFLAGS) hello_world.c $(INC_PARAMS) -L$(LIBDIR) $(LIBDIR)/crt0.o -lc -o $@
+	patchelf $(BINARY) --set-interpreter /lib/ld.so
 
 clean:
-	rm -rf hello
+	rm -rf $(BINARY)
 
 

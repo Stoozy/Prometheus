@@ -101,7 +101,6 @@ int sys_write(int file, char *ptr, int len) {
 #endif
   for (int i = 0; i < len; ++i)
     kprintf("%c", ptr[i]);
-  kprintf("\n");
   return len;
 }
 
@@ -140,8 +139,6 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
     int pages = (size / PAGE_SIZE) + 1;
     void *phys_base = pmm_alloc_blocks(pages);
 
-
-
     if (phys_base == NULL) {
       // out of memory
       for (;;)
@@ -172,7 +169,7 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
         (void *)((u64)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET),
         virt_base, phys_base, size, page_flags);
 
-    //vmm_switch_page_directory(gp_current_process->cr3);
+    // vmm_switch_page_directory(gp_current_process->cr3);
 
     kprintf("[MMAP] Returning 0x%x\n", virt_base);
 
@@ -273,7 +270,7 @@ void syscall_dispatcher(Registers regs) {
     break;
   }
   case SYS_WRITE: {
-    kprintf("[SYS]  WRITE CALLED\n");
+    // kprintf("[SYS]  WRITE CALLED\n");
     int file = regs.r8;
     char *ptr = (char *)regs.r9;
     int len = regs.r10;
