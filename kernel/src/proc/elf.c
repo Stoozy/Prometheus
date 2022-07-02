@@ -1,14 +1,14 @@
-#include "elf.h"
-#include "proc.h"
+#include <proc/elf.h>
+#include <proc/proc.h>
 
-#include "../config.h"
-#include "../fs/vfs.h"
-#include "../kprintf.h"
-#include "../memory/pmm.h"
-#include "../memory/vmm.h"
-#include "../proc/proc.h"
-#include "../string/string.h"
-#include "../typedefs.h"
+#include <config.h>
+#include <fs/vfs.h>
+#include <kprintf.h>
+#include <memory/pmm.h>
+#include <memory/vmm.h>
+#include <proc/proc.h>
+#include <string/string.h>
+#include <typedefs.h>
 
 extern void load_pagedir(PageTable *);
 

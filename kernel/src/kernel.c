@@ -1,33 +1,32 @@
 #define SSFN_CONSOLEBITMAP_TRUECOLOR
 #define NULL (void *)0
 
-#include "cpu/gdt.h"
-#include "cpu/idt.h"
-#include "cpu/io.h"
-#include "cpu/smp.h"
-#include "misc/ssfn.h"
-#include "typedefs.h"
+#include <cpu/gdt.h>
+#include <cpu/idt.h>
+#include <cpu/io.h>
+#include <cpu/smp.h>
+#include <kmalloc.h>
+#include <memory/pmm.h>
+#include <memory/vmm.h>
+#include <misc/ssfn.h>
+#include <typedefs.h>
 
-#include "kmalloc.h"
-#include "memory/pmm.h"
-#include "memory/vmm.h"
+#include <drivers/pit.h>
+#include <drivers/serial.h>
+#include <drivers/video.h>
 
-#include "drivers/pit.h"
-#include "drivers/serial.h"
-#include "drivers/video.h"
+#include <kprintf.h>
+#include <util.h>
 
-#include "kprintf.h"
-#include "util.h"
+#include <proc/elf.h>
+#include <proc/proc.h>
 
-#include "proc/elf.h"
-#include "proc/proc.h"
+#include <fs/tarfs.h>
+#include <stivale2.h>
+#include <string/string.h>
+#include <syscall/syscalls.h>
 
-#include "fs/tarfs.h"
-#include "stivale2.h"
-#include "string/string.h"
-#include "syscall/syscalls.h"
-
-#include "syscall/syscalls.h"
+#include <syscall/syscalls.h>
 
 u64 k_start;
 u64 k_end;

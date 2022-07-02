@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../typedefs.h"
-#include "../memory/vmm.h"
+#include <typedefs.h>
+#include <memory/vmm.h>
 
 typedef struct  {
     u64 rdi;    

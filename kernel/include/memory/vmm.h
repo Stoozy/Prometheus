@@ -3,7 +3,7 @@
 
 #define PAGE_SIZE   4096
 
-#include "../typedefs.h"
+#include <typedefs.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

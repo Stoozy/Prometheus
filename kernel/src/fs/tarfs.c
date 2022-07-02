@@ -1,11 +1,11 @@
 #include <stdarg.h>
 
-#include "../config.h"
-#include "../kmalloc.h"
-#include "../kprintf.h"
-#include "../string/string.h"
-#include "tarfs.h"
-#include "vfs.h"
+#include <config.h>
+#include <fs/tarfs.h>
+#include <fs/vfs.h>
+#include <kmalloc.h>
+#include <kprintf.h>
+#include <string/string.h>
 
 struct file *ustar_finddir(VfsNode *dir, const char *name);
 struct dirent *ustar_readdir(VfsNode *dir, u32 index);

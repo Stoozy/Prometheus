@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../memory/vmm.h"
-#include "../typedefs.h"
+#include <memory/vmm.h>
 #include <stddef.h>
+#include <typedefs.h>
 
 typedef unsigned long long caddr_t;
 

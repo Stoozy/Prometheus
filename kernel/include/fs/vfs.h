@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../typedefs.h"
+#include <typedefs.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <unistd.h>

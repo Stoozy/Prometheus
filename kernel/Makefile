@@ -1,4 +1,5 @@
 KERNEL := kernel.elf
+INCLUDEDIR=$(shell pwd)/include
 
 CC=gcc
 NASM=nasm 
@@ -15,7 +16,7 @@ INTERNALLDFLAGS := \
 	-mcmodel=large -v 
 
 INTERNALCFLAGS  :=       \
-	-I.       			 \
+	-I$(INCLUDEDIR)       			 \
 	-Wall				 \
 	-Wextra				 \
 	-std=gnu11           \
@@ -50,7 +51,7 @@ stivale2.h:
 	$(NASM) -f elf64 $< -o $@
 
 %.o: %.c stivale2.h 
-	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(KERNEL) $(C_OBJ) $(NASM_OBJ)

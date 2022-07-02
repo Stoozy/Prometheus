@@ -1,14 +1,14 @@
-#include "idt.h"
+#include <cpu/idt.h>
 
-#include "../kprintf.h"
-#include "../typedefs.h"
+#include <kprintf.h>
+#include <typedefs.h>
 
-#include "../drivers/pit.h"
-#include "../drivers/serial.h"
+#include <drivers/pit.h>
+#include <drivers/serial.h>
 
-#include "../proc/proc.h"
-#include "cpu.h"
-#include "io.h"
+#include <cpu/cpu.h>
+#include <cpu/io.h>
+#include <proc/proc.h>
 
 __attribute__((aligned(0x10))) IDTEntry idt[256];
 

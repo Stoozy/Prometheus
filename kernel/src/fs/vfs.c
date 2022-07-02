@@ -1,7 +1,7 @@
-#include "vfs.h"
-#include "../kmalloc.h"
-#include "../kprintf.h"
-#include "../string/string.h"
+#include <fs/vfs.h>
+#include <kmalloc.h>
+#include <kprintf.h>
+#include <string/string.h>
 
 FileSystem *gp_filesystems;
 VfsNode *gp_root;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../typedefs.h"
+#include <typedefs.h>
 
 void screen_init();
 void draw_pixel(int X, int Y, int RGB);

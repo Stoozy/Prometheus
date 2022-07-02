@@ -1,5 +1,5 @@
 #pragma once
-#include "../typedefs.h"
+#include <typedefs.h>
 
 typedef struct {
     u16 limit;

@@ -1,7 +1,7 @@
 #ifndef _PMM_H 
 #define _PMM_H
 
-#include "../typedefs.h"
+#include <typedefs.h>
 #include <stddef.h>
 #include <stdbool.h>
 

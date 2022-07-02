@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../typedefs.h"
+#include <typedefs.h>
 
 struct table_ptr {
     u16 limit;

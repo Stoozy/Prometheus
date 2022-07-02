@@ -1,16 +1,15 @@
 #include <stdint.h>
-#include <sys/mman.h>
 
-#include "../config.h"
-#include "../cpu/cpu.h"
-#include "../fs/vfs.h"
-#include "../kmalloc.h"
-#include "../kprintf.h"
-#include "../memory/pmm.h"
-#include "../memory/vmm.h"
-#include "../proc/proc.h"
-#include "../typedefs.h"
-#include "syscalls.h"
+#include <config.h>
+#include <cpu/cpu.h>
+#include <fs/vfs.h>
+#include <kmalloc.h>
+#include <kprintf.h>
+#include <memory/pmm.h>
+#include <memory/vmm.h>
+#include <proc/proc.h>
+#include <syscall/syscalls.h>
+#include <typedefs.h>
 
 typedef long int off_t;
 
