@@ -208,7 +208,7 @@ void _start(struct stivale2_struct *boot_info) {
     ssfn_dst.x = 100;
     ssfn_dst.y = 205;
     ssfn_dst.fg = 0xffffff;
-    // screen_init(framebuffer_tag);
+    screen_init(framebuffer_tag);
   }
 
   cli();

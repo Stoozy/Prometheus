@@ -36,22 +36,6 @@ char **environ = &__env;
 
 void sys_log_libc(const char *message) { kprintf(message); }
 
-void *sys_anon_allocate(size_t size) {
-  kprintf("[SYS]  sys anon allocate was called\n");
-  u64 blocks = (size / PAGE_SIZE) + 1;
-  kprintf("[SYS]  Requesting %llu  blocks\n");
-  void *ret = pmm_alloc_blocks(blocks);
-  extern ProcessControlBlock *gp_current_process;
-
-  int flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-  for (u64 page = 0; page < blocks; page++) {
-    void *caddr = (void *)(ret + (page * PAGE_SIZE));
-    vmm_map_page(gp_current_process->cr3, caddr, caddr, flags);
-  }
-
-  return ret;
-}
-
 int sys_exit() {
   kill_current_proc();
   return 0;
@@ -103,17 +87,20 @@ int sys_write(int file, char *ptr, int len) {
   return len;
 }
 
-/* snatched from mlibc/vm-flags.h */
+/* snatched from lemon/vm-flags.h */
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
 #define PROT_WRITE 0x02
 #define PROT_EXEC 0x04
 
+#define MAP_FAILED ((void *)(-1))
+#define MAP_FILE 0x00
 #define MAP_PRIVATE 0x01
 #define MAP_SHARED 0x02
 #define MAP_FIXED 0x04
 #define MAP_ANON 0x08
 #define MAP_ANONYMOUS 0x08
+#define MAP_NORESERVE 0x10
 
 void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
                  off_t offset) {
@@ -163,7 +150,6 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
 
     kprintf("Virt base is %x\n", virt_base);
 
-    asm("cli");
     vmm_map_range(
         (void *)((u64)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET),
         virt_base, phys_base, size, page_flags);
@@ -293,7 +279,7 @@ void syscall_dispatcher(Registers regs) {
     off_t off = regs.r14;
 
     void *ret = sys_vm_map(addr, size, prot, flags, fd, off);
-    regs.r15 = ret;
+    regs.r15 = (u64)ret;
 
     break;
   }
@@ -303,12 +289,13 @@ void syscall_dispatcher(Registers regs) {
     off_t off = regs.r9;
     int whence = regs.r10;
     regs.r15 = sys_seek(fd, off, whence);
+    kprintf("Returning offset %llu\n", regs.r15);
 
     break;
   }
   case SYS_TCB_SET: {
     kprintf("[SYS]  TCB_SET CALLED\n");
-    void *ptr = regs.r8;
+    void *ptr = (void *)regs.r8;
     regs.r15 = sys_tcb_set(ptr);
     break;
   }

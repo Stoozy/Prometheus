@@ -14,7 +14,10 @@ extern syscall_dispatcher
     push r13
     push r14
     push r15
+
     push rbp
+
+    push rdx
     push rcx
     push rbx
     push rax
@@ -28,7 +31,10 @@ extern syscall_dispatcher
     pop rax
     pop rbx    
     pop rcx    
+    pop rdx
+
     pop rbp    
+
     pop r15
     pop r14
     pop r13
@@ -38,6 +44,7 @@ extern syscall_dispatcher
     pop r9
     pop r8
 %endmacro
+
 
 
 enable_sce:
@@ -50,7 +57,6 @@ enable_sce:
     mov edx, 0x180008       ; load up GDT segment bases 0x0 (kernel) and 0x18 (user)
     wrmsr                   ; write back new STAR
     ret                     ; return back to C
-
 
 ; call number in rdi
 ; arg1  r8
@@ -77,7 +83,7 @@ syscall_entry:
     push qword [gs:0x8]     ; saved rsp
     push qword r11          ; rflags
     push qword 0x2b         ; user cs
-    push rcx                ; rip
+    push qword rcx          ; rip
 
     pushaq
     cld

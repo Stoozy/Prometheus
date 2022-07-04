@@ -1,6 +1,7 @@
 #include <drivers/video.h>
 #include <fs/vfs.h>
 #include <kmalloc.h>
+#include <kprintf.h>
 #include <misc/ssfn.h>
 #include <stivale2.h>
 #include <string/string.h>
@@ -133,16 +134,12 @@ void draw_fill_rect(int x, int y, int w, int h, int color) {
 }
 
 void refresh_screen_proc() {
-  // draw_fill_rect(100, 100, 100, 100, 0xff0000);
-  // draw_fill_rect(200, 100, 100, 100, 0x00ff00);
-  // draw_fill_rect(300, 100, 100, 100, 0x0000ff);
-  // draw_line(0, 384, 1024, 384, 0xffffff);
-  // draw_line(512, 0, 512, 1024, 0xffffff);
 
-  memset(gp_framebuffer, 0xff, g_fb_size);
-  while (1) {
-  }
-} // refresh_screen_proc
+  memset(gp_framebuffer, 0x2b, g_fb_size);
+  for (;;)
+    ;
+  // kprintf("Running refresh process\n");
+}
 
 u32 *get_framebuffer_addr() { return gp_framebuffer; }
 

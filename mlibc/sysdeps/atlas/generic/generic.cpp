@@ -204,11 +204,12 @@ int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written) {
 
 int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
   // TODO
-
   register off_t ret asm("r15");
   SYSCALL_NA3(SYS_SEEK, fd, offset, whence);
 
   *new_offset = ret;
+  mlibc::infoLogger() << "Got new offset " << *new_offset << " bytes"
+                      << frg::endlog;
 
   return 0;
 }
