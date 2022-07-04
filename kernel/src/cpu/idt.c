@@ -27,8 +27,8 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags) {
 void irq0_handler(Registers regs) {
   tick();
 
-  schedule(&regs);
   outb(0x20, 0x20); /* EOI */
+  schedule(&regs);
 }
 
 void irq1_handler() {
