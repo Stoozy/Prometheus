@@ -9,6 +9,7 @@ typedef struct {
   u64 rax;
   u64 rbx;
   u64 rcx;
+  u64 rdx;
 
   u64 rbp;
 

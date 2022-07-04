@@ -138,6 +138,9 @@ ProcessControlBlock *create_process(void (*entry)(void)) {
   *--stack = 0; // rbp
 
   *--stack = 0; // rdx
+  *--stack = 0; // rcx
+  *--stack = 0; // rbx
+  *--stack = 0; // rax
   *--stack = 0; // rsi
   *--stack = 0; // rdi
 
@@ -148,6 +151,47 @@ ProcessControlBlock *create_process(void (*entry)(void)) {
   return pcb;
 }
 
+ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
+
+  ProcessControlBlock *pcb = kmalloc(sizeof(ProcessControlBlock));
+
+  memset(pcb, 0, sizeof(ProcessControlBlock));
+
+  pcb->p_stack = pmm_alloc_block() + PAGE_SIZE;
+
+  u64 *stack = (u64 *)(pcb->p_stack);
+
+  // user proc
+  *--stack = 0x10;              // ss
+  *--stack = (u64)pcb->p_stack; // rsp
+  *--stack = 0x202;             // rflags
+  *--stack = 0x08;              // cs
+  *--stack = (u64)entry;        // rip
+
+  *--stack = 0; // r8
+  *--stack = 0;
+  *--stack = 0;
+  *--stack = 0; // ...
+  *--stack = 0;
+  *--stack = 0;
+  *--stack = 0;
+  *--stack = 0; // r15
+
+  *--stack = 0; // rbp
+
+  *--stack = 0; // rdx
+  *--stack = 0; // rcx
+  *--stack = 0; // rbx
+  *--stack = 0; // rax
+  *--stack = 0; // rsi
+  *--stack = 0; // rdi
+
+  pcb->p_stack = stack;
+  pcb->cr3 = vmm_get_current_cr3(); // kernel cr3
+  pcb->next = NULL;
+
+  return pcb;
+}
 void register_process(ProcessControlBlock *new_pcb) {
 
 #ifdef SCHEDULER_DEBUG
@@ -180,8 +224,12 @@ void register_process(ProcessControlBlock *new_pcb) {
 void multitasking_init() {
   // save kernel page tables
   kernel_cr3 = vmm_get_current_cr3();
+
   ProcessControlBlock *hello_proc = create_elf_process("/bin/hello");
   register_process(hello_proc);
+
+  ProcessControlBlock *screen_proc = create_kernel_process(refresh_screen_proc);
+  register_process(screen_proc);
 
   gp_current_process = gp_process_queue;
 

@@ -31,6 +31,7 @@ global dummy_irq
 
     push rbp
 
+    push rdx
     push rcx
     push rbx
     push rax
@@ -44,6 +45,7 @@ global dummy_irq
     pop rax
     pop rbx    
     pop rcx    
+    pop rdx
 
     pop rbp    
 

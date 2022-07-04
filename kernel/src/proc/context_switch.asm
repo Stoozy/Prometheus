@@ -9,6 +9,7 @@ global switch_to_process
     pop rax
     pop rbx    
     pop rcx
+    pop rdx
 
     pop rbp    
 
@@ -23,20 +24,17 @@ global switch_to_process
 %endmacro
 
 switch_to_process:
-    ; check if new cr3 needs to be set
-    mov rcx, cr3
-    cmp rcx, rsi
-    je .done
-    
-
-    ; set new cr3
-    mov cr3, rsi
-
     ; Load new callee-saved registers
     mov rsp, rdi
 
 
+    ; check if new cr3 needs to be set
+    mov rcx, cr3
+    cmp rcx, rsi
+    je .done
 
+    ; set new cr3
+    mov cr3, rsi
 .done:
     popaq
     iretq

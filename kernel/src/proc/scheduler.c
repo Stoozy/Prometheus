@@ -21,23 +21,24 @@ void save_context(volatile ProcessControlBlock *proc, Registers *regs) {
   *--stack = regs->rflags;
   *--stack = regs->cs;
 
-  *--stack = (u64)regs->rip;
-  *--stack = (u64)regs->r8;
-  *--stack = (u64)regs->r9;
-  *--stack = (u64)regs->r10;
-  *--stack = (u64)regs->r11;
-  *--stack = (u64)regs->r12;
-  *--stack = (u64)regs->r13;
-  *--stack = (u64)regs->r14;
-  *--stack = (u64)regs->r15;
+  *--stack = regs->rip;
+  *--stack = regs->r8;
+  *--stack = regs->r9;
+  *--stack = regs->r10;
+  *--stack = regs->r11;
+  *--stack = regs->r12;
+  *--stack = regs->r13;
+  *--stack = regs->r14;
+  *--stack = regs->r15;
 
-  *--stack = regs->rbp; // rbp
+  *--stack = regs->rbp;
 
-  *--stack = regs->rcx; // rbx
-  *--stack = regs->rbx; // rbx
-  *--stack = regs->rax; // rbx
-  *--stack = regs->rsi; // rsi
-  *--stack = regs->rdi; // rdi
+  *--stack = regs->rdx;
+  *--stack = regs->rcx;
+  *--stack = regs->rbx;
+  *--stack = regs->rax;
+  *--stack = regs->rsi;
+  *--stack = regs->rdi;
 
   proc->p_stack = stack;
 
@@ -58,8 +59,7 @@ void schedule(Registers *regs) {
   kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
 #endif
 
-  load_pagedir(kernel_cr3);
-  // save current proc
+  load_pagedir(kernel_cr3); // need it for
   save_context(gp_current_process, regs);
 
   // not enough procs or not time to switch yet

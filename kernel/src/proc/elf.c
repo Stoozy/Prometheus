@@ -178,7 +178,10 @@ ProcessControlBlock *create_elf_process(const char *path) {
   *--stack = 0;
   *--stack = 0;
   *--stack = 0; // r15
+
   *--stack = 0; // rbp
+
+  *--stack = 0; // rdx
   *--stack = 0; // rcx
   *--stack = 0; // rbx
   *--stack = 0; // rax
