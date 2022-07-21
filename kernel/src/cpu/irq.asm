@@ -1,6 +1,9 @@
-[bits 64]
+%include "cpu/macros.mac"
 
 global load_idt
+
+global exc6
+
 global irq0
 global irq1
 global irq2
@@ -19,45 +22,7 @@ global irq14
 global irq15
 global dummy_irq 
 
-%macro pushaq 	0
-    push r8
-    push r9
-    push r10
-    push r11
-    push r12
-    push r13
-    push r14
-    push r15
-
-    push rbp
-
-    push rdx
-    push rcx
-    push rbx
-    push rax
-    push rsi
-    push rdi
-%endmacro
-
-%macro popaq	0
-    pop rdi    
-    pop rsi    
-    pop rax
-    pop rbx    
-    pop rcx    
-    pop rdx
-
-    pop rbp    
-
-    pop r15
-    pop r14
-    pop r13
-    pop r12
-    pop r11
-    pop r10
-    pop r9
-    pop r8
-%endmacro
+extern exc6_handler
 
 extern irq0_handler
 extern irq1_handler
@@ -86,18 +51,29 @@ hang:
     call hang
 
 dummy_irq:
-	pushaq
-	call dummy_handler 
+    pushaq
+    call dummy_handler 
     call hang
-	;popaq
-	;iretq
+
+exc6:
+    pushaq
+    mov rdi, rsp
+
+    call exc6_handler
+
+    ; never reaches
+    popaq
+    iretq
  
 irq0:
-	pushaq
-	call irq0_handler
-	popaq
-	iretq
-    
+    pushaq
+    mov rdi, rsp
+
+    call irq0_handler
+
+    popaq
+    iretq
+
 irq1:
     pushfq
     call irq1_handler
@@ -106,8 +82,10 @@ irq1:
  
 irq2:
     pushfq
+    cli
     call irq2_handler
     popfq
+    sti
     iretq
  
 irq3:

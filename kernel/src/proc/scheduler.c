@@ -11,17 +11,19 @@ extern ProcessControlBlock *gp_process_queue;
 
 extern PageTable *kernel_cr3;
 
-void save_context(volatile ProcessControlBlock *proc, Registers *regs) {
+void save_context(ProcessControlBlock *proc, Registers *regs) {
 
-  proc->p_stack = (void *)regs->rsp;
+  kprintf("[SCHDULER] Saving context: \n");
+  dump_regs(regs);
 
-  u64 *stack = proc->p_stack;
+  u64 *stack = (u64 *)(regs->rsp) ;
+
   *--stack = regs->ss;
   *--stack = (u64)proc->p_stack;
   *--stack = regs->rflags;
   *--stack = regs->cs;
-
   *--stack = regs->rip;
+
   *--stack = regs->r8;
   *--stack = regs->r9;
   *--stack = regs->r10;
@@ -42,33 +44,22 @@ void save_context(volatile ProcessControlBlock *proc, Registers *regs) {
 
   proc->p_stack = stack;
 
-  // TODO: this should use actual processor ids
-  // update LocalCpuData
-  LocalCpuData *lcd = get_cpu_struct(0);
-
-  lcd->regs = *regs;
-  lcd->syscall_user_stack = stack;
-
   return;
 }
 
 void schedule(Registers *regs) {
 
-#ifdef SCHEDULER_DEBUG
-  dump_regs(regs);
-  kprintf("[SCHEDULER]    %d Global Processes\n", g_procs);
-#endif
-
-  load_pagedir(kernel_cr3); // need it for
-  save_context(gp_current_process, regs);
+  // load_pagedir(kernel_cr3);
 
   // not enough procs or not time to switch yet
   if (g_procs == 0) {
     return;
   } else if (g_ticks % SMP_TIMESLICE != 0) {
-    load_pagedir(gp_current_process->cr3);
+    // load_pagedir(gp_current_process->cr3);
     return;
   }
+
+  save_context(gp_current_process, regs);
 
   if (gp_current_process->next == NULL) {
     gp_current_process = gp_process_queue; // go to head
@@ -88,8 +79,9 @@ void schedule(Registers *regs) {
   }
 
 #ifdef SCHEDULER_DEBUG
-  kprintf("[SCHEDULER]    Switching to proc with %llx as cr3\n",
-          (void *)gp_current_process->cr3);
+  kprintf(
+      "[SCHEDULER]    Switching to proc with stack at %llx and %llx as cr3\n",
+      (void *)gp_current_process->p_stack, (void *)gp_current_process->cr3);
 #endif
 
   switch_to_process(gp_current_process->p_stack,

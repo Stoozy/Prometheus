@@ -135,9 +135,10 @@ void draw_fill_rect(int x, int y, int w, int h, int color) {
 
 void refresh_screen_proc() {
 
-  memset(gp_framebuffer, 0x2b, g_fb_size);
   for (;;)
-    ;
+    memset(gp_framebuffer, 0x1f, g_fb_size);
+  // kprintf("Done with painting\n");
+  ;
   // kprintf("Running refresh process\n");
 }
 

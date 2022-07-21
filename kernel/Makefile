@@ -2,10 +2,11 @@ KERNEL := kernel.elf
 INCLUDEDIR=$(shell pwd)/include
 
 CC=gcc
-NASM=nasm 
+NASM=nasm  
 AS=as
 
 CFLAGS = -g -Wall -Wextra -O0 -pipe 
+NASMFLAGS = -f elf64 -I$(INCLUDEDIR)
 
 INTERNALLDFLAGS := \
 	-Wl,-static,--no-dynamic-linker,-ztext \
@@ -48,7 +49,7 @@ stivale2.h:
 	wget https://github.com/stivale/stivale/raw/master/stivale2.h
 
 %.o : %.asm
-	$(NASM) -f elf64 $< -o $@
+	$(NASM) $(NASMFLAGS) $< -o $@
 
 %.o: %.c stivale2.h 
 	$(CC)  $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@

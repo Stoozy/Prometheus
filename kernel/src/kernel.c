@@ -38,7 +38,6 @@ extern void gdt_init();
 // We need to tell the stivale bootloader where we want our stack to be.
 // We are going to allocate our stack as an uninitialised array in .bss.
 volatile u8 stack[4096];
-volatile u8 user_stack[4096];
 
 // We are now going to define a framebuffer header tag.
 // This tag tells the bootloader that we want a graphical framebuffer instead

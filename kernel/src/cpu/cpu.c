@@ -32,6 +32,7 @@ void dump_regs(Registers *regs) {
   kprintf("[REGISTERS]    RIP: 0x%llx\n", regs->rip);
   kprintf("[REGISTERS]    RSP: 0x%llx\n", regs->rsp);
   kprintf("[REGISTERS]    RBP: 0x%llx\n", regs->rbp);
+  kprintf("[REGISTERS]    RAX: 0x%llx\n", regs->rax);
   kprintf("[REGISTERS]    RBX: 0x%llx\n", regs->rbx);
   kprintf("[REGISTERS]    RCX: 0x%llx\n", regs->rcx);
   kprintf("[REGISTERS]    RDX: 0x%llx\n", regs->rdx);
