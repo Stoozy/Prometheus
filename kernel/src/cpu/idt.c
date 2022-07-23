@@ -24,18 +24,17 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags) {
   desc->rsv0 = 0;
 }
 
-void dump_stack(u64 * stack){
+void dump_stack(u64 *stack) {}
+
+void exc6_handler(Registers *regs) {
+  outb(0x20, 0x20);
+  kprintf("Exception occured\n");
+  kprintf("Invalid opcode.\n");
+  for (;;)
+    ;
 }
 
-void exc6_handler(Registers * regs){
-    outb(0x20, 0x20);
-    dump_regs(regs);
-    kprintf("Exception occured\n");
-    kprintf("Invalid opcode.\n");
-    for(;;);
-}
-
-void irq0_handler(Registers * regs) {
+void irq0_handler(Registers *regs) {
   tick();
 
   outb(0x20, 0x20); /* EOI */

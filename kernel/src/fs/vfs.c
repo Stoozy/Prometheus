@@ -140,10 +140,18 @@ static void _vfs_rec_dump(VfsNode *node) {
     kprintf("Is a directory. Iterating directory...\n");
     if (node->children)
       _vfs_rec_dump(node->children);
+    else
+      kprintf("No children\n");
   }
 
-  if (node->next)
+  if (node->next) {
+    kprintf("Checking next item in directory\n");
     _vfs_rec_dump(node->next);
+  }
+
+  kprintf("Done iterating dir\n");
+
+  return;
 }
 
 void vfs_dump() { _vfs_rec_dump(gp_root); }
@@ -152,7 +160,7 @@ void vfs_init(FileSystem *root_fs) {
   gp_root = kmalloc(sizeof(VfsNode));
 
   gp_root->parent = NULL;
-  gp_root->type = VFS_MOUNTPOINT;
+  gp_root->type |= VFS_MOUNTPOINT;
 
   /* no need to iterate fs yet */
   gp_root->children = NULL;

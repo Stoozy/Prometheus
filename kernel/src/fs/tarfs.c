@@ -118,7 +118,7 @@ u64 ustar_read(struct file *file, size_t size, u8 *buffer) {
   kprintf("[TARFS] File data: %s\n", sof);
   if (tar_fp) {
     kprintf("[TARFS] Valid file\n");
-    kprintf("Copying data over to %x\n", buffer);
+    kprintf("Copying data over to %x (%llu bytes)\n", buffer, size);
     memcpy(buffer, begin, size);
     return size;
   }

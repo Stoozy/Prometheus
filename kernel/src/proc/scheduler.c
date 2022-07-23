@@ -23,7 +23,7 @@ void schedule(Registers *regs) {
     return;
   }
 
-  gp_current_process->p_stack = (void*)regs;
+  gp_current_process->p_stack = (void *)regs;
 
   if (gp_current_process->next == NULL) {
     gp_current_process = gp_process_queue; // go to head

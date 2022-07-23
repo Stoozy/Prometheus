@@ -215,6 +215,7 @@ void _start(struct stivale2_struct *boot_info) {
   // smp_init(smp_tag);
   sys_init();
 
+  // vfs_open("/usr/bin/bash", 0);
   // jump to userspace
   multitasking_init();
 }

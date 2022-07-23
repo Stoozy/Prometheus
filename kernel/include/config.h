@@ -1,9 +1,9 @@
 #define SMP_DEBUG
-#define SCHEDULER_DEBUG
+#undef SCHEDULER_DEBUG
 #define TMPFS_DEBUG
 #undef PIT_DEBUG
 #undef ALLOCATOR_DEBUG
-#define SYSCALL_DEBUG
+#undef SYSCALL_DEBUG
 #define VMM_DEBUG
 
 #define SMP_TIMESLICE 5

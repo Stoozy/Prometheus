@@ -134,12 +134,10 @@ void draw_fill_rect(int x, int y, int w, int h, int color) {
 }
 
 void refresh_screen_proc() {
-
-  for (;;)
-    memset(gp_framebuffer, 0x1f, g_fb_size);
-  // kprintf("Done with painting\n");
-  ;
-  // kprintf("Running refresh process\n");
+  for (;;) {
+    // memset(gp_backbuffer, 0x1f, g_fb_size);
+    memcpy(gp_framebuffer, gp_backbuffer, g_fb_size);
+  }
 }
 
 u32 *get_framebuffer_addr() { return gp_framebuffer; }

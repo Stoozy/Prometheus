@@ -154,7 +154,7 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
   *--stack = (u64)pcb->p_stack; // rsp
   *--stack = 0x202;             // rflags
   *--stack = 0x08;              // cs
-  *--stack = (uintptr_t)entry;        // rip
+  *--stack = (uintptr_t)entry;  // rip
 
   *--stack = 0; // r8
   *--stack = 0;
@@ -213,17 +213,11 @@ void multitasking_init() {
   // save kernel page tables
   kernel_cr3 = vmm_get_current_cr3();
 
-  // ProcessControlBlock *hello_proc = create_elf_process("/bin/hello");
-  // register_process(hello_proc);
-
   // ProcessControlBlock *screen_proc =
   // create_kernel_process(refresh_screen_proc); register_process(screen_proc);
 
-  ProcessControlBlock *proc_a = create_kernel_process(task_a);
-  register_process(proc_a);
-
-  ProcessControlBlock *proc_b = create_kernel_process(task_b);
-  register_process(proc_b);
+  ProcessControlBlock *hello_proc = create_elf_process("/bin/bash");
+  register_process(hello_proc);
 
   gp_current_process = gp_process_queue;
 

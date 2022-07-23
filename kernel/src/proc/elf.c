@@ -163,11 +163,13 @@ ProcessControlBlock *create_elf_process(const char *path) {
   *--stack = 0; // argc
   uintptr_t sa = (uintptr_t)stack;
 
-  // Interrupt frame
-  *--stack = 0x23;              // ss
-  *--stack = sa;                // rsp
-  *--stack = 0x202;             // rflags
-  *--stack = 0x2b;              // cs
+  /* Interrupt frame */
+  *--stack = 0x23;  // ss
+  *--stack = sa;    // rsp
+  *--stack = 0x202; // rflags
+  *--stack = 0x2b;  // cs
+
+  /* TODO: This should depend on the kind of executable  */
   *--stack = (u64)aux.ld_entry; // rip
 
   *--stack = 0; // r8
