@@ -18,3 +18,4 @@ sysroot/lib/*.so
 initrd.tar
 3rdparty
 build
+sysroot/usr
