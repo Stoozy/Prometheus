@@ -1,4 +1,3 @@
-#define SSFN_CONSOLEBITMAP_TRUECOLOR
 #define NULL (void *)0
 
 #include <cpu/gdt.h>
@@ -8,7 +7,6 @@
 #include <kmalloc.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
-#include <misc/ssfn.h>
 #include <typedefs.h>
 
 #include <drivers/pit.h>
@@ -199,15 +197,9 @@ void _start(struct stivale2_struct *boot_info) {
     kprintf("[MAIN]   Framebuffer width: %d\n",
             framebuffer_tag->framebuffer_width);
 
-#define SSFN_CONSOLEBITMAP_TRUECOLOR
-    ssfn_dst.ptr = (u8 *)framebuffer_tag->framebuffer_addr;
-    ssfn_dst.w = framebuffer_tag->framebuffer_width;
-    ssfn_dst.h = framebuffer_tag->framebuffer_height;
-    ssfn_dst.p = 4096;
-    ssfn_dst.x = 100;
-    ssfn_dst.y = 205;
-    ssfn_dst.fg = 0xffffff;
     screen_init(framebuffer_tag);
+    for (;;)
+      ;
   }
 
   cli();

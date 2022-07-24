@@ -2,12 +2,13 @@
 #include <fs/vfs.h>
 #include <kmalloc.h>
 #include <kprintf.h>
-#include <misc/ssfn.h>
 #include <stivale2.h>
 #include <string/string.h>
 #include <typedefs.h>
 
-#define SSFN_CONSOLEBITMAP_TRUECOLOR
+#define SSFN_CONSOLEBITMAP_TRUECOLOR /* use the special renderer for 32 bit    \
+                                        truecolor packed pixels */
+#include <misc/ssfn.h>
 
 static u64 g_fb_size = 0;
 static u32 *gp_framebuffer;
@@ -20,18 +21,32 @@ void screen_init(struct stivale2_struct_tag_framebuffer *fb_info) {
 
   g_fb_size = fb_info->framebuffer_width * fb_info->framebuffer_height *
               (fb_info->framebuffer_bpp / 8);
-
   gp_framebuffer = (u32 *)fb_info->framebuffer_addr;
   gp_backbuffer = (u32 *)kmalloc(g_fb_size);
 
-  draw_fill_rect(100, 100, 100, 100, 0xff0000);
-  draw_fill_rect(200, 100, 100, 100, 0x00ff00);
-  draw_fill_rect(300, 100, 100, 100, 0x0000ff);
+  File *font_file = vfs_open("/fonts/unscii-16.sfn", 0);
 
-  draw_line(fb_info->framebuffer_width / 2, 0, fb_info->framebuffer_width / 2,
-            fb_info->framebuffer_height, 0xffffff);
-  draw_line(0, fb_info->framebuffer_height / 2, fb_info->framebuffer_width,
-            fb_info->framebuffer_height / 2, 0xffffff);
+  u8 *font_file_buffer = kmalloc(font_file->size);
+  vfs_read(font_file, font_file_buffer, 0, font_file->size);
+
+  ssfn_src = (ssfn_font_t *)font_file_buffer;
+  ssfn_dst.ptr = (uint8_t *)gp_framebuffer;
+
+  ssfn_dst.p = gp_fb_info->framebuffer_pitch;
+  ssfn_dst.x = ssfn_dst.y = 30;
+  ssfn_dst.bg = 0;
+  ssfn_dst.fg = 0xffffff;
+
+  for (int i = 0; i < 80; i++) {
+    for (int j = 0; j < 25; j++) {
+      ssfn_dst.fg = 0xffffff - (i * i * j * j);
+      ssfn_dst.bg = 0;
+      ssfn_dst.x = i * 8;
+      ssfn_dst.y = j * 16;
+
+      ssfn_putc(i + j);
+    }
+  }
 
 } // screen_init
 
