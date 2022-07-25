@@ -1,4 +1,4 @@
-Build started at 2022-07-24T19:10:12.760534
+Build started at 2022-07-25T18:00:43.562819
 Main binary: /usr/bin/python
 Build Options: '--cross-file ../cross_file.txt'
 Python system: Linux
@@ -123,8 +123,8 @@ mlibc undefined
 
 Found ninja-1.11.0 at /usr/bin/ninja
 Running compile:
-Working directory:  /home/stoozy/osdev/mlibc/build/meson-private/tmp7wupgyrz
-Command line:  c++ /home/stoozy/osdev/mlibc/build/meson-private/tmp7wupgyrz/testfile.cpp -o /home/stoozy/osdev/mlibc/build/meson-private/tmp7wupgyrz/output.obj -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+Working directory:  /home/stoozy/osdev/mlibc/build/meson-private/tmpl5zx8emw
+Command line:  c++ /home/stoozy/osdev/mlibc/build/meson-private/tmpl5zx8emw/testfile.cpp -o /home/stoozy/osdev/mlibc/build/meson-private/tmpl5zx8emw/output.obj -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
 
 Code:
  
@@ -136,8 +136,8 @@ libraries: =/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.0/:/usr/lib/gcc/x86_64-pc-linu
 Compiler stderr:
  
 Running compile:
-Working directory:  /tmp/tmp2hvnzlid
-Command line:  g++ /tmp/tmp2hvnzlid/testfile.cpp -o /tmp/tmp2hvnzlid/output.obj -D_FILE_OFFSET_BITS=64 -c -std=c++20 
+Working directory:  /tmp/tmp1qnz4utq
+Command line:  g++ /tmp/tmp1qnz4utq/testfile.cpp -o /tmp/tmp1qnz4utq/output.obj -D_FILE_OFFSET_BITS=64 -c -std=c++20 
 
 Code:
  int i = static_cast<int>(0);
@@ -147,8 +147,8 @@ Compiler stderr:
  
 Compiler accepts -std=c++20: YES
 Running compile:
-Working directory:  /home/stoozy/osdev/mlibc/build/meson-private/tmp3gjp9hc7
-Command line:  g++ /home/stoozy/osdev/mlibc/build/meson-private/tmp3gjp9hc7/testfile.cpp -o /home/stoozy/osdev/mlibc/build/meson-private/tmp3gjp9hc7/output.obj -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+Working directory:  /home/stoozy/osdev/mlibc/build/meson-private/tmpi15srmqk
+Command line:  g++ /home/stoozy/osdev/mlibc/build/meson-private/tmpi15srmqk/testfile.cpp -o /home/stoozy/osdev/mlibc/build/meson-private/tmpi15srmqk/output.obj -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
 
 Code:
  

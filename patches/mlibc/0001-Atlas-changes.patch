@@ -1,6 +1,6 @@
-From 3d2c6e955be815045f408e95a09614cebbf469e4 Mon Sep 17 00:00:00 2001
+From e4b9d316b6f439f635957de031413237a03df789 Mon Sep 17 00:00:00 2001
 From: Stoozy <stoozy@proton.me>
-Date: Sun, 24 Jul 2022 18:22:44 -0400
+Date: Mon, 25 Jul 2022 18:51:48 -0400
 Subject: [PATCH] Atlas changes
 
 ---
@@ -155,7 +155,7 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..cac14195
+index 00000000..7f46c269
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
 @@ -0,0 +1,344 @@
@@ -307,11 +307,16 @@ index 00000000..cac14195
 +void sys_exit(int status) {
 +  register int ret asm("r15");
 +  SYSCALL_NA1(SYS_EXIT, status);
++
 +}
 +#endif
 +
 +#ifndef MLIBC_BUILDING_RTDL
-+int sys_clock_get(int clock, time_t *secs, long *nanos) { return 0; }
++int sys_clock_get(int clock, time_t *secs, long *nanos) { 
++
++    mlibc::infoLogger() << "[mlibc] Calling sys_clock_get() STUB" << frg::endlog;
++    return 0; 
++}
 +#endif
 +
 +int sys_open(const char *path, int flags, int mode, int *fd) {
@@ -390,34 +395,20 @@ index 00000000..cac14195
 +
 +int sys_vm_unmap(void *pointer, size_t size) {
 +  // TODO
-+  return sys_anon_free(pointer, size);
++  
++    return sys_anon_free(pointer, size);
 +}
 +
 +int sys_futex_wait(int *pointer, int expected, const struct timespec *time) {
-+  // TODO
-+  // uint64_t err;
-+  // asm volatile ("syscall"
-+  //        : "=d"(err)
-+  //        : "a"(66), "D"(pointer), "S"(expected)
-+  //        : "rcx", "r11");
 +
-+  // if (err) {
-+  //     return -1;
-+  // }
++    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wait() STUB" << frg::endlog;
 +
 +  return 0;
 +}
 +
 +int sys_futex_wake(int *pointer) {
-+  // uint64_t err;
-+  // asm volatile ("syscall"
-+  //         : "=d"(err)
-+  //         : "a"(65), "D"(pointer)
-+  //         : "rcx", "r11");
 +
-+  // if (err) {
-+  //     return -1;
-+  // }
++    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wake() STUB" << frg::endlog;
 +
 +  return 0;
 +}
@@ -426,78 +417,87 @@ index 00000000..cac14195
 +#ifndef MLIBC_BUILDING_RTDL
 +
 +int sys_clone(void *entry, void *user_arg, void *tcb, pid_t *tid_out) {
-+  void *sp = prepare_stack(entry, user_arg, tcb);
-+  int tid;
++  //void *sp = prepare_stack(entry, user_arg, tcb);
++  //int tid;
 +
-+  asm volatile("syscall"
-+               : "=a"(tid)
-+               : "a"(67), "D"(__mlibc_start_thread), "S"(sp), "d"(tcb)
-+               : "rcx", "r11");
++  //asm volatile("syscall"
++  //             : "=a"(tid)
++  //             : "a"(67), "D"(__mlibc_start_thread), "S"(sp), "d"(tcb)
++  //             : "rcx", "r11");
 +
-+  if (tid_out)
-+    *tid_out = tid;
++  //if (tid_out)
++  //  *tid_out = tid;
++
++
++    mlibc::infoLogger() << "[mlibc] Calling sys_clone() STUB" << frg::endlog;
 +
 +  return 0;
 +}
 +
 +void sys_thread_exit() {
-+  asm volatile("syscall" : : "a"(68) : "rcx", "r11");
-+  __builtin_trap();
++
++    mlibc::infoLogger() << "[mlibc] Calling sys_thread_exit() STUB" << frg::endlog;
++
++  //asm volatile("syscall" : : "a"(68) : "rcx", "r11");
++  //__builtin_trap();
 +}
 +
 +int sys_sleep(time_t *secs, long *nanos) {
-+  long ms = (*nanos / 1000000) + (*secs * 1000);
-+  asm volatile("syscall" : : "a"(6), "D"(ms) : "rcx", "r11");
-+  *secs = 0;
-+  *nanos = 0;
++
++    mlibc::infoLogger() << "[mlibc] Calling sys_sleep() STUB" << frg::endlog;
 +  return 0;
 +}
 +
-+int sys_fork(pid_t *child) { return 0; }
++int sys_fork(pid_t *child) { 
++    mlibc::infoLogger() << "[mlibc] Calling sys_fork() STUB" << frg::endlog;
++    return 0; 
++}
 +
 +int sys_execve(const char *path, char *const argv[], char *const envp[]) {
-+  int ret;
-+  int sys_errno;
-+
-+  asm volatile("syscall"
-+               : "=a"(ret), "=d"(sys_errno)
-+               : "a"(59), "D"(path), "S"(argv), "d"(envp)
-+               : "rcx", "r11");
-+
-+  if (sys_errno != 0)
-+    return sys_errno;
++  
++    mlibc::infoLogger() << "[mlibc] Calling sys_execve() STUB" << frg::endlog;
 +
 +  return 0;
 +}
 +
 +uid_t sys_getuid(){
++    mlibc::infoLogger() << "[mlibc] Calling sys_getuid() STUB" << frg::endlog;
 +    return 1000;
 +}
 +
 +gid_t sys_getgid(){
++    mlibc::infoLogger() << "[mlibc] Calling sys_getgid() STUB" << frg::endlog;
 +    return 1000;
 +}
 +
 +uid_t sys_geteuid(){
++    mlibc::infoLogger() << "[mlibc] Calling sys_geteuid() STUB" << frg::endlog;
 +    return 1000;
 +}
 +
 +gid_t sys_getegid(){
++    mlibc::infoLogger() << "[mlibc] Calling sys_getegid() STUB" << frg::endlog;
 +    return 1000;
 +}
 +
-+
++int sys_getcwd(char * buffer, size_t size){
++    mlibc::infoLogger() << "[mlibc] Calling sys_getcwd() STUB" << frg::endlog;
++    return 0;
++}
 +
 +pid_t sys_getpid() {
-+  pid_t pid;
-+  asm volatile("syscall" : "=a"(pid) : "a"(5) : "rcx", "r11", "rdx");
-+  return pid;
++    mlibc::infoLogger() << "[mlibc] Calling sys_getpid() STUB" << frg::endlog;
++    return 0;
++}
++
++pid_t sys_getpgid(pid_t pid, pid_t *pgid){
++    mlibc::infoLogger() << "[mlibc] Calling sys_getpgid() STUB" << frg::endlog;
++    return 0;
 +}
 +
 +pid_t sys_getppid() {
-+  pid_t ppid;
-+  asm volatile("syscall" : "=a"(ppid) : "a"(14) : "rcx", "r11", "rdx");
-+  return ppid;
++    mlibc::infoLogger() << "[mlibc] Calling sys_getppid() STUB" << frg::endlog;
++    return 0;
 +}
 +
 +#endif // MLIBC_BUILDING_RTDL

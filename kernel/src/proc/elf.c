@@ -221,7 +221,8 @@ ProcessControlBlock *create_elf_process(const char *path, char **argvp,
 
   proc->p_stack = stack;
   proc->mmap_base = MMAP_BASE;
-  proc->fd_table[1] = proc->fd_table[2] = vfs_open("/dev/tty", 0);
+  proc->fd_table[0] = proc->fd_table[1] = proc->fd_table[2] =
+      vfs_open("/dev/tty0", 0);
   proc->next = 0;
 
   return proc;

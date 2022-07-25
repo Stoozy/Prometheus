@@ -8,6 +8,7 @@
 
 #include <cpu/cpu.h>
 #include <cpu/io.h>
+#include <drivers/keyboard.h>
 #include <proc/proc.h>
 
 __attribute__((aligned(0x10))) IDTEntry idt[256];
@@ -43,7 +44,7 @@ void irq0_handler(Registers *regs) {
 
 void irq1_handler() {
   /* keyboard driver */
-  // handle_scan(inb(0x60));
+  handle_scan(inb(0x60));
 
   outb(0x20, 0x20); /* EOI */
 }

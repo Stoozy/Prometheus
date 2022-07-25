@@ -1,7 +1,6 @@
 #include <drivers/video.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <kmalloc.h> #include <kprintf.h>
 #include <stivale2.h>
 #include <string/string.h>
 #include <typedefs.h>

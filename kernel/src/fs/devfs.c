@@ -73,6 +73,7 @@ u64 devfs_write(struct file *file, size_t size, u8 *buffer) {
   if (file->position > file->size + size) {
     return 0;
   }
+
   char *data_ptr = (char *)file->device;
   kprintf("[DEVFS]  Writing to %s %s", file->name, buffer);
   memcpy(data_ptr + file->position, buffer, size);
@@ -85,6 +86,9 @@ u64 devfs_read(struct file *file, size_t size, u8 *buffer) {
 
   char *data_ptr = (char *)file->device;
   memcpy(buffer, data_ptr + file->position, size);
+  while (!buffer[0]) {
+    memcpy(buffer, data_ptr + file->position, size);
+  }
   return 1;
 }
 void devfs_close(struct file *f) { return; }

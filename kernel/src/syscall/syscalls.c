@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #include <config.h>
 #include <cpu/cpu.h>
 #include <fs/vfs.h>
@@ -8,6 +6,8 @@
 #include <memory/pmm.h>
 #include <memory/vmm.h>
 #include <proc/proc.h>
+#include <stdint.h>
+#include <string/string.h>
 #include <syscall/syscalls.h>
 #include <typedefs.h>
 
@@ -68,6 +68,7 @@ int sys_close(int fd) {
 }
 
 int sys_read(int file, char *ptr, size_t len) {
+
   extern ProcessControlBlock *gp_current_process;
   struct file *f = gp_current_process->fd_table[file];
   vfs_dump();
@@ -78,12 +79,22 @@ int sys_read(int file, char *ptr, size_t len) {
 }
 
 int sys_write(int file, char *ptr, int len) {
+  if (file == 1 || file == 2) {
+    extern char g_term_buffer[0x1000];
+    if (len < 0x1000) {
+      memcpy(&g_term_buffer, ptr, len);
+    } else {
+      kprintf("Buffer overflow");
+      for (;;)
+        ;
+    }
+  }
 #ifdef SYSCALL_DEBUG
   kprintf("Called SYS_WRITE File: %d Buffer addr: 0x%x Length: %d\n", file, ptr,
           len);
 #endif
-  for (int i = 0; i < len; ++i)
-    kprintf("%c", ptr[i]);
+  // for (int i = 0; i < len; ++i)
+  // kprintf("%c", ptr[i]);
   return len;
 }
 
@@ -171,10 +182,8 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
 
 off_t sys_seek(int fd, off_t offset, int whence) {
   extern ProcessControlBlock *gp_current_process;
-  kprintf("Current proccess is at %llx\n", gp_current_process);
-  kprintf("Current proccess' fd table is at %llx\n",
-          gp_current_process->fd_table);
-  kprintf("FD addr: %llx\n", &gp_current_process->fd_table[fd]);
+  kprintf("[SYS_SEEK] Name %s\n", gp_current_process->fd_table[fd]->name);
+  kprintf("[SYS_SEEK] FD addr: %llx\n", &gp_current_process->fd_table[fd]);
   kprintf("[SYS_SEEK] FD is %d. Offset is %d. Whence is %d\n", fd, offset,
           whence);
 
@@ -197,6 +206,7 @@ off_t sys_seek(int fd, off_t offset, int whence) {
     break;
   }
 
+  kprintf("\n");
   return gp_current_process->fd_table[fd]->position;
 }
 

@@ -1,5 +1,7 @@
 #include <drivers/keyboard.h>
+#include <fs/vfs.h>
 #include <kprintf.h>
+#include <proc/proc.h>
 
 u8 kbdus[128] = {
     0,    27,  '1', '2', '3',  '4', '5', '6', '7',  '8', /* 9 */
@@ -35,6 +37,18 @@ u8 kbdus[128] = {
 };
 
 void handle_scan(u8 scan_code) {
+
   if (scan_code < 128)
     kprintf("%c", kbdus[scan_code]);
+
+  extern char g_term_buffer[0x1000];
+  g_term_buffer[0] = kbdus[scan_code];
+
+  // extern ProcessControlBlock *gp_current_process;
+
+  // if (!gp_current_process)
+  // return;
+
+  // File *_stdin = gp_current_process->fd_table[0];
+  //_stdin->fs->write(_stdin, 1, &kbdus[scan_code]);
 }
