@@ -184,23 +184,15 @@ void _start(struct stivale2_struct *boot_info) {
   struct stivale2_struct_tag_framebuffer *framebuffer_tag =
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
-  if (framebuffer_tag == NULL) {
-    kprintf("[MAIN]   No framebuffer found. Exiting.\n");
-    hang();
-  } else {
-    kprintf("[MAIN]   Framebuffer found!\n");
-    kprintf("[MAIN]   Framebuffer addr: 0x%llx\n",
-            framebuffer_tag->framebuffer_addr);
-    kprintf("[MAIN]   Framebuffer bpp: %d\n", framebuffer_tag->framebuffer_bpp);
-    kprintf("[MAIN]   Framebuffer height: %d\n",
-            framebuffer_tag->framebuffer_height);
-    kprintf("[MAIN]   Framebuffer width: %d\n",
-            framebuffer_tag->framebuffer_width);
-
+  if (framebuffer_tag)
     screen_init(framebuffer_tag);
-    for (;;)
-      ;
-  }
+  else
+    hang();
+
+  extern void devfs_init(VfsNode *);
+  extern VfsNode *gp_root;
+
+  devfs_init(gp_root);
 
   cli();
   // smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") :

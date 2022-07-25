@@ -44,7 +44,7 @@ int sys_exit() {
 int sys_open(const char *name, int flags, ...) {
 
   File *file = vfs_open(name, flags);
-  kprintf("Got file %s with size %d bytes\n", file->name, file->size);
+  // kprintf("Got file %s with size %d bytes\n", file->name, file->size);
 
   if (file == NULL)
     return -1;
@@ -171,6 +171,10 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
 
 off_t sys_seek(int fd, off_t offset, int whence) {
   extern ProcessControlBlock *gp_current_process;
+  kprintf("Current proccess is at %llx\n", gp_current_process);
+  kprintf("Current proccess' fd table is at %llx\n",
+          gp_current_process->fd_table);
+  kprintf("FD addr: %llx\n", &gp_current_process->fd_table[fd]);
   kprintf("[SYS_SEEK] FD is %d. Offset is %d. Whence is %d\n", fd, offset,
           whence);
 

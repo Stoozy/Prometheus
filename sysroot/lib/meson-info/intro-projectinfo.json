@@ -1,0 +1,1 @@
+{"version": "undefined", "descriptive_name": "mlibc", "subproject_dir": "subprojects", "subprojects": [{"name": "cxxshim", "version": "undefined", "descriptive_name": "cxxshim"}, {"name": "frigg", "version": "undefined", "descriptive_name": "frigg"}]}

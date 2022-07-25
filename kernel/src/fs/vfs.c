@@ -7,12 +7,80 @@ FileSystem *gp_filesystems;
 VfsNode *gp_root;
 VfsOpenListNode *gp_open_list;
 
+/* check if a starts with b */
+static bool starts_with(const char *a, char *b) {
+  kprintf("Checking if %s starts with %s\n", a, b);
+  size_t alen = strlen(a);
+  size_t blen = strlen(b);
+
+  if (alen < blen) {
+    kprintf("Invalid lengths\n");
+    return false;
+  }
+
+  int i = 0;
+  while (i < blen) {
+    if (a[i] != b[i]) {
+      kprintf("It does't\n");
+      return false;
+    }
+    i++;
+  }
+
+  kprintf("It does\n");
+  return true;
+}
 static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
 
   kprintf("[VFS]  Getting node from path %s\n", path);
   kprintf("[VFS]  Parent is %s\n", parent->file->name);
 
-  size_t len = __builtin_strlen(path);
+  size_t len = strlen(path);
+  size_t parent_len = strlen(parent->file->name);
+
+  /* Iterating vfs nodes children */
+  if (parent->children) {
+    kprintf("Root has children\n");
+    VfsNode *current_child = parent->children;
+    kprintf("Childs name is %s\n", current_child->file->name);
+    kprintf("Relative path is  is %s\n", &path[parent_len]);
+
+    size_t cur_child_path_len = strlen(current_child->file->name);
+
+    if (starts_with(&path[parent_len], current_child->file->name) &&
+        strcmp(path, current_child->file->name) != 0) {
+      kprintf("Found dir %s\n ", current_child->file->name);
+      return vfs_node_from_path(current_child,
+                                &path[parent_len + cur_child_path_len + 1]);
+      // return current_child;
+    } else if (strcmp(current_child->file->name, path) == 0) {
+      return current_child;
+    }
+
+    while (current_child->next) {
+      if (starts_with(&path[parent_len], current_child->file->name) &&
+          strcmp(path, current_child->file->name) != 0) {
+        kprintf("Found dir %s\n ", current_child->file->name);
+        return vfs_node_from_path(current_child,
+                                  &path[parent_len + cur_child_path_len + 1]);
+        // return current_child;
+      } else if (strcmp(current_child->file->name, path) == 0) {
+        return current_child;
+      }
+
+      current_child = current_child->next;
+    }
+  } else {
+    // child does not exist
+    // create file
+    File *file = parent->file->fs->open(path, 0);
+    if (file) {
+      VfsNode *node = kmalloc(sizeof(VfsNode));
+      node->file = file;
+      node->type = VFS_FILE;
+      return node;
+    }
+  }
 
   File *file = parent->file->fs->finddir(parent, &path[1]);
 
@@ -173,5 +241,6 @@ void vfs_init(FileSystem *root_fs) {
   gp_root->file->fs = root_fs;
   gp_root->file->device = root_fs->device;
 
+  vfs_dump();
   return;
 }

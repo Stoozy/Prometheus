@@ -216,7 +216,11 @@ void multitasking_init() {
   // ProcessControlBlock *screen_proc =
   // create_kernel_process(refresh_screen_proc); register_process(screen_proc);
 
-  ProcessControlBlock *hello_proc = create_elf_process("/usr/bin/bash");
+  char *envp[4] = {"PATH=/usr/bin", "HOME=/", "TERM=linux", NULL};
+  char *argvp[2] = {"--login", NULL};
+
+  ProcessControlBlock *hello_proc =
+      create_elf_process("/usr/bin/bash", envp, argvp);
   register_process(hello_proc);
 
   gp_current_process = gp_process_queue;

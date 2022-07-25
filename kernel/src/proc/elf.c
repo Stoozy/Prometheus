@@ -113,7 +113,8 @@ Auxval load_elf_segments(PageTable *vas, u8 *elf_data) {
 #define AT_RANDOM 25
 #define AT_EXECFN 31
 
-ProcessControlBlock *create_elf_process(const char *path) {
+ProcessControlBlock *create_elf_process(const char *path, char **argvp,
+                                        char **envp) {
   File *elf_file = vfs_open(path, 0);
 
   u8 *elf_data = kmalloc(elf_file->size);
@@ -147,6 +148,20 @@ ProcessControlBlock *create_elf_process(const char *path) {
 
   u64 *stack = (u64 *)(proc->p_stack);
 
+  // copy environment vars
+  int envp_len;
+  for (int envp_len = 0; envp[envp_len] != NULL; envp_len++) {
+    stack = (void *)stack - (strlen(envp[envp_len]) + 1);
+    memcpy(stack, envp[envp_len], strlen(envp[envp_len]));
+  }
+
+  // copy args
+  int args_len;
+  for (args_len = 0; argvp[args_len] != NULL; args_len++) {
+    stack = (void *)stack - (strlen(argvp[args_len]) + 1);
+    memcpy(stack, argvp[args_len], strlen(argvp[args_len]));
+  }
+
   *--stack = 0;
   *--stack = 0;
   *--stack = aux.entry;
@@ -158,9 +173,23 @@ ProcessControlBlock *create_elf_process(const char *path) {
   *--stack = aux.phdr;
   *--stack = AT_PHDR;
 
-  *--stack = 0; // end argv
+  uintptr_t old_rsp = (uintptr_t)stack;
+
   *--stack = 0; // end envp
-  *--stack = 0; // argc
+  stack -= envp_len;
+  for (int i = 0; i < envp_len; i++) {
+    old_rsp -= strlen(envp[i]) + 1;
+    stack[i] = old_rsp;
+  }
+
+  *--stack = 0; // end argv
+  stack -= args_len;
+  for (int i = 0; i < args_len; i++) {
+    old_rsp -= strlen(argvp[i]) + 1;
+    stack[i] = old_rsp;
+  }
+  *--stack = args_len; // argc
+
   uintptr_t sa = (uintptr_t)stack;
 
   /* Interrupt frame */
@@ -192,6 +221,7 @@ ProcessControlBlock *create_elf_process(const char *path) {
 
   proc->p_stack = stack;
   proc->mmap_base = MMAP_BASE;
+  proc->fd_table[1] = proc->fd_table[2] = vfs_open("/dev/tty", 0);
   proc->next = 0;
 
   return proc;

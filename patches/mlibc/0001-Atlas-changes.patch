@@ -1,13 +1,13 @@
-From ffe7183f3dd8ae9d072199c32794a4d290d8751c Mon Sep 17 00:00:00 2001
-From: Stoozy <mahinsemail@gmail.com>
-Date: Thu, 30 Jun 2022 00:28:16 -0400
-Subject: [PATCH] atlas changes
+From 3d2c6e955be815045f408e95a09614cebbf469e4 Mon Sep 17 00:00:00 2001
+From: Stoozy <stoozy@proton.me>
+Date: Sun, 24 Jul 2022 18:22:44 -0400
+Subject: [PATCH] Atlas changes
 
 ---
  meson.build                                  |   6 +
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 ++
- sysdeps/atlas/generic/generic.cpp            | 326 +++++++++++++++++++
+ sysdeps/atlas/generic/generic.cpp            | 344 +++++++++++++++++++
  sysdeps/atlas/generic/thread.cpp             |  44 +++
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/abi.h         |   1 +
@@ -43,7 +43,7 @@ Subject: [PATCH] atlas changes
  sysdeps/atlas/include/abi-bits/wait.h        |   1 +
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
  sysdeps/atlas/meson.build                    |  59 ++++
- 39 files changed, 526 insertions(+)
+ 39 files changed, 544 insertions(+)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -155,10 +155,10 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..c2acfc91
+index 00000000..cac14195
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,326 @@
+@@ -0,0 +1,344 @@
 +#include <bits/ensure.h>
 +#include <dirent.h>
 +#include <errno.h>
@@ -469,6 +469,24 @@ index 00000000..c2acfc91
 +
 +  return 0;
 +}
++
++uid_t sys_getuid(){
++    return 1000;
++}
++
++gid_t sys_getgid(){
++    return 1000;
++}
++
++uid_t sys_geteuid(){
++    return 1000;
++}
++
++gid_t sys_getegid(){
++    return 1000;
++}
++
++
 +
 +pid_t sys_getpid() {
 +  pid_t pid;
@@ -816,7 +834,7 @@ index 00000000..2dd88a64
 +}
 diff --git a/sysdeps/atlas/meson.build b/sysdeps/atlas/meson.build
 new file mode 100644
-index 00000000..a1a39d3e
+index 00000000..dc59b73b
 --- /dev/null
 +++ b/sysdeps/atlas/meson.build
 @@ -0,0 +1,59 @@

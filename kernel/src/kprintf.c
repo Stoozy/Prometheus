@@ -8,14 +8,16 @@
 #include <drivers/serial.h>
 #include <util.h>
 
+extern int ssfn_putc(uint32_t);
 static bool is_digit(char c) { return (c > 47 && c < 58); }
+
+extern bool screen_initialized;
 
 static bool print(const char *data, size_t length) {
   const unsigned char *bytes = (const unsigned char *)data;
   turn_color_on();
   for (size_t i = 0; i < length; i++) {
     write_serial(bytes[i]);
-    // ssfn_putc(bytes[i]);
   }
   turn_color_off();
   return true;

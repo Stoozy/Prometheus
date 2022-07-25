@@ -1,0 +1,5 @@
+[options]
+
+[properties]
+cross_file = ['/home/stoozy/osdev/cross_file.txt']
+

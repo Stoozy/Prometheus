@@ -1,6 +1,6 @@
 ISO_IMAGE=disk.iso
 SYSROOT=$(shell pwd)/sysroot
-QEMU_RUN_FLAGS= -smp cores=2 -serial stdio  -vga std -machine q35 -no-reboot -d int  -M smm=off -no-shutdown -m 8G
+QEMU_RUN_FLAGS= -smp cores=2 -serial stdio  -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G -d int 
 QEMU_MONITOR_FLAGS =  -smp cores=2 -monitor stdio  -vga std -machine q35 -no-reboot -d int -M smm=off -no-shutdown -m 8G 
 
 .PHONY: clean all run libc
@@ -8,7 +8,7 @@ QEMU_MONITOR_FLAGS =  -smp cores=2 -monitor stdio  -vga std -machine q35 -no-reb
 all: $(ISO_IMAGE) 
 
 monitor: $(ISO_IMAGE)
-	qemu-system-x86_64  $(QEMU_MONITOR_FLAGS) -cdrom $(ISO_IMAGE)
+	qemu-system-x86_64  $(QEMU_MONITOR_FLAGS) -cdrom $(ISO_MAGE)
 
 run: $(ISO_IMAGE)
 	qemu-system-x86_64 $(QEMU_RUN_FLAGS) -cdrom $(ISO_IMAGE)
@@ -25,10 +25,10 @@ kernel/kernel.elf:
 	$(MAKE) -C kernel
 
 libc:
-	cd mlibc && mkdir build && meson . build --cross-file crossfile.ini && ninja -C build && yes | cp build/*.so $(SYSROOT)/lib && yes | cp build/sysdeps/atlas/crt0.o $(SYSROOT)/lib
+	cd mlibc && mkdir build && meson . build --cross-file ../cross_file.txt && ninja -C build && yes | cp build/*.so $(SYSROOT)/usr/lib/ && yes | cp build/sysdeps/atlas/crt0.o $(SYSROOT)/lib
 
 initrd: 
-	tar -C $(SYSROOT) -cvf initrd.tar bin etc usr fonts
+	tar -C $(SYSROOT) -cvf initrd.tar bin etc usr fonts lib
 	
 
 

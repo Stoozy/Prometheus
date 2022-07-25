@@ -13,10 +13,17 @@
 static u64 g_fb_size = 0;
 static u32 *gp_framebuffer;
 static u32 *gp_backbuffer;
-
 static struct stivale2_struct_tag_framebuffer *gp_fb_info;
 
+bool screen_initialized = false;
+
 void screen_init(struct stivale2_struct_tag_framebuffer *fb_info) {
+  kprintf("[VIDEO]   Framebuffer found!\n");
+  kprintf("[VIDEO]   Framebuffer addr: 0x%llx\n", fb_info->framebuffer_addr);
+  kprintf("[VIDEO]   Framebuffer bpp: %d\n", fb_info->framebuffer_bpp);
+  kprintf("[VIDEO]   Framebuffer height: %d\n", fb_info->framebuffer_height);
+  kprintf("[VIDEO]   Framebuffer width: %d\n", fb_info->framebuffer_width);
+
   gp_fb_info = fb_info;
 
   g_fb_size = fb_info->framebuffer_width * fb_info->framebuffer_height *
@@ -37,17 +44,9 @@ void screen_init(struct stivale2_struct_tag_framebuffer *fb_info) {
   ssfn_dst.bg = 0;
   ssfn_dst.fg = 0xffffff;
 
-  for (int i = 0; i < 80; i++) {
-    for (int j = 0; j < 25; j++) {
-      ssfn_dst.fg = 0xffffff - (i * i * j * j);
-      ssfn_dst.bg = 0;
-      ssfn_dst.x = i * 8;
-      ssfn_dst.y = j * 16;
+  screen_initialized = true;
 
-      ssfn_putc(i + j);
-    }
-  }
-
+  return;
 } // screen_init
 
 void draw_pixel(int x, int y, int color) {

@@ -18,7 +18,7 @@ typedef struct process_control_block {
 
   uint64_t mmap_base;
 
-  struct file *fd_table[MAX_PROC_FDS];
+  struct file * fd_table[MAX_PROC_FDS];
   int fd_length;
 
   struct process_control_block *next;
