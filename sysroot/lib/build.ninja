@@ -1848,61 +1848,65 @@ build libdl.so: cpp_LINKER libdl.so.p/dummy-libs_libdl_src_dummy.cpp.o
 
 # Test rules
 
-build meson-test: CUSTOM_COMMAND all PHONY
+build test: phony meson-internal__test
+
+build meson-internal__test: CUSTOM_COMMAND all PHONY
  COMMAND = /usr/bin/meson test --no-rebuild --print-errorlogs
  DESC = Running$ all$ tests.
  pool = console
 
-build test: phony meson-test
+build benchmark: phony meson-internal__benchmark
 
-build meson-benchmark: CUSTOM_COMMAND all PHONY
+build meson-internal__benchmark: CUSTOM_COMMAND all PHONY
  COMMAND = /usr/bin/meson test --benchmark --logbase benchmarklog --num-processes=1 --no-rebuild
  DESC = Running$ benchmark$ suite.
  pool = console
 
-build benchmark: phony meson-benchmark
-
 # Install rules
 
-build meson-install: CUSTOM_COMMAND PHONY | all
+build install: phony meson-internal__install
+
+build meson-internal__install: CUSTOM_COMMAND PHONY | all
  DESC = Installing$ files.
  COMMAND = /usr/bin/meson install --no-rebuild
  pool = console
 
-build install: phony meson-install
+build dist: phony meson-internal__dist
 
-build meson-dist: CUSTOM_COMMAND PHONY
+build meson-internal__dist: CUSTOM_COMMAND PHONY
  DESC = Creating$ source$ packages
  COMMAND = /usr/bin/meson dist
  pool = console
 
-build dist: phony meson-dist
-
 # Suffix
 
-build meson-scan-build: CUSTOM_COMMAND PHONY
+build scan-build: phony meson-internal__scan-build
+
+build meson-internal__scan-build: CUSTOM_COMMAND PHONY
  COMMAND = /usr/bin/meson --internal scanbuild /home/stoozy/osdev/mlibc /home/stoozy/osdev/mlibc/build /usr/bin/meson -Dbuild_tests=false -Dbuild_tests_host_libc=true -Dcxxshim:install_headers=false -Ddisable_ansi_option=false -Ddisable_bsd_option=false -Ddisable_crypt_option=false -Ddisable_glibc_option=false -Ddisable_iconv_option=false -Ddisable_intl_option=false -Ddisable_linux_headers_option=false -Ddisable_linux_option=false -Ddisable_posix_option=false -Dfrigg:build_tests=auto -Dfrigg:frigg_no_install=true -Dheaders_only=false -Dmlibc_no_headers=false
  pool = console
 
-build scan-build: phony meson-scan-build
+build uninstall: phony meson-internal__uninstall
 
-build meson-uninstall: CUSTOM_COMMAND PHONY
+build meson-internal__uninstall: CUSTOM_COMMAND PHONY
  COMMAND = /usr/bin/meson --internal uninstall
  pool = console
 
-build uninstall: phony meson-uninstall
+build all: phony meson-test-prereq meson-benchmark-prereq sysdeps/atlas/crt0.o options/ansi/libmlibc-musl-math.a ld.so libc.so libpthread.so librt.so libutil.so libm.so libcrypt.so libresolv.so libdl.so
 
-build all: phony sysdeps/atlas/crt0.o options/ansi/libmlibc-musl-math.a ld.so libc.so libpthread.so librt.so libutil.so libm.so libcrypt.so libresolv.so libdl.so
+build meson-test-prereq: phony 
 
-build clean: phony meson-clean
+build meson-benchmark-prereq: phony 
 
-build meson-clean-ctlist: CUSTOM_COMMAND PHONY
+build clean: phony meson-internal__clean
+
+build clean-ctlist: phony meson-internal__clean-ctlist
+
+build meson-internal__clean-ctlist: CUSTOM_COMMAND PHONY
  COMMAND = /usr/bin/meson --internal cleantrees /home/stoozy/osdev/mlibc/build/meson-private/cleantrees.dat
  description = Cleaning$ custom$ target$ directories
 
-build clean-ctlist: phony meson-clean-ctlist
-
-build meson-clean: CUSTOM_COMMAND PHONY | clean-ctlist
+build meson-internal__clean: CUSTOM_COMMAND PHONY | clean-ctlist
  COMMAND = /usr/bin/ninja -t clean
  description = Cleaning
 
