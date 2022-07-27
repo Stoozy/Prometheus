@@ -134,7 +134,7 @@ u64 ustar_write(struct file *file, u64 size, u8 *buffer) {
 
 struct dirent *ustar_readdir(VfsNode *dir, u32 index) {
   /* make sure node is actually a directory */
-  if (dir->type != VFS_DIRECTORY)
+  if (dir->file->type != VFS_DIRECTORY)
     return NULL;
 
   struct dirent *ret = kmalloc(sizeof(struct dirent));

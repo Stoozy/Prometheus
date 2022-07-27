@@ -1,6 +1,5 @@
 #pragma once
 
-#include <typedefs.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -17,12 +16,13 @@
 #define VFS_INVALID_FS      0x09
 
 
-#define NAME_MAX			128
+#define name_max            128
+
 
 
 struct dirent {
-	char name[NAME_MAX];
-	u32 ino;
+    char name[name_max];
+    uint32_t ino;
 }; 
 
 struct file;
@@ -30,9 +30,9 @@ struct vfs_node;
 
 typedef struct file * (*open_func_t)(const char * filename, int flags);
 typedef void (*close_func_t)(struct file *);
-typedef u64 (*read_func_t)(struct file *, size_t count, u8 * buf);
-typedef u64 (*write_func_t)(struct file *, size_t count, u8 * buf);
-typedef struct dirent * (*readdir_func_t)(struct vfs_node *, u32 index);
+typedef uint64_t (*read_func_t)(struct file *, size_t count, uint8_t * buf);
+typedef uint64_t (*write_func_t)(struct file *, size_t count, uint8_t * buf);
+typedef struct dirent * (*readdir_func_t)(struct vfs_node *, uint32_t index);
 typedef struct file * (*finddir_func_t)(struct vfs_node *, const char * filename);
 
 
@@ -40,7 +40,7 @@ typedef struct fs {
 
     char * name;
 
-    u64 device;
+    uint64_t device;
 
     open_func_t     open;
     close_func_t    close;
@@ -54,19 +54,27 @@ typedef struct fs {
 } FileSystem;
 
 
+
+typedef struct vfs_node_stat  {
+    uint32_t type;
+    uint64_t inode;
+    uint64_t filesize;
+} __attribute__((packed)) VfsNodeStat;
+
 typedef struct file {
 
     char * name;
-    u64 inode;
-    u64 device;
-    u64 position;
-    u64 size;
-    u8  mode;
+    uint64_t inode;
+    uint64_t device;
+    uint64_t position;
+    uint64_t size;
+    uint8_t  mode;
 
+    uint8_t  type;
 
-    FileSystem * fs;
+    FileSystem  * fs;
 
-    FileSystem * next;
+    FileSystem  * next;
 
 } File;
 
@@ -74,7 +82,6 @@ typedef struct vfs_node {
 
     File * file;
 
-    u8  type;
 
     struct vfs_node * parent;
     struct vfs_node * children;     /* points to the head of children */
@@ -98,10 +105,11 @@ bool vfs_mount(const char * src, const char * dst);
 File * vfs_open(const char * filename , int flags);
 void vfs_close(File * file);
 
-ssize_t vfs_read(File * node, u8 * buffer, size_t off, size_t size);
-ssize_t vfs_write(File * node,  u8 * buffer, size_t off, size_t size);
+ssize_t vfs_read(File * node, uint8_t * buffer, size_t off, size_t size);
+ssize_t vfs_write(File * node,  uint8_t * buffer, size_t off, size_t size);
 
-void vfs_register_fs(FileSystem *, u64 device_id);
+void  vfs_get_stat(const char * path, VfsNodeStat * res);
+void vfs_register_fs(FileSystem *, uint64_t device_id);
 void vfs_unregister_fs(FileSystem * fs);
 
 void vfs_init(FileSystem *);

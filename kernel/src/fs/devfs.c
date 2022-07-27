@@ -97,7 +97,7 @@ void devfs_init(VfsNode *root_fs) {
   VfsNode *devfs_root_node = kmalloc(sizeof(VfsNode));
   devfs_root_node->file = kmalloc(sizeof(File));
   devfs_root_node->file->fs = &g_devtmpfs;
-  devfs_root_node->type = VFS_DIRECTORY | VFS_MOUNTPOINT;
+  devfs_root_node->file->type = VFS_DIRECTORY | VFS_MOUNTPOINT;
   devfs_root_node->file->name = kmalloc(256);
 
   memcpy(devfs_root_node->file->name, "dev", 6);
