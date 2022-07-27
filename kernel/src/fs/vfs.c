@@ -9,25 +9,20 @@ VfsOpenListNode *gp_open_list;
 
 /* check if a starts with b */
 static bool starts_with(const char *a, char *b) {
-  kprintf("Checking if %s starts with %s\n", a, b);
   size_t alen = strlen(a);
   size_t blen = strlen(b);
 
   if (alen < blen) {
-    kprintf("Invalid lengths\n");
     return false;
   }
 
   int i = 0;
   while (i < blen) {
-    if (a[i] != b[i]) {
-      kprintf("It does't\n");
+    if (a[i] != b[i]) 
       return false;
-    }
     i++;
   }
 
-  kprintf("It does\n");
   return true;
 }
 static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
@@ -43,12 +38,12 @@ static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
     kprintf("Root has children\n");
     VfsNode *current_child = parent->children;
     kprintf("Childs name is %s\n", current_child->file->name);
-    kprintf("Relative path is  is %s\n", &path[parent_len]);
 
     size_t cur_child_path_len = strlen(current_child->file->name);
 
     if (starts_with(&path[parent_len], current_child->file->name) &&
         strcmp(path, current_child->file->name) != 0) {
+      kprintf("Relative path is  is %s\n", &path[parent_len]);
       kprintf("Found dir %s\n ", current_child->file->name);
       return vfs_node_from_path(current_child,
                                 &path[parent_len + cur_child_path_len + 1]);
@@ -77,7 +72,7 @@ static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
     if (file) {
       VfsNode *node = kmalloc(sizeof(VfsNode));
       node->file = file;
-      node->type = VFS_FILE;
+      node->file->type = VFS_FILE;
       return node;
     }
   }
@@ -90,7 +85,7 @@ static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
     new_node->parent = parent;
     new_node->children = NULL;
     new_node->next = NULL;
-    new_node->type = VFS_FILE;
+    new_node->file->type = VFS_FILE;
 
     return new_node;
   }
@@ -154,7 +149,7 @@ ssize_t vfs_write(File *file, u8 *buffer, size_t off, size_t size) {
   return -1;
 }
 
-void vfs_register_fs(FileSystem *fs, u64 device_id) {
+void vfs_register_fs(FileSystem *fs, uint64_t device_id) {
   if (gp_filesystems == NULL) {
     gp_filesystems = fs;
   } else {
@@ -191,7 +186,7 @@ bool vfs_mount(const char *src, const char *dst) {
   VfsNode *node = vfs_node_from_path(gp_root, dst);
 
   if (node) {
-    node->type = VFS_MOUNTPOINT;
+    node->file->type = VFS_MOUNTPOINT;
     node->file = NULL;
   } else {
     /* trying to mount on non-existent dir */
@@ -204,7 +199,7 @@ bool vfs_mount(const char *src, const char *dst) {
 static void _vfs_rec_dump(VfsNode *node) {
   kprintf("Found %s\n", node->file->name);
 
-  if (node->type == VFS_DIRECTORY || node->type == VFS_MOUNTPOINT) {
+  if (node->file->type == VFS_DIRECTORY || node->file->type == VFS_MOUNTPOINT) {
     kprintf("Is a directory. Iterating directory...\n");
     if (node->children)
       _vfs_rec_dump(node->children);
@@ -222,13 +217,31 @@ static void _vfs_rec_dump(VfsNode *node) {
   return;
 }
 
+
 void vfs_dump() { _vfs_rec_dump(gp_root); }
+
+void vfs_get_stat(const char *path, VfsNodeStat* res){
+  VfsNode * node = vfs_node_from_path(gp_root, path);
+
+  if(node){
+    res->filesize = node->file->size; 
+    res->inode = node->file->inode;
+    res->type = node->file->type;
+  }else{
+    kprintf("Path doesn't exist: %s\n", path);
+    res->filesize =  0;
+    res->inode =  0;
+    res->type = 0;
+  }
+
+  return;
+}
 
 void vfs_init(FileSystem *root_fs) {
   gp_root = kmalloc(sizeof(VfsNode));
 
   gp_root->parent = NULL;
-  gp_root->type |= VFS_MOUNTPOINT;
+  gp_root->file->type |= VFS_MOUNTPOINT;
 
   /* no need to iterate fs yet */
   gp_root->children = NULL;

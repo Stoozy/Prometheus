@@ -98,6 +98,7 @@ int sys_write(int file, char *ptr, int len) {
   return len;
 }
 
+
 /* snatched from lemon/vm-flags.h */
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
@@ -206,8 +207,44 @@ off_t sys_seek(int fd, off_t offset, int whence) {
     break;
   }
 
+
+
   kprintf("\n");
   return gp_current_process->fd_table[fd]->position;
+}
+
+int sys_fstat(int fd, VfsNodeStat* statbuf){
+  if(fd > MAX_PROC_FDS || fd < 0 )
+    kprintf("[SYS_STAT] Invalid FD");
+
+  extern ProcessControlBlock* gp_current_process;
+  File * file = gp_current_process->fd_table[fd];
+
+  if(!file)
+    kprintf("[SYS_FSTAT]  File not open\n");
+
+  statbuf->filesize = file->size;
+  statbuf->type = file->type;
+  statbuf->inode = file->inode;
+
+  return 0;
+}
+
+int sys_stat(const char *  path, VfsNodeStat* statbuf){
+  if(strcmp(path, ".") == 0 
+    || strcmp(path, "..") == 0 
+    || strcmp(path, "/" ) == 0)
+  {
+    statbuf->inode = 0; 
+    statbuf->filesize = 0;
+    statbuf->type = VFS_DIRECTORY;
+    return 0;
+  }
+
+
+
+  vfs_get_stat(path, statbuf);
+  return 0;
 }
 
 int sys_tcb_set(void *ptr) {
@@ -215,9 +252,26 @@ int sys_tcb_set(void *ptr) {
   return 0;
 }
 
-int sys_execve(char *name, char **argv, char **env) { return -1; }
+
+int sys_execve(char *name, char **argv, char **env) { 
+  return -1; }
 
 int sys_fork() { return -1; }
+
+int sys_ioctl(int fd, unsigned long req, void * arg){
+  extern ProcessControlBlock * gp_current_process;
+  kprintf("Request is %x\n", req);
+  kprintf("FD is %d\n", fd);
+  if (fd < 0 || fd > MAX_PROC_FDS){
+    kprintf("Invalid FD\n");
+    return -1; // Invalid fd
+  }
+
+  File * file = gp_current_process->fd_table[fd];
+
+  kprintf("Name is %s\n", file->name);
+  return 0; 
+}
 
 void syscall_dispatcher(Registers regs) {
 
@@ -311,6 +365,31 @@ void syscall_dispatcher(Registers regs) {
     kprintf("[SYS]  TCB_SET CALLED\n");
     void *ptr = (void *)regs.r8;
     regs.r15 = sys_tcb_set(ptr);
+    break;
+  }
+  case SYS_IOCTL:{
+    kprintf("[SYS]  IOCTL CALLED\n");
+    int fd = regs.r8;
+    unsigned long req = regs.r9;
+    void * arg = (void*)regs.r10;
+
+    regs.r15 = sys_ioctl(fd, req, arg);
+    break;
+  }
+  case SYS_STAT:{
+    kprintf("[SYS]  STAT CALLED\n");
+    const char * path = regs.r8; 
+    VfsNodeStat * statbuf  = regs.r9;
+
+    regs.r15 = sys_stat(path, statbuf);
+    break;
+  }
+  case SYS_FSTAT:{
+    kprintf("[SYS]  FSTAT CALLED\n");
+    int fd = regs.r8; 
+    VfsNodeStat * statbuf  = regs.r9;
+
+    regs.r15 = sys_fstat(fd, statbuf);
     break;
   }
   default: {

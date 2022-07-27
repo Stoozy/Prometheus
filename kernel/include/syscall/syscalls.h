@@ -27,5 +27,10 @@ typedef unsigned long long caddr_t;
 #define SYS_VM_MAP 6
 #define SYS_SEEK 7
 #define SYS_TCB_SET 8
+#define SYS_IOCTL 9
+#define SYS_FORK 10
+#define SYS_WAIT 11
+#define SYS_STAT 12
+#define SYS_FSTAT 13
 
 void sys_init();
