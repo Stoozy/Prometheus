@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <fs/vfs.h>
 #include <kmalloc.h>
 #include <kprintf.h>
@@ -18,17 +19,27 @@ static bool starts_with(const char *a, char *b) {
 
   int i = 0;
   while (i < blen) {
-    if (a[i] != b[i]) 
+    if (a[i] != b[i])
       return false;
     i++;
   }
 
   return true;
 }
+
 static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
 
-  kprintf("[VFS]  Getting node from path %s\n", path);
-  kprintf("[VFS]  Parent is %s\n", parent->file->name);
+  //kprintf("[VFS]  Getting node from path %s\n", path);
+  //kprintf("[VFS]  Parent is %s\n", parent->file->name);
+
+  if (strcmp("/", path) == 0)
+    return gp_root;
+
+  if (strcmp("..", path) == 0)
+    return parent->parent;
+
+  if (strcmp(".", path) == 0)
+    return parent;
 
   size_t len = strlen(path);
   size_t parent_len = strlen(parent->file->name);
@@ -102,10 +113,13 @@ static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
 
 File *vfs_open(const char *filename, int flags) {
   kprintf("[VFS]  Called open on %s\n", filename);
+
   VfsNode *node = vfs_node_from_path(gp_root, filename);
 
   if (node)
     return node->file;
+
+  kprintf("[VFS] Node not found :(; while opening %s \n", filename);
 
   return NULL;
 }
@@ -136,6 +150,15 @@ ssize_t vfs_read(File *file, u8 *buffer, size_t off, size_t size) {
   }
 
   return -1;
+}
+
+DirectoryEntry * vfs_readdir(File *file) {
+  VfsNode *node = vfs_node_from_path(gp_root, file->name);
+
+  if (node)
+    return node->file->fs->readdir(node, ++file->position);
+
+  return NULL;
 }
 
 ssize_t vfs_write(File *file, u8 *buffer, size_t off, size_t size) {
@@ -217,20 +240,19 @@ static void _vfs_rec_dump(VfsNode *node) {
   return;
 }
 
-
 void vfs_dump() { _vfs_rec_dump(gp_root); }
 
-void vfs_get_stat(const char *path, VfsNodeStat* res){
-  VfsNode * node = vfs_node_from_path(gp_root, path);
+void vfs_get_stat(const char *path, VfsNodeStat *res) {
+  VfsNode *node = vfs_node_from_path(gp_root, path);
 
-  if(node){
-    res->filesize = node->file->size; 
+  if (node) {
+    res->filesize = node->file->size;
     res->inode = node->file->inode;
     res->type = node->file->type;
-  }else{
+  } else {
     kprintf("Path doesn't exist: %s\n", path);
-    res->filesize =  0;
-    res->inode =  0;
+    res->filesize = 0;
+    res->inode = 0;
     res->type = 0;
   }
 
@@ -241,7 +263,6 @@ void vfs_init(FileSystem *root_fs) {
   gp_root = kmalloc(sizeof(VfsNode));
 
   gp_root->parent = NULL;
-  gp_root->file->type |= VFS_MOUNTPOINT;
 
   /* no need to iterate fs yet */
   gp_root->children = NULL;
@@ -250,9 +271,12 @@ void vfs_init(FileSystem *root_fs) {
   gp_root->file->name = kmalloc(2);
   gp_root->file->name[0] = '/';
   gp_root->file->name[1] = '\0';
+  gp_root->file->type = VFS_DIRECTORY | VFS_MOUNTPOINT;
 
   gp_root->file->fs = root_fs;
+  gp_root->file->position = 0;
   gp_root->file->device = root_fs->device;
+  gp_root->parent = gp_root;
 
   vfs_dump();
   return;

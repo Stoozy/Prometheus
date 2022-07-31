@@ -6,7 +6,7 @@
 VfsNode *gp_devfs_root;
 
 struct file *devfs_finddir(VfsNode *dir, const char *name);
-struct dirent *devfs_readdir(VfsNode *dir, u32 index);
+DirectoryEntry *devfs_readdir(VfsNode *dir, u32 index);
 u64 devfs_write(struct file *file, size_t size, u8 *buffer);
 u64 devfs_read(struct file *file, size_t size, u8 *buffer);
 void devfs_close(struct file *f);

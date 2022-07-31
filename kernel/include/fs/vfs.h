@@ -18,12 +18,13 @@
 
 #define name_max            128
 
-
-
-struct dirent {
+typedef struct  {
     char name[name_max];
     uint32_t ino;
-}; 
+    uint32_t type;
+} __attribute__((packed)) DirectoryEntry; 
+
+
 
 struct file;
 struct vfs_node;
@@ -32,7 +33,7 @@ typedef struct file * (*open_func_t)(const char * filename, int flags);
 typedef void (*close_func_t)(struct file *);
 typedef uint64_t (*read_func_t)(struct file *, size_t count, uint8_t * buf);
 typedef uint64_t (*write_func_t)(struct file *, size_t count, uint8_t * buf);
-typedef struct dirent * (*readdir_func_t)(struct vfs_node *, uint32_t index);
+typedef DirectoryEntry * (*readdir_func_t)(struct vfs_node *, uint32_t index);
 typedef struct file * (*finddir_func_t)(struct vfs_node *, const char * filename);
 
 
@@ -106,6 +107,7 @@ File * vfs_open(const char * filename , int flags);
 void vfs_close(File * file);
 
 ssize_t vfs_read(File * node, uint8_t * buffer, size_t off, size_t size);
+DirectoryEntry * vfs_readdir(File * file);
 ssize_t vfs_write(File * node,  uint8_t * buffer, size_t off, size_t size);
 
 void  vfs_get_stat(const char * path, VfsNodeStat * res);
