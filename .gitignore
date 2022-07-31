@@ -11,11 +11,10 @@
 .vscode/*.*
 limine
 ./kernel/src/*/*.o
-
 mlibc/.cache/*
-
 initrd.tar
-3rdparty
-build
-sysroot/*
-mlibc/*
+3rdparty/
+build/
+sysroot/
+mlibc/
+
