@@ -32,5 +32,9 @@ typedef unsigned long long caddr_t;
 #define SYS_WAIT 11
 #define SYS_STAT 12
 #define SYS_FSTAT 13
+#define SYS_GETPID 14
+#define SYS_DUP 15
+#define SYS_DUP2 16
+#define SYS_READDIR	17
 
 void sys_init();

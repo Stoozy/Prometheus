@@ -10,6 +10,7 @@
 #include <string/string.h>
 #include <syscall/syscalls.h>
 #include <typedefs.h>
+#include <unistd.h>
 
 typedef long int off_t;
 
@@ -98,7 +99,6 @@ int sys_write(int file, char *ptr, int len) {
   return len;
 }
 
-
 /* snatched from lemon/vm-flags.h */
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
@@ -182,9 +182,17 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
 #define SEEK_END 2
 
 off_t sys_seek(int fd, off_t offset, int whence) {
+
   extern ProcessControlBlock *gp_current_process;
-  kprintf("[SYS_SEEK] Name %s\n", gp_current_process->fd_table[fd]->name);
-  kprintf("[SYS_SEEK] FD addr: %llx\n", &gp_current_process->fd_table[fd]);
+  File *file = gp_current_process->fd_table[fd];
+
+  if (!file){
+    kprintf("File dne: %d\n", fd);
+    return -1;
+  }
+
+  kprintf("[SYS_SEEK] Name %s\n", file->name);
+  kprintf("[SYS_SEEK] FD addr: %llx\n", file);
   kprintf("[SYS_SEEK] FD is %d. Offset is %d. Whence is %d\n", fd, offset,
           whence);
 
@@ -207,20 +215,18 @@ off_t sys_seek(int fd, off_t offset, int whence) {
     break;
   }
 
-
-
   kprintf("\n");
   return gp_current_process->fd_table[fd]->position;
 }
 
-int sys_fstat(int fd, VfsNodeStat* statbuf){
-  if(fd > MAX_PROC_FDS || fd < 0 )
+int sys_fstat(int fd, VfsNodeStat *statbuf) {
+  if (fd > MAX_PROC_FDS || fd < 0)
     kprintf("[SYS_STAT] Invalid FD");
 
-  extern ProcessControlBlock* gp_current_process;
-  File * file = gp_current_process->fd_table[fd];
+  extern ProcessControlBlock *gp_current_process;
+  File *file = gp_current_process->fd_table[fd];
 
-  if(!file)
+  if (!file)
     kprintf("[SYS_FSTAT]  File not open\n");
 
   statbuf->filesize = file->size;
@@ -230,47 +236,115 @@ int sys_fstat(int fd, VfsNodeStat* statbuf){
   return 0;
 }
 
-int sys_stat(const char *  path, VfsNodeStat* statbuf){
-  if(strcmp(path, ".") == 0 
-    || strcmp(path, "..") == 0 
-    || strcmp(path, "/" ) == 0)
-  {
-    statbuf->inode = 0; 
+int sys_stat(const char *path, VfsNodeStat *statbuf) {
+  if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0 ||
+      strcmp(path, "/") == 0) {
+    statbuf->inode = 0;
     statbuf->filesize = 0;
     statbuf->type = VFS_DIRECTORY;
     return 0;
   }
-
-
 
   vfs_get_stat(path, statbuf);
   return 0;
 }
 
 int sys_tcb_set(void *ptr) {
+
   wrmsr(FSBASE, (uint64_t)ptr);
+
   return 0;
 }
 
-
-int sys_execve(char *name, char **argv, char **env) { 
-  return -1; }
+int sys_execve(char *name, char **argv, char **env) { return -1; }
 
 int sys_fork() { return -1; }
 
-int sys_ioctl(int fd, unsigned long req, void * arg){
-  extern ProcessControlBlock * gp_current_process;
+int sys_ioctl(int fd, unsigned long req, void *arg) {
+  extern ProcessControlBlock *gp_current_process;
   kprintf("Request is %x\n", req);
   kprintf("FD is %d\n", fd);
-  if (fd < 0 || fd > MAX_PROC_FDS){
+  if (fd < 0 || fd > MAX_PROC_FDS) {
     kprintf("Invalid FD\n");
     return -1; // Invalid fd
   }
 
-  File * file = gp_current_process->fd_table[fd];
+  File *file = gp_current_process->fd_table[fd];
 
   kprintf("Name is %s\n", file->name);
-  return 0; 
+  return 0;
+}
+
+pid_t sys_getpid() {
+  extern ProcessControlBlock *gp_current_process;
+  return gp_current_process->pid;
+}
+
+int sys_dup(int fd, int flags) {
+
+  extern ProcessControlBlock *gp_current_process;
+
+  if (fd < 0 || fd > MAX_PROC_FDS) {
+    kprintf("Invalid fd %d\n", fd);
+    return -1;
+  }
+
+  File *file = gp_current_process->fd_table[fd];
+  int new_fd = map_file_to_proc(gp_current_process, file);
+
+  return new_fd;
+}
+
+int sys_dup2(int fd, int flags, int fd2) {
+
+  extern ProcessControlBlock *gp_current_process;
+
+  if (fd < 0 || fd > MAX_PROC_FDS) {
+    kprintf("Invalid fd %d\n", fd);
+    return -1;
+  }
+
+  File *file = gp_current_process->fd_table[fd];
+
+  if (!file) {
+    kprintf("file doesn't exist\n");
+    return -1;
+  }
+
+  File *file2 = gp_current_process->fd_table[fd2];
+
+  if (file2) {
+    file2->fs->close(file2);
+  }
+
+  // refer to the same file
+  gp_current_process->fd_table[fd2] = file;
+
+  return fd2;
+}
+
+int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
+  kprintf("Dirent buffer is at %x\n", buffer);
+
+  if (max_size < sizeof(DirectoryEntry))
+    return -1;
+
+  extern ProcessControlBlock *gp_current_process;
+
+  File *file = gp_current_process->fd_table[handle];
+  if (!file){
+      kprintf("Invalid open stream\n");
+      return -1;
+  }
+
+  kprintf("Reading entries from %s\n", file->name);
+  DirectoryEntry *entry = vfs_readdir(file);
+  if (entry) {
+    *buffer = *entry;
+    return 0;
+  }
+
+  return 0;
 }
 
 void syscall_dispatcher(Registers regs) {
@@ -301,8 +375,7 @@ void syscall_dispatcher(Registers regs) {
       regs.r15 = fd;
     } else {
       kprintf("Couldn't open file\n");
-      for (;;)
-        ;
+      regs.r15 = -1;
     }
 
     break;
@@ -357,7 +430,7 @@ void syscall_dispatcher(Registers regs) {
     off_t off = regs.r9;
     int whence = regs.r10;
     regs.r15 = sys_seek(fd, off, whence);
-    kprintf("Returning offset %llu\n", regs.r15);
+    kprintf("Returning offset %d\n", regs.r15);
 
     break;
   }
@@ -367,32 +440,49 @@ void syscall_dispatcher(Registers regs) {
     regs.r15 = sys_tcb_set(ptr);
     break;
   }
-  case SYS_IOCTL:{
+  case SYS_IOCTL: {
     kprintf("[SYS]  IOCTL CALLED\n");
     int fd = regs.r8;
     unsigned long req = regs.r9;
-    void * arg = (void*)regs.r10;
+    void *arg = (void *)regs.r10;
 
     regs.r15 = sys_ioctl(fd, req, arg);
     break;
   }
-  case SYS_STAT:{
+  case SYS_STAT: {
     kprintf("[SYS]  STAT CALLED\n");
-    const char * path = regs.r8; 
-    VfsNodeStat * statbuf  = regs.r9;
+    const char *path = (const char *)regs.r8;
+    VfsNodeStat *statbuf = (VfsNodeStat *)regs.r9;
 
     regs.r15 = sys_stat(path, statbuf);
     break;
   }
-  case SYS_FSTAT:{
+  case SYS_FSTAT: {
     kprintf("[SYS]  FSTAT CALLED\n");
-    int fd = regs.r8; 
-    VfsNodeStat * statbuf  = regs.r9;
+    int fd = regs.r8;
+    VfsNodeStat *statbuf = (VfsNodeStat *)regs.r9;
 
     regs.r15 = sys_fstat(fd, statbuf);
     break;
   }
+  case SYS_GETPID: {
+    regs.r15 = sys_getpid();
+    break;
+  }
+  case SYS_DUP: {
+    regs.r15 = sys_dup(regs.r8, regs.r9);
+    break;
+  }
+  case SYS_DUP2: {
+    regs.r15 = sys_dup2(regs.r8, regs.r9, regs.r10);
+    break;
+  }
+  case SYS_READDIR: {
+    regs.r15 = sys_readdir(regs.r8, (DirectoryEntry * )regs.r9, regs.r10);
+    break;
+  }
   default: {
+    kprintf("Invalid syscall %d\n", syscall);
     break;
   }
   }
