@@ -129,8 +129,10 @@ ProcessControlBlock *create_elf_process(const char *path, char **argvp,
       (ProcessControlBlock *)(kmalloc(sizeof(ProcessControlBlock)));
 
   memset(proc, 0, sizeof(ProcessControlBlock));
-  proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
-  memset(proc->p_stack, 0, 8 * PAGE_SIZE);
+
+  proc->p_stack = pmm_alloc_blocks(24) + (24 * PAGE_SIZE);
+  memset(proc->p_stack, 0, 24 * PAGE_SIZE);
+
   kprintf("Process stack at 0x%x\n", proc->p_stack);
 
   proc->cr3 = vmm_create_user_proc_pml4(proc->p_stack);
@@ -224,6 +226,9 @@ ProcessControlBlock *create_elf_process(const char *path, char **argvp,
   proc->fd_table[0] = proc->fd_table[1] = proc->fd_table[2] =
       vfs_open("/dev/tty0", 0);
   proc->next = 0;
+  kprintf("fd 0 is at %x\n", proc->fd_table[0]);
+  kprintf("fd 1 is at %x\n", proc->fd_table[1]);
+  kprintf("fd 2 is at %x\n", proc->fd_table[2]);
 
   return proc;
 }

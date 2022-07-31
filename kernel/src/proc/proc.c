@@ -212,16 +212,18 @@ void register_process(ProcessControlBlock *new_pcb) {
 void multitasking_init() {
   // save kernel page tables
   kernel_cr3 = vmm_get_current_cr3();
-  char *envp[4] = {"PATH=/usr/bin", "HOME=/", "TERM=linux", NULL};
-  char *argvp[2] = {"--version", NULL};
-
-  ProcessControlBlock *hello_proc =
-      create_elf_process("/usr/bin/bash", envp, argvp);
-  register_process(hello_proc);
 
   extern void terminal_main();
   ProcessControlBlock *term_proc = create_kernel_process(terminal_main);
   register_process(term_proc);
+
+
+  char *envp[4] = {"PATH=/usr/bin", "HOME=/", "TERM=linux", NULL};
+  char *argvp[2] = {"--login", NULL};
+
+  ProcessControlBlock *hello_proc =
+      create_elf_process("/usr/bin/bash", envp, argvp);
+  register_process(hello_proc);
 
   gp_current_process = gp_process_queue;
 

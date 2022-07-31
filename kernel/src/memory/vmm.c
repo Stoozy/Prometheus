@@ -121,7 +121,7 @@ PageTable *vmm_create_user_proc_pml4(void *stack_top) {
   // k_size, kflags);
 
   /* mapping stacks */
-  size_t stack_size = 8 * PAGE_SIZE;
+  size_t stack_size = 24 * PAGE_SIZE;
   void *stack_base = stack_top - (stack_size);
   kprintf("[VMM]  Mapping userspace stack \n");
   vmm_map_range(pml4, stack_base, stack_base, stack_size, uflags);

@@ -1,13 +1,13 @@
-From c76084c5bc5526388c2cedc81b7a7f416dad55cc Mon Sep 17 00:00:00 2001
+From 418d817eb65c1e8c6e48e17534f8213a2005bd61 Mon Sep 17 00:00:00 2001
 From: Stoozy <stoozy@proton.me>
-Date: Tue, 26 Jul 2022 22:31:27 -0400
+Date: Sat, 30 Jul 2022 14:39:44 -0400
 Subject: [PATCH] Atlas changes
 
 ---
  meson.build                                  |   6 +
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 ++
- sysdeps/atlas/generic/generic.cpp            | 467 +++++++++++++++++++
+ sysdeps/atlas/generic/generic.cpp            | 585 +++++++++++++++++++
  sysdeps/atlas/generic/thread.cpp             |  44 ++
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/abi.h         |   1 +
@@ -42,9 +42,9 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/vm-flags.h    |   1 +
  sysdeps/atlas/include/abi-bits/wait.h        |   1 +
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
- sysdeps/atlas/include/vfs.h                  |  22 +
- sysdeps/atlas/meson.build                    |  59 +++
- 40 files changed, 689 insertions(+)
+ sysdeps/atlas/include/vfs.h                  |  28 +
+ sysdeps/atlas/meson.build                    |  59 ++
+ 40 files changed, 813 insertions(+)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -157,10 +157,10 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..e3ed4085
+index 00000000..24f68264
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,467 @@
+@@ -0,0 +1,585 @@
 +#include <bits/ensure.h>
 +#include <dirent.h>
 +#include <errno.h>
@@ -188,11 +188,14 @@ index 00000000..e3ed4085
 +#define SYS_WAIT 11
 +#define SYS_STAT 12
 +#define SYS_FSTAT 13
++#define SYS_GETPID 14
++#define SYS_DUP 15
++#define SYS_DUP2 16
++#define SYS_READDIR 17
 +
 +#define SYSCALL_NA0(call)                                                      \
 +  ({                                                                           \
 +    register uint64_t syscall asm("rsi") = call;                               \
-+    register auto r8 asm("r8") = (arg0);                                       \
 +    asm volatile("syscall"                                                     \
 +                 : "=r"(ret)                                                   \
 +                 : "r"(syscall)                                                \
@@ -330,14 +333,64 @@ index 00000000..e3ed4085
 +#endif
 +
 +int sys_open(const char *path, int flags, int mode, int *fd) {
++  mlibc::infoLogger() << "[mlibc] Called sys_open on " << path << frg::endlog;
++
 +  register int ret asm("r15");
 +  SYSCALL_NA2(SYS_OPEN, path, flags);
 +
-+  *fd = ret;
-+  mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd
-+                      << frg::endlog;
++  if(ret != -1){
++    *fd = ret;
++    mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd  << "\n" << frg::endlog;
++  }
++  else
++    return ENOENT; 
 +
 +  return 0;
++}
++
++int sys_open_dir(const char *path, int *handle){
++
++  mlibc::infoLogger() << "[mlibc] sys_open_dir; path: " << path << "\n" << frg::endlog;
++  return sys_open(path, O_DIRECTORY | O_RDONLY,  0, handle);
++}
++
++int sys_read_entries(int handle, void* buffer, size_t max_size, size_t* bytes_read)
++{
++    __ensure(max_size >= sizeof(dirent));
++
++    mlibc::infoLogger() << "[mlibc] sys_read_entries STUB; handle: " << handle << "\n" << frg::endlog;
++
++    dirent * ret_entry = (dirent*)(buffer);
++    DirectoryEntry  entry;
++
++
++    register int ret asm ("r15");
++    SYSCALL_NA3(SYS_READDIR, handle, &entry, max_size);
++
++    ret_entry->d_ino =  entry.ino;
++    ret_entry->d_off = 0;
++    ret_entry->d_reclen = sizeof(DirectoryEntry);
++    memcpy(ret_entry->d_name, entry.name, 128);
++
++    mlibc::infoLogger() << "Got entry " << entry.name << "\n" << frg::endlog;
++    switch(entry.type){
++      case VFS_DIRECTORY:
++        ret_entry->d_type = DT_DIR;
++        mlibc::infoLogger() << "Type is DIR" << "\n" <<  frg::endlog;
++        break;
++      case VFS_FILE:
++        ret_entry->d_type = DT_REG;
++        mlibc::infoLogger() << "Type is FILE" << "\n" <<  frg::endlog;
++        break;
++      default:
++        ret_entry->d_type = DT_UNKNOWN;
++        mlibc::infoLogger() << "Type is UNKNOWN" << "\n" <<  frg::endlog;
++        break;
++    }
++
++    *bytes_read =  ret_entry->d_reclen;
++
++    return 0;
 +}
 +
 +int sys_close(int fd) {
@@ -384,7 +437,13 @@ index 00000000..e3ed4085
 +  register off_t ret asm("r15");
 +  SYSCALL_NA3(SYS_SEEK, fd, offset, whence);
 +
++  mlibc::infoLogger() << "[mlibc] Sys seek derefing" << new_offset << "\n" << frg::endlog;
++
++  if(ret == -1)
++    return EINVAL;
 +  *new_offset = ret;
++
++  mlibc::infoLogger() << "[mlibc] Sys seek got ret " << *new_offset << "\n" << frg::endlog;
 +
 +  return 0;
 +}
@@ -397,7 +456,7 @@ index 00000000..e3ed4085
 +    case fsfd_target::fd:{
 +      mlibc::infoLogger() << "[mlibc] Calling stat on " << fd << " fd\n" << frg::endlog;
 +
-+      uint64_t ret;
++      register int ret asm ("r15");
 +      SYSCALL_NA2(SYS_FSTAT, fd, &vns);
 +      break;
 +    }
@@ -408,7 +467,11 @@ index 00000000..e3ed4085
 +      SYSCALL_NA2(SYS_STAT, path, &vns);
 +      break;
 +    }
-+    default: sys_libc_panic();
++    default: {
++      mlibc::infoLogger() << "Invalid fsfs_target \n" << frg::endlog;
++      return ENOENT; 
++      break;
++    }
 +  }
 +
 +  statbuf->st_ino = vns.inode;
@@ -433,7 +496,8 @@ index 00000000..e3ed4085
 +          statbuf->st_mode |= S_IFCHR;
 +          statbuf->st_rdev = vns.inode;
 +          break;
-+      default: sys_libc_panic();
++      default: return ENOENT; 
++
 +  }
 +
 +
@@ -442,15 +506,20 @@ index 00000000..e3ed4085
 +}
 +
 +
++int sys_access(const char* filename, int mode){
++    mlibc::infoLogger() << "[mlibc] Calling sys_access() STUB\n" << frg::endlog;
++    return 0;
++}
++
 +int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd,
 +               off_t offset, void **window) {
 +  __ensure(flags & MAP_ANONYMOUS);
 +
-+  register void *ret asm("r15");
++  register uint64_t ret asm("r15");
 +  SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
 +
-+  mlibc::infoLogger() << "[mlibc] Derefing window at " << window << frg::endlog;
-+  *window = ret;
++  mlibc::infoLogger() << "[mlibc] Derefing window at " << window << "\n" << frg::endlog;
++  *window = (void*)ret;
 +  mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window
 +                      << frg::endlog;
 +
@@ -459,7 +528,6 @@ index 00000000..e3ed4085
 +
 +int sys_vm_unmap(void *pointer, size_t size) {
 +  // TODO
-+  
 +    return sys_anon_free(pointer, size);
 +}
 +
@@ -470,9 +538,15 @@ index 00000000..e3ed4085
 +  return 0;
 +}
 +
++int sys_isatty(int fd){
++  return 0;
++}
++
 +int sys_ioctl(int fd, unsigned long request, void *arg, int *result) { 
 +
-+  mlibc::infoLogger() << "[mlibc] Called sys_ioctl() \n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Called sys_ioctl() STUB \n" << frg::endlog;
++  return ENOSYS;
++
 +  switch(request){
 +    case TIOCGWINSZ:{
 +
@@ -490,10 +564,8 @@ index 00000000..e3ed4085
 +    }
 +    case TIOCGPGRP:{
 +      mlibc::infoLogger() << "[mlibc] REQ: TIOCGPGRP\n" << frg::endlog;
-+      if(fd != -1)
-+       *result = -1; 
 +
-+      *result = 0;
++      *result = 1;
 +      break;
 +    }
 +    case TIOCSPGRP:{
@@ -538,7 +610,7 @@ index 00000000..e3ed4085
 +
 +    mlibc::infoLogger() << "[mlibc] Calling sys_clone() STUB\n" << frg::endlog;
 +
-+  return 0;
++    return 0;
 +}
 +
 +void sys_thread_exit() {
@@ -552,7 +624,7 @@ index 00000000..e3ed4085
 +int sys_sleep(time_t *secs, long *nanos) {
 +
 +    mlibc::infoLogger() << "[mlibc] Calling sys_sleep() STUB\n" << frg::endlog;
-+  return 0;
++    return 0;
 +}
 +
 +int sys_fork(pid_t *child) { 
@@ -562,7 +634,7 @@ index 00000000..e3ed4085
 +
 +int sys_execve(const char *path, char *const argv[], char *const envp[]) {
 +    mlibc::infoLogger() << "[mlibc] Calling sys_execve() STUB\n" << frg::endlog;
-+  return 0;
++    return 0;
 +}
 +
 +
@@ -588,29 +660,64 @@ index 00000000..e3ed4085
 +
 +int sys_getcwd(char * buffer, size_t size){
 +    mlibc::infoLogger() << "[mlibc] Calling sys_getcwd() STUB\n" << frg::endlog;
-+    return 0;
++    return ENOSYS;
 +}
 +
 +pid_t sys_getpid() {
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getpid() STUB\n" << frg::endlog;
-+    return 0;
++
++    mlibc::infoLogger() << "[mlibc] Calling sys_getpid() \n" << frg::endlog;
++
++    register pid_t ret asm ("r15");
++    SYSCALL_NA0(SYS_GETPID)
++
++    pid_t res = ret;
++    mlibc::infoLogger() << "[mlibc] Got pid: " << res << frg::endlog;
++    return ret;
 +}
 +
-+pid_t sys_getpgid(pid_t pid, pid_t *pgid){
++int sys_getpgid(pid_t pid, pid_t *pgid){
 +    mlibc::infoLogger() << "[mlibc] Calling sys_getpgid() STUB\n" << frg::endlog;
-+    return 0;
++    return ENOSYS;
++}
++
++
++int sys_setpgid(pid_t pid, pid_t pgid){
++    mlibc::infoLogger() << "[mlibc] Calling sys_setpgid() STUB\n" << frg::endlog;
++    return ENOSYS; 
 +}
 +
 +pid_t sys_getppid() {
 +    mlibc::infoLogger() << "[mlibc] Calling sys_getppid() STUB\n" << frg::endlog;
-+    return 0;
++    return ENOSYS;
 +}
 +
 +int sys_dup(int fd, int flags, int * newfd){
-+  mlibc::infoLogger() << "[mlibc] Calling sys_dup() STUB\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
++
++  register int ret asm("r15");
++  SYSCALL_NA2(SYS_DUP, fd, flags);
++
++  if(ret)
++    *newfd = ret;
++
++  mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
 +
 +  return 0;  
 +}
++
++int sys_dup2(int fd, int flags, int  newfd){
++
++  mlibc::infoLogger() << "[mlibc] Calling sys_dup2() \n" << frg::endlog;
++  register int ret asm("r15");
++  SYSCALL_NA3(SYS_DUP2, fd, flags, newfd);
++  if(ret != newfd)
++    return -1;
++  mlibc::infoLogger() << "[mlibc] sys_dup2(): success \n" << frg::endlog;
++
++  return 0;
++}
++
++
 +int sys_waitpid(pid_t pid, int *status, int flags, pid_t *ret_pid){
 +  mlibc::infoLogger() << "[mlibc] Calling sys_waitpid() STUB\n" << frg::endlog;
 +  return 0;
@@ -622,6 +729,17 @@ index 00000000..e3ed4085
 +  (void)act;
 +  (void)oldact;
 +  mlibc::infoLogger() << "[mlibc] Calling sys_sigaction() STUB\n" << frg::endlog;
++
++  return ENOSYS;
++}
++
++int sys_gethostname(char *buffer, size_t bufsize){
++  if(bufsize < 0)
++    return EINVAL;
++
++  for(size_t i=0; i<bufsize; i++)
++    buffer[i] = "root"[i];
++
 +  return 0;
 +}
 +
@@ -959,10 +1077,10 @@ index 00000000..2dd88a64
 +}
 diff --git a/sysdeps/atlas/include/vfs.h b/sysdeps/atlas/include/vfs.h
 new file mode 100644
-index 00000000..85b775ee
+index 00000000..ba870bff
 --- /dev/null
 +++ b/sysdeps/atlas/include/vfs.h
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,28 @@
 +#pragma once
 +
 +#include <stdint.h>
@@ -984,6 +1102,12 @@ index 00000000..85b775ee
 +    uint64_t inode;
 +    uint64_t filesize;
 +} __attribute__((packed)) VfsNodeStat;
++
++typedef struct  {
++    char name[name_max];
++    uint32_t ino;
++    uint32_t type;
++} __attribute__((packed)) DirectoryEntry; 
 +
 diff --git a/sysdeps/atlas/meson.build b/sysdeps/atlas/meson.build
 new file mode 100644

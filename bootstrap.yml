@@ -457,7 +457,7 @@ packages:
           - '--without-bash-malloc'
           - '--disable-nls'
           - '--disable-readline'
-            #- '--with-installed-readline=$SYSROOT_DIR$/usr'
+          #- '--with-installed-readline=$SYSROOT_DIR$/usr'
         environ:
           ac_cv_func_wcswidth: 'no'
     build:

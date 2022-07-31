@@ -1,6 +1,6 @@
 ISO_IMAGE=disk.iso
 SYSROOT=$(shell pwd)/sysroot
-QEMU_RUN_FLAGS= -smp cores=2 -serial stdio  -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G # -d int 
+QEMU_RUN_FLAGS= -smp cores=2 -serial stdio  -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G -d int 
 QEMU_MONITOR_FLAGS =  -smp cores=2 -monitor stdio  -vga std -machine q35 -no-reboot -d int -M smm=off -no-shutdown -m 8G 
 
 .PHONY: clean all run libc
@@ -8,7 +8,7 @@ QEMU_MONITOR_FLAGS =  -smp cores=2 -monitor stdio  -vga std -machine q35 -no-reb
 all: $(ISO_IMAGE) 
 
 monitor: $(ISO_IMAGE)
-	qemu-system-x86_64  $(QEMU_MONITOR_FLAGS) -cdrom $(ISO_MAGE)
+	qemu-system-x86_64  $(QEMU_MONITOR_FLAGS) -cdrom disk.iso
 
 run: $(ISO_IMAGE)
 	qemu-system-x86_64 $(QEMU_RUN_FLAGS) -cdrom $(ISO_IMAGE)

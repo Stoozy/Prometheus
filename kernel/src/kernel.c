@@ -1,5 +1,6 @@
 #define NULL (void *)0
 
+#include "fs/vfs.h"
 #include <cpu/gdt.h>
 #include <cpu/idt.h>
 #include <cpu/io.h>
@@ -193,6 +194,16 @@ void _start(struct stivale2_struct *boot_info) {
   extern VfsNode *gp_root;
 
   devfs_init(gp_root);
+
+  //File * root = vfs_open("/", 0);
+  //kprintf("Reading root directory entries\n");
+  //DirectoryEntry * entry = vfs_readdir(root);
+  //while(entry){
+  //  kprintf("%s\n", entry);
+  //  entry = vfs_readdir(root);
+  //}
+
+  //for(;;);
 
   cli();
   // smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") :
