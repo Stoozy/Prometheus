@@ -42,6 +42,7 @@ void handle_scan(u8 scan_code) {
     kprintf("%c", kbdus[scan_code]);
 
   extern char g_term_buffer[0x1000];
+  memset(g_term_buffer, 0, 4096);
   g_term_buffer[0] = kbdus[scan_code];
 
   // extern ProcessControlBlock *gp_current_process;
