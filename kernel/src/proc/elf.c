@@ -113,8 +113,8 @@ Auxval load_elf_segments(PageTable *vas, u8 *elf_data) {
 #define AT_RANDOM 25
 #define AT_EXECFN 31
 
-ProcessControlBlock *create_elf_process(const char *path, char **argvp,
-                                        char **envp) {
+ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
+                                        char *envp[]) {
   File *elf_file = vfs_open(path, 0);
 
   u8 *elf_data = kmalloc(elf_file->size);
@@ -130,8 +130,8 @@ ProcessControlBlock *create_elf_process(const char *path, char **argvp,
 
   memset(proc, 0, sizeof(ProcessControlBlock));
 
-  proc->p_stack = pmm_alloc_blocks(24) + (24 * PAGE_SIZE);
-  memset(proc->p_stack, 0, 24 * PAGE_SIZE);
+  proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
+  memset(proc->p_stack, 0, 8 * PAGE_SIZE);
 
   kprintf("Process stack at 0x%x\n", proc->p_stack);
 
@@ -143,25 +143,29 @@ ProcessControlBlock *create_elf_process(const char *path, char **argvp,
 
   void *phys_start = pmm_alloc_blocks((elf_file->size / PAGE_SIZE) + 1);
   size_t pa_size = ((elf_file->size / PAGE_SIZE) + 1) * PAGE_SIZE;
-  // vmm_map_range(proc->cr3, pa_virt_start, phys_start, pa_size,  PAGE_USER |
-  // PAGE_PRESENT | PAGE_WRITE);
 
   Auxval aux = load_elf_segments(proc->cr3, elf_data);
 
-  u64 *stack = (u64 *)(proc->p_stack);
+  uint64_t *stack = (uint64_t *)(proc->p_stack);
 
-  // copy environment vars
   int envp_len;
-  for (int envp_len = 0; envp[envp_len] != NULL; envp_len++) {
-    stack = (void *)stack - (strlen(envp[envp_len]) + 1);
-    memcpy(stack, envp[envp_len], strlen(envp[envp_len]));
+  for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
+    size_t length = strlen(envp[envp_len]);
+    stack = (void *)stack - length - 1;
+    memcpy(stack, envp[envp_len], length);
   }
 
-  // copy args
-  int args_len;
-  for (args_len = 0; argvp[args_len] != NULL; args_len++) {
-    stack = (void *)stack - (strlen(argvp[args_len]) + 1);
-    memcpy(stack, argvp[args_len], strlen(argvp[args_len]));
+  int argv_len;
+  for (argv_len = 0; argvp[argv_len] != NULL; argv_len++) {
+    size_t length = strlen(argvp[argv_len]);
+    stack = (void *)stack - length - 1;
+    memcpy(stack, argvp[argv_len], length);
+  }
+
+  stack = (uint64_t *)(((uintptr_t)stack / 16) * 16);
+
+  if (((argv_len + envp_len + 1) & 1) != 0) {
+    stack--;
   }
 
   *--stack = 0;
@@ -175,7 +179,7 @@ ProcessControlBlock *create_elf_process(const char *path, char **argvp,
   *--stack = aux.phdr;
   *--stack = AT_PHDR;
 
-  uintptr_t old_rsp = (uintptr_t)stack;
+  uintptr_t old_rsp = (uintptr_t)proc->p_stack;
 
   *--stack = 0; // end envp
   stack -= envp_len;
@@ -184,23 +188,24 @@ ProcessControlBlock *create_elf_process(const char *path, char **argvp,
     stack[i] = old_rsp;
   }
 
-  *--stack = 0; // end argv
-  stack -= args_len;
-  for (int i = 0; i < args_len; i++) {
+  *--stack = 0; // end argvp
+  stack -= argv_len;
+  for (int i = 0; i < argv_len; i++) {
     old_rsp -= strlen(argvp[i]) + 1;
     stack[i] = old_rsp;
   }
-  *--stack = args_len; // argc
 
-  uintptr_t sa = (uintptr_t)stack;
+  *--stack = argv_len; // argc
+
+  proc->p_stack -= (proc->p_stack - (void *)stack);
 
   /* Interrupt frame */
-  *--stack = 0x23;  // ss
-  *--stack = sa;    // rsp
-  *--stack = 0x202; // rflags
-  *--stack = 0x2b;  // cs
+  *--stack = 0x23;                     // ss
+  *--stack = (uintptr_t)proc->p_stack; // rsp
+  *--stack = 0x202;                    // rflags
+  *--stack = 0x2b;                     // cs
 
-  /* TODO: This should depend on the kind of executable  */
+  /* FIXME: This should depend on the kind of executable  */
   *--stack = (u64)aux.ld_entry; // rip
 
   *--stack = 0; // r8
