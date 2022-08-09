@@ -12,6 +12,9 @@
 #include <typedefs.h>
 #include <unistd.h>
 
+#include <abi-bits/seek-whence.h>
+#include <abi-bits/vm-flags.h>
+
 typedef long int off_t;
 
 extern PageTable *kernel_cr3;
@@ -99,21 +102,6 @@ int sys_write(int file, char *ptr, int len) {
   return len;
 }
 
-/* snatched from lemon/vm-flags.h */
-#define PROT_NONE 0x00
-#define PROT_READ 0x01
-#define PROT_WRITE 0x02
-#define PROT_EXEC 0x04
-
-#define MAP_FAILED ((void *)(-1))
-#define MAP_FILE 0x00
-#define MAP_PRIVATE 0x01
-#define MAP_SHARED 0x02
-#define MAP_FIXED 0x04
-#define MAP_ANON 0x08
-#define MAP_ANONYMOUS 0x08
-#define MAP_NORESERVE 0x10
-
 void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
                  off_t offset) {
 
@@ -177,16 +165,12 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
   return NULL;
 }
 
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
-
 off_t sys_seek(int fd, off_t offset, int whence) {
 
   extern ProcessControlBlock *gp_current_process;
   File *file = gp_current_process->fd_table[fd];
 
-  if (!file){
+  if (!file) {
     kprintf("File dne: %d\n", fd);
     return -1;
   }
@@ -332,9 +316,9 @@ int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
   extern ProcessControlBlock *gp_current_process;
 
   File *file = gp_current_process->fd_table[handle];
-  if (!file){
-      kprintf("Invalid open stream\n");
-      return -1;
+  if (!file) {
+    kprintf("Invalid open stream\n");
+    return -1;
   }
 
   kprintf("Reading entries from %s\n", file->name);
@@ -478,7 +462,7 @@ void syscall_dispatcher(Registers regs) {
     break;
   }
   case SYS_READDIR: {
-    regs.r15 = sys_readdir(regs.r8, (DirectoryEntry * )regs.r9, regs.r10);
+    regs.r15 = sys_readdir(regs.r8, (DirectoryEntry *)regs.r9, regs.r10);
     break;
   }
   default: {
