@@ -39,20 +39,14 @@ typedef struct {
 } __attribute__((packed)) PageTableEntry;
 
 typedef struct {
-    void * vaddr;
-    void * paddr;
-    u64 length;
-} MemRange;
-
-
-typedef struct {
     PageTableEntry entries[512];
 } __attribute__((packed)) PageTable;
 
 void *      vmm_virt_to_phys(PageTable * cr3, void * virt_addr);
 void        vmm_map_page(PageTable * , uintptr_t , uintptr_t , int );
-PageTable * vmm_create_user_proc_pml4();
-PageTable * vmm_create_kernel_proc_pml4();
+PageTable * vmm_create_user_proc_pml4(void * stk);
+PageTable * vmm_create_kernel_proc_pml4(void * stk);
+PageTable * vmm_clone_page_table(PageTable *);
 PageTable * vmm_get_current_cr3();
 
 void        vmm_switch_page_directory(PageTable *);
