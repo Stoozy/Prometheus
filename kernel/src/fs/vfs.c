@@ -29,8 +29,8 @@ static bool starts_with(const char *a, char *b) {
 
 static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
 
-  //kprintf("[VFS]  Getting node from path %s\n", path);
-  //kprintf("[VFS]  Parent is %s\n", parent->file->name);
+  // kprintf("[VFS]  Getting node from path %s\n", path);
+  // kprintf("[VFS]  Parent is %s\n", parent->file->name);
 
   if (strcmp("/", path) == 0)
     return gp_root;
@@ -152,7 +152,7 @@ ssize_t vfs_read(File *file, u8 *buffer, size_t off, size_t size) {
   return -1;
 }
 
-DirectoryEntry * vfs_readdir(File *file) {
+DirectoryEntry *vfs_readdir(File *file) {
   VfsNode *node = vfs_node_from_path(gp_root, file->name);
 
   if (node)
@@ -165,7 +165,7 @@ ssize_t vfs_write(File *file, u8 *buffer, size_t off, size_t size) {
 
   if (file) {
     file->position += off;
-    size_t bytes = file->fs->read(file, size, buffer);
+    size_t bytes = file->fs->write(file, size, buffer);
     return bytes;
   }
 
