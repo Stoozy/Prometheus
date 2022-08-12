@@ -36,5 +36,7 @@ typedef unsigned long long caddr_t;
 #define SYS_DUP 15
 #define SYS_DUP2 16
 #define SYS_READDIR	17
+#define SYS_FCNTL	18
+#define SYS_POLL	19
 
 void sys_init();
