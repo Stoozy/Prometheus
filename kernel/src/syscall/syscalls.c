@@ -95,6 +95,13 @@ int sys_read(int file, char *ptr, size_t len) {
 
 int sys_write(int fd, char *ptr, int len) {
   extern ProcessControlBlock *gp_current_process;
+
+  if (fd == 1 || fd == 2)
+    kprintf("Writing data to stdout or stderr: %s\n", ptr);
+
+  if (!valid_fd(fd))
+    return -1;
+
   File *file = gp_current_process->fd_table[fd];
   if (file) {
     kprintf("Writing to %s\n", file->name);
@@ -153,7 +160,7 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
     memset(PAGING_VIRTUAL_OFFSET + phys_base, 0, pages * PAGE_SIZE);
 
     void *virt_base = NULL;
-    if (flags & MAP_FIXED) {
+    if (flags & MAP_FIXED && addr != NULL) {
       virt_base = addr;
     } else {
       virt_base = (void *)gp_current_process->mmap_base;
@@ -171,6 +178,14 @@ void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
     vmm_map_range(
         (void *)((u64)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET),
         virt_base, phys_base, size, page_flags);
+
+    VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+    range->virt_start = virt_base;
+    range->phys_start = phys_base;
+    range->size = pages * PAGE_SIZE;
+    range->page_flags = page_flags;
+
+    proc_add_vas_range(gp_current_process, range);
 
     kprintf("[MMAP] Returning 0x%x\n", virt_base);
 
@@ -261,10 +276,12 @@ int sys_execve(char *name, char **argv, char **env) { return -1; }
 int sys_fork(Registers *regs) {
   extern ProcessControlBlock *gp_current_process;
 
+  // gp_current_process->p_stack = (void *)regs;
+  dump_regs(gp_current_process->p_stack);
   ProcessControlBlock *child_proc = clone_process(gp_current_process, regs);
   register_process(child_proc);
 
-  kprintf("Got child pid %d\n", child_proc->pid);
+  // kprintf("[SYS] Got child pid %d\n", child_proc->pid);
 
   return child_proc->pid;
 }
@@ -273,8 +290,7 @@ int sys_ioctl(int fd, unsigned long req, void *arg) {
   extern ProcessControlBlock *gp_current_process;
   kprintf("Request is %x\n", req);
   kprintf("FD is %d\n", fd);
-  if (fd < 0 || fd > MAX_PROC_FDS) {
-    kprintf("Invalid FD\n");
+  if (!(valid_fd(fd))) {
     return -1; // Invalid fd
   }
 
@@ -293,7 +309,7 @@ int sys_dup(int fd, int flags) {
 
   extern ProcessControlBlock *gp_current_process;
 
-  if (fd < 0 || fd > MAX_PROC_FDS) {
+  if (!valid_fd(fd)) {
     kprintf("Invalid fd %d\n", fd);
     return -1;
   }

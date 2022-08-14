@@ -339,6 +339,6 @@ typedef struct {
 } Auxval;
 
 u8 validate_elf(u8 *);
-Auxval load_elf_segments(PageTable *, u8 *);
+Auxval load_elf_segments(ProcessControlBlock *, u8 *);
 ProcessControlBlock *create_elf_process(const char *path, 
         char ** argvp,  char ** envp);

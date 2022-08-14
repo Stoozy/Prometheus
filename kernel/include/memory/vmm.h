@@ -11,6 +11,9 @@
 #define PAGING_KERNEL_OFFSET        0xffffffff80000000
 #define PAGING_VIRTUAL_OFFSET       0xffff800000000000
 
+
+typedef struct process_control_block ProcessControlBlock;
+
 enum {
     PAGE_PRESENT    = 1 << 0, // same as 1
     PAGE_WRITE      = 1 << 1, // same as 2, binary 10
@@ -38,15 +41,25 @@ typedef struct {
     u64 address: 52;
 } __attribute__((packed)) PageTableEntry;
 
+typedef struct vas_range_node {
+    void * virt_start;
+    void * phys_start;
+    size_t size;
+
+    int page_flags;
+
+    struct vas_range_node * next; 
+} __attribute__((packed)) VASRangeNode;
+
+
 typedef struct {
     PageTableEntry entries[512];
 } __attribute__((packed)) PageTable;
 
-void *      vmm_virt_to_phys(PageTable * cr3, void * virt_addr);
 void        vmm_map_page(PageTable * , uintptr_t , uintptr_t , int );
-PageTable * vmm_create_user_proc_pml4(void * stk);
-PageTable * vmm_create_kernel_proc_pml4(void * stk);
-PageTable * vmm_clone_page_table(PageTable *);
+PageTable * vmm_create_user_proc_pml4(ProcessControlBlock *);
+PageTable * vmm_create_kernel_proc_pml4(ProcessControlBlock *);
+PageTable * vmm_copy_vas(ProcessControlBlock*);
 PageTable * vmm_get_current_cr3();
 
 void        vmm_switch_page_directory(PageTable *);

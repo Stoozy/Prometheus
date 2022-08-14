@@ -94,55 +94,39 @@ void dump_list() {
   kprintf(" NULL\n");
 }
 
-// Creates a process with given entrypoint
-// this requires allocating a stack, setting the stack
-// and creating page tables
-ProcessControlBlock *create_process(void (*entry)(void)) {
-  ProcessControlBlock *pcb = kmalloc(sizeof(ProcessControlBlock));
+void dump_proc_vas(ProcessControlBlock *proc) {
+  VASRangeNode *cnode = proc->vas;
+  kprintf("---------PROCESS VAS---------\n");
 
-  memset(pcb, 0, sizeof(ProcessControlBlock));
+  if (proc->vas) {
+    kprintf("start: %x; size: %x; flags: %d\n", cnode->virt_start, cnode->size,
+            cnode->page_flags);
 
-  pcb->p_stack = pmm_alloc_block() + PAGE_SIZE;
+    while (cnode->next != NULL) {
+      kprintf("start: %x; size: %x; flags: %d\n", cnode->virt_start,
+              cnode->size, cnode->page_flags);
 
-  u64 *stack = (u64 *)(pcb->p_stack);
-  PageTable *pml4 = vmm_create_user_proc_pml4(stack);
+      cnode = cnode->next;
+    }
+  }
+}
 
-  // user proc
-  *--stack = 0x23;              // ss
-  *--stack = (u64)pcb->p_stack; // rsp
-  *--stack = 0x202;             // rflags
-  *--stack = 0x2b;              // cs
-  *--stack = (u64)entry;        // rip
+void proc_add_vas_range(ProcessControlBlock *proc, VASRangeNode *node) {
+  if (!proc->vas)
+    proc->vas = node;
 
-  *--stack = 0; // r8
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0; // ...
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0; // r15
+  VASRangeNode *cnode = proc->vas;
 
-  *--stack = 0; // rbp
+  while (cnode->next != NULL)
+    cnode = cnode->next;
 
-  *--stack = 0; // rdx
-  *--stack = 0; // rcx
-  *--stack = 0; // rbx
-  *--stack = 0; // rax
-  *--stack = 0; // rsi
-  *--stack = 0; // rdi
-
-  pcb->p_stack = stack;
-  pcb->cr3 = pml4;
-  pcb->next = NULL;
-
-  return pcb;
+  cnode->next = node;
+  node->next = NULL;
 }
 
 ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
 
   ProcessControlBlock *pcb = kmalloc(sizeof(ProcessControlBlock));
-
   memset(pcb, 0, sizeof(ProcessControlBlock));
 
   pcb->p_stack = pmm_alloc_block() + PAGE_SIZE;
@@ -180,6 +164,25 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
 
   return pcb;
 }
+
+ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
+
+  ProcessControlBlock *clone = kmalloc(sizeof(ProcessControlBlock));
+  memset(clone, 0, sizeof(ProcessControlBlock));
+  memcpy(clone, proc, sizeof(ProcessControlBlock));
+
+  clone->pid++;
+  clone->cr3 = vmm_copy_vas(proc);
+  clone->p_stack = regs;
+  kprintf("Registers are at stack %x\n", regs);
+
+  kprintf("Fork'd process has cr3: %x\n", clone->cr3);
+
+  clone->next = NULL;
+
+  return clone;
+}
+
 void register_process(ProcessControlBlock *new_pcb) {
 
 #ifdef SCHEDULER_DEBUG
@@ -188,8 +191,10 @@ void register_process(ProcessControlBlock *new_pcb) {
 
   volatile ProcessControlBlock *current_pcb = gp_process_queue;
 
+  kprintf("Current pcb is at %x\n", current_pcb);
+
   // first process
-  if (current_pcb == NULL) {
+  if (!current_pcb) {
     gp_process_queue = new_pcb;
     ++g_procs;
     return;
@@ -198,6 +203,7 @@ void register_process(ProcessControlBlock *new_pcb) {
   while (current_pcb->next != NULL)
     current_pcb = current_pcb->next;
   current_pcb->next = new_pcb;
+  new_pcb->next = NULL;
 
 #ifdef SCHEDULER_DEBUG
   kprintf("[TASKING]  PCB at 0x%x is after 0x%x\n", current_pcb->next,
@@ -213,22 +219,22 @@ void multitasking_init() {
   // save kernel page tables
   kernel_cr3 = vmm_get_current_cr3();
 
-  extern void terminal_main();
-  ProcessControlBlock *term_proc = create_kernel_process(terminal_main);
-  register_process(term_proc);
-
-
   char *envp[4] = {"PATH=/usr/bin", "HOME=/", "TERM=linux", NULL};
-  char *argvp[2] = {"--login", NULL};
+  char *argvp[2] = {NULL};
 
-  ProcessControlBlock *hello_proc =
-      create_elf_process("/usr/bin/bash", envp, argvp);
-  register_process(hello_proc);
+  ProcessControlBlock *fbpad =
+      create_elf_process("/usr/bin/fork_test", argvp, envp);
+  kprintf("Got process at %x\n", fbpad);
+  register_process(fbpad);
+
+  // extern void refresh_screen_proc();
+  // ProcessControlBlock *video_refresh =
+  //     create_kernel_process(refresh_screen_proc);
+  // register_process(video_refresh);
 
   gp_current_process = gp_process_queue;
 
-  // kprintf("Switching to process with 0x%llx cr3\n",
-  // (void *)gp_current_process->cr3);
+  kprintf("switching to process pid:%d\n", gp_current_process->pid);
   switch_to_process(gp_current_process->p_stack,
                     (void *)gp_current_process->cr3);
   return;

@@ -1,6 +1,6 @@
 #include <drivers/video.h>
 #include <fs/vfs.h>
-#include <kmalloc.h> 
+#include <kmalloc.h>
 #include <kprintf.h>
 #include <stivale2.h>
 #include <string/string.h>
@@ -22,7 +22,20 @@ void screen_init(struct stivale2_struct_tag_framebuffer *fb_info) {
   kprintf("[VIDEO]   Framebuffer addr: 0x%llx\n", fb_info->framebuffer_addr);
   kprintf("[VIDEO]   Framebuffer bpp: %d\n", fb_info->framebuffer_bpp);
   kprintf("[VIDEO]   Framebuffer height: %d\n", fb_info->framebuffer_height);
+
   kprintf("[VIDEO]   Framebuffer width: %d\n", fb_info->framebuffer_width);
+  kprintf("[VIDEO]   Framebuffer red mask shift: %d\n",
+          fb_info->red_mask_shift);
+  kprintf("[VIDEO]   Framebuffer red mask size: %d\n", fb_info->red_mask_size);
+  kprintf("[VIDEO]   Framebuffer blue mask shift: %d\n",
+          fb_info->blue_mask_shift);
+  kprintf("[VIDEO]   Framebuffer blue mask size: %d\n",
+          fb_info->blue_mask_size);
+
+  kprintf("[VIDEO]   Framebuffer green mask shift: %d\n",
+          fb_info->green_mask_shift);
+  kprintf("[VIDEO]   Framebuffer green mask size: %d\n",
+          fb_info->green_mask_size);
 
   gp_fb_info = fb_info;
 
@@ -30,6 +43,10 @@ void screen_init(struct stivale2_struct_tag_framebuffer *fb_info) {
               (fb_info->framebuffer_bpp / 8);
   gp_framebuffer = (u32 *)fb_info->framebuffer_addr;
   gp_backbuffer = (u32 *)kmalloc(g_fb_size);
+
+  File *fb_dev = vfs_open("/dev/fb0", 0);
+  fb_dev->device = (uintptr_t)gp_framebuffer;
+  fb_dev->size = g_fb_size;
 
   File *font_file = vfs_open("/fonts/unscii-16.sfn", 0);
 
@@ -149,8 +166,8 @@ void draw_fill_rect(int x, int y, int w, int h, int color) {
 
 void refresh_screen_proc() {
   for (;;) {
-    // memset(gp_backbuffer, 0x1f, g_fb_size);
     memcpy(gp_framebuffer, gp_backbuffer, g_fb_size);
+    kprintf("Refreshed screen\n");
   }
 }
 

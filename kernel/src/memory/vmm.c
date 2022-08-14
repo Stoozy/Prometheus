@@ -9,6 +9,7 @@
 #include <kprintf.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
+#include <proc/proc.h>
 #include <stivale2.h>
 #include <string/string.h>
 #include <typedefs.h>
@@ -32,15 +33,24 @@ static PageIndex vmm_get_page_index(uintptr_t vaddr) {
 static uintptr_t *get_next_table(uintptr_t *table, u64 entry) {
   void *addr;
 
+  if (!table)
+    kprintf("NULL table\n");
+
   if (table[entry] & PAGE_PRESENT) {
     addr = (void *)(table[entry] & ~((uintptr_t)0xfff));
   } else {
     addr = pmm_alloc_block();
-    memset(PAGING_VIRTUAL_OFFSET + addr, 0, PAGE_SIZE);
+    if ((uintptr_t)addr & PAGING_VIRTUAL_OFFSET)
+      memset(addr, 0, PAGE_SIZE);
+    else
+      memset(PAGING_VIRTUAL_OFFSET + addr, 0, PAGE_SIZE);
 
-    if (addr == NULL)
+    if (addr == NULL) {
+
+      kprintf("Found null addr\n");
       for (;;)
         ; // panic here
+    }
 
     table[entry] = (uintptr_t)addr | PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
   }
@@ -90,9 +100,49 @@ void vmm_map_range(PageTable *cr3, void *virt_start, void *phys_start,
   return;
 }
 
-PageTable *vmm_create_user_proc_pml4(void *stack_top) {
+void vmm_map_kernel(PageTable *cr3) {
+  extern PageTable *kernel_cr3;
+  PageTable *kcr3 = PAGING_VIRTUAL_OFFSET + (void *)kernel_cr3;
+  for (int i = 256; i < 512; i++) {
+    cr3->entries[i] = kcr3->entries[i];
+  }
+}
+
+PageTable *vmm_copy_vas(ProcessControlBlock *proc) {
+
+  PageTable *new_vas = (void *)(pmm_alloc_block() + PAGING_VIRTUAL_OFFSET);
+  memset(new_vas, 0, sizeof(PageTable));
+
+  vmm_map_kernel(new_vas);
+
+  kprintf("[VMM]    Cloning page map\n");
+
+  for (VASRangeNode *cnode = proc->vas; cnode; cnode = cnode->next) {
+    kprintf("Mapping virtual 0x%x with size 0x%x\n", cnode->virt_start,
+            cnode->size);
+
+    void *clone_phys_addr = pmm_alloc_blocks(cnode->size / PAGE_SIZE);
+
+    kprintf("Copying from physical %x to %x. Virt: %x\n",
+            PAGING_VIRTUAL_OFFSET + cnode->phys_start,
+            PAGING_VIRTUAL_OFFSET + clone_phys_addr, cnode->virt_start);
+
+    // copy memory before mapping range
+    memcpy(PAGING_VIRTUAL_OFFSET + clone_phys_addr,
+           PAGING_VIRTUAL_OFFSET + cnode->phys_start, cnode->size);
+
+    vmm_map_range(new_vas, cnode->virt_start, clone_phys_addr, cnode->size,
+                  cnode->page_flags);
+  }
+
+  kprintf("[VMM]    Done cloning page map\n");
+  return (void *)new_vas - PAGING_VIRTUAL_OFFSET;
+}
+
+PageTable *vmm_create_user_proc_pml4(ProcessControlBlock *proc) {
+
   PageTable *pml4 = (PageTable *)pmm_alloc_block();
-  memset(pml4, 0x0, PAGE_SIZE);
+  memset(PAGING_VIRTUAL_OFFSET + (void *)pml4, 0x0, PAGE_SIZE);
 
   PageTable *kcr3 = vmm_get_current_cr3();
 
@@ -100,31 +150,26 @@ PageTable *vmm_create_user_proc_pml4(void *stack_top) {
     pml4->entries[i] = kcr3->entries[i];
   }
 
+  int kflags = PAGE_PRESENT | PAGE_WRITE;
   int uflags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
 
-  /* map framebuffer */
-
-  // void* fb_start = get_framebuffer_addr();
-  // void* fb_end = fb_start + get_framebuffer_size();
-
-  // size_t fb_size = ((get_framebuffer_size()) / PAGE_SIZE) * PAGE_SIZE;
-  // kprintf("[VMM]  Mapping fb for userspace\n");
-  // vmm_map_range(pml4, fb_start, fb_start-PAGING_VIRTUAL_OFFSET, fb_size,
-  // uflags);
-
   /* kernel mapping */
-  int kflags = PAGE_PRESENT | PAGE_WRITE;
-  // extern u64 k_start, k_end, k_size;
-
-  // kprintf("[VMM]  Mapping kernel \n");
-  // vmm_map_range(pml4, (void*)k_start , (void*)k_start-PAGING_KERNEL_OFFSET,
-  // k_size, kflags);
 
   /* mapping stacks */
-  size_t stack_size = 24 * PAGE_SIZE;
-  void *stack_base = stack_top - (stack_size);
+  int stack_size = 16 * PAGE_SIZE;
+  uintptr_t stack_base = (uintptr_t)proc->p_stack - (stack_size);
   kprintf("[VMM]  Mapping userspace stack \n");
-  vmm_map_range(pml4, stack_base, stack_base, stack_size, uflags);
+  vmm_map_range(pml4, (void *)stack_base, (void *)stack_base, stack_size,
+                uflags);
+
+  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+  range->virt_start = (void *)stack_base;
+  range->phys_start = (void *)stack_base;
+  range->size = stack_size;
+  range->page_flags = uflags;
+  range->next = NULL;
+
+  proc_add_vas_range(proc, range);
 
   // LocalCpuData * lcd = get_cpu_struct(0);
   /* map kernel stack */

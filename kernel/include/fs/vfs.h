@@ -65,10 +65,12 @@ typedef struct vfs_node_stat  {
 typedef struct file {
 
     char * name;
+    int status;
     uint64_t inode;
     uint64_t device;
     uint64_t position;
     uint64_t size;
+
     uint8_t  mode;
 
     uint8_t  type;

@@ -13,8 +13,6 @@ extern PageTable *kernel_cr3;
 
 void schedule(Registers *regs) {
 
-  // load_pagedir(kernel_cr3);
-
   // not enough procs or not time to switch yet
   if (g_procs == 0) {
     return;

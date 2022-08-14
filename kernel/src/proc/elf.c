@@ -1,6 +1,7 @@
 #include <proc/elf.h>
 #include <proc/proc.h>
 
+#include <abi-bits/auxv.h>
 #include <config.h>
 #include <fs/vfs.h>
 #include <kmalloc.h>
@@ -25,7 +26,8 @@ u8 validate_elf(u8 *elf) {
   return 1;
 }
 
-Auxval load_elf_segments(PageTable *vas, u8 *elf_data) {
+Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
+  PageTable *vas = proc->cr3;
   kprintf("[ELF]  Load elf segments called with %x vas and %x elf buffer\n",
           vas, elf_data);
   Auxval aux = {0};
@@ -79,6 +81,16 @@ Auxval load_elf_segments(PageTable *vas, u8 *elf_data) {
 
         int page_flags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
         vmm_map_range(vas, vaddr, paddr, blocks * PAGE_SIZE, page_flags);
+
+        VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+
+        range->virt_start = vaddr;
+        range->phys_start = paddr;
+        range->size = blocks * PAGE_SIZE;
+        range->page_flags = page_flags;
+        range->next = NULL;
+
+        proc_add_vas_range(proc, range);
       }
     }
 
@@ -96,22 +108,21 @@ Auxval load_elf_segments(PageTable *vas, u8 *elf_data) {
            p_header->p_filesz);
 
     int page_flags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
-    for (int block = 0; block <= blocks; block++) {
-      vmm_map_page(vas, (uintptr_t)virt_addr, (uintptr_t)phys_addr, page_flags);
-      virt_addr += PAGE_SIZE;
-      phys_addr += PAGE_SIZE;
-    }
+    vmm_map_range(vas, virt_addr, phys_addr, blocks * PAGE_SIZE, page_flags);
+
+    VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+
+    range->virt_start = virt_addr;
+    range->phys_start = phys_addr;
+    range->size = blocks * PAGE_SIZE;
+    range->page_flags = page_flags;
+    range->next = NULL;
+
+    proc_add_vas_range(proc, range);
   }
 
   return aux;
 }
-
-#define AT_PHDR 3
-#define AT_PHENT 4
-#define AT_PHNUM 5
-#define AT_ENTRY 9
-#define AT_RANDOM 25
-#define AT_EXECFN 31
 
 ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
                                         char *envp[]) {
@@ -130,12 +141,13 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
   memset(proc, 0, sizeof(ProcessControlBlock));
 
-  proc->p_stack = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
+  proc->p_stack = pmm_alloc_blocks(16) + (16 * PAGE_SIZE);
   memset(proc->p_stack, 0, 8 * PAGE_SIZE);
 
   kprintf("Process stack at 0x%x\n", proc->p_stack);
 
-  proc->cr3 = vmm_create_user_proc_pml4(proc->p_stack);
+  proc->vas = NULL;
+  proc->cr3 = vmm_create_user_proc_pml4(proc);
 
   kprintf("Elf file size is %llu bytes\n", elf_file->size);
 
@@ -144,7 +156,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   void *phys_start = pmm_alloc_blocks((elf_file->size / PAGE_SIZE) + 1);
   size_t pa_size = ((elf_file->size / PAGE_SIZE) + 1) * PAGE_SIZE;
 
-  Auxval aux = load_elf_segments(proc->cr3, elf_data);
+  Auxval aux = load_elf_segments(proc, elf_data);
 
   uint64_t *stack = (uint64_t *)(proc->p_stack);
 
@@ -232,7 +244,9 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   proc->fd_table[1] = vfs_open("/dev/tty0", 0);
   proc->fd_table[2] = vfs_open("/dev/tty0", 0);
 
+  proc->pid = 200;
   proc->next = 0;
+
   kprintf("fd 0 is at %x\n", proc->fd_table[0]);
   kprintf("fd 1 is at %x\n", proc->fd_table[1]);
   kprintf("fd 2 is at %x\n", proc->fd_table[2]);

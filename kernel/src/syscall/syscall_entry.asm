@@ -33,12 +33,15 @@ enable_sce:
 syscall_entry:
     cli
 
+    ;cld
     swapgs
 
     mov [gs:0x8], rsp       ; save process stack
 
 
     mov rsp, [gs:0x0]       ; switch to syscall stack
+
+    ; pushing registers struct
 
     push qword 0x23         ; user ss
     push qword [gs:0x8]     ; saved rsp
@@ -47,7 +50,6 @@ syscall_entry:
     push qword rcx          ; rip
 
     pushaq
-    cld
 
     mov rdi, rsp
     mov rbp, 0

@@ -1,3 +1,4 @@
+#include <abi-bits/fcntl.h>
 #include <fs/vfs.h>
 #include <kmalloc.h>
 #include <kprintf.h>
@@ -70,7 +71,7 @@ struct file *devfs_open(const char *path, int flags) {
 }
 
 u64 devfs_write(struct file *file, size_t size, u8 *buffer) {
-  if (file->position > file->size + size) {
+  if (file->position > file->size) {
     return 0;
   }
 
