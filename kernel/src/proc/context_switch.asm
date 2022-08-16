@@ -1,5 +1,5 @@
 ; C declaration
-; switch_to_process(void * new_stack, void* cr3) 
+; switch_to_process(void * trapframe, void* cr3) 
 global switch_to_process
 
 %include "cpu/macros.mac"

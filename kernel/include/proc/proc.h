@@ -16,7 +16,7 @@ typedef struct process_control_block {
   uint64_t pid;
   char name[256];
 
-  void *p_stack;
+  Registers trapframe;
   PageTable *cr3;
 
   enum TaskState state;

@@ -1,3 +1,4 @@
+#include "cpu/cpu.h"
 #include <config.h>
 #include <drivers/video.h>
 #include <fs/vfs.h>
@@ -6,6 +7,7 @@
 #include <memory/pmm.h>
 #include <proc/elf.h>
 #include <proc/proc.h>
+#include <stdint.h>
 #include <string/string.h>
 
 ProcessControlBlock *gp_process_queue = NULL;
@@ -59,7 +61,8 @@ void kill_proc(ProcessControlBlock *proc) {
   pcb->next = gp_current_process->next;
 
   // free memory
-  pmm_free_block((u64)node_to_remove->p_stack);
+
+  // pmm_free_block((u64)node_to_remove->trapframe);
   pmm_free_block((u64)node_to_remove);
 
   // decrease global number of procs
@@ -129,56 +132,39 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
   ProcessControlBlock *pcb = kmalloc(sizeof(ProcessControlBlock));
   memset(pcb, 0, sizeof(ProcessControlBlock));
 
-  pcb->p_stack = pmm_alloc_block() + PAGE_SIZE;
+  void *stack_ptr = (void *)pmm_alloc_block() + PAGE_SIZE;
 
-  u64 *stack = (u64 *)(pcb->p_stack);
+  memset(&pcb->trapframe, 0, sizeof(Registers));
 
-  // user proc
-  *--stack = 0x10;              // ss
-  *--stack = (u64)pcb->p_stack; // rsp
-  *--stack = 0x202;             // rflags
-  *--stack = 0x08;              // cs
-  *--stack = (uintptr_t)entry;  // rip
+  pcb->trapframe.ss = 0x10;
+  pcb->trapframe.rsp = (uint64_t)stack_ptr;
+  pcb->trapframe.rflags = 0x202;
+  pcb->trapframe.cs = 0x28;
+  pcb->trapframe.rip = (uint64_t)entry;
 
-  *--stack = 0; // r8
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0; // ...
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0; // r15
-
-  *--stack = 0; // rbp
-
-  *--stack = 0; // rdx
-  *--stack = 0; // rcx
-  *--stack = 0; // rbx
-  *--stack = 0; // rax
-  *--stack = 0; // rsi
-  *--stack = 0; // rdi
-
-  pcb->p_stack = stack;
   pcb->cr3 = vmm_get_current_cr3(); // kernel cr3
   pcb->next = NULL;
 
   return pcb;
 }
 
+#define MMAP_BASE 0xC000000000
 ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
 
   ProcessControlBlock *clone = kmalloc(sizeof(ProcessControlBlock));
   memset(clone, 0, sizeof(ProcessControlBlock));
   memcpy(clone, proc, sizeof(ProcessControlBlock));
 
-  clone->pid++;
   clone->cr3 = vmm_copy_vas(proc);
-  clone->p_stack = regs;
-  kprintf("Registers are at stack %x\n", regs);
+  clone->pid++;
+  clone->trapframe = *regs;
 
-  kprintf("Fork'd process has cr3: %x\n", clone->cr3);
-
+  clone->mmap_base = MMAP_BASE;
+  clone->vas = NULL;
   clone->next = NULL;
+
+  kprintf("Registers are at stack %x\n", regs);
+  kprintf("Fork'd process has cr3: %x\n", clone->cr3);
 
   return clone;
 }
@@ -235,7 +221,7 @@ void multitasking_init() {
   gp_current_process = gp_process_queue;
 
   kprintf("switching to process pid:%d\n", gp_current_process->pid);
-  switch_to_process(gp_current_process->p_stack,
+  switch_to_process(&gp_current_process->trapframe,
                     (void *)gp_current_process->cr3);
   return;
 }

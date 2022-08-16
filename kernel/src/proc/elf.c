@@ -1,3 +1,4 @@
+#include "cpu/cpu.h"
 #include <proc/elf.h>
 #include <proc/proc.h>
 
@@ -9,6 +10,7 @@
 #include <memory/pmm.h>
 #include <memory/vmm.h>
 #include <proc/proc.h>
+#include <stdint.h>
 #include <string/string.h>
 #include <typedefs.h>
 
@@ -141,24 +143,32 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
   memset(proc, 0, sizeof(ProcessControlBlock));
 
-  proc->p_stack = pmm_alloc_blocks(16) + (16 * PAGE_SIZE);
-  memset(proc->p_stack, 0, 8 * PAGE_SIZE);
+  void *stack_ptr = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
+  void *stack_base = stack_ptr - (8 * PAGE_SIZE);
 
-  kprintf("Process stack at 0x%x\n", proc->p_stack);
+  kprintf("Process stack at 0x%x\n", stack_ptr);
 
   proc->vas = NULL;
   proc->cr3 = vmm_create_user_proc_pml4(proc);
 
+  vmm_map_range(proc->cr3, stack_base, stack_base, 8 * PAGE_SIZE,
+                PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
+
+  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+
+  range->virt_start = stack_base;
+  range->phys_start = stack_base;
+  range->size = 8 * PAGE_SIZE;
+  range->page_flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+  range->next = NULL;
+
+  proc_add_vas_range(proc, range);
+
   kprintf("Elf file size is %llu bytes\n", elf_file->size);
-
-  void *pa_virt_start = (void *)(((u64)elf_data / PAGE_SIZE) * PAGE_SIZE);
-
-  void *phys_start = pmm_alloc_blocks((elf_file->size / PAGE_SIZE) + 1);
-  size_t pa_size = ((elf_file->size / PAGE_SIZE) + 1) * PAGE_SIZE;
 
   Auxval aux = load_elf_segments(proc, elf_data);
 
-  uint64_t *stack = (uint64_t *)(proc->p_stack);
+  uint64_t *stack = (uint64_t *)(stack_ptr);
 
   int envp_len;
   for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
@@ -191,7 +201,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   *--stack = aux.phdr;
   *--stack = AT_PHDR;
 
-  uintptr_t old_rsp = (uintptr_t)proc->p_stack;
+  uintptr_t old_rsp = (uintptr_t)stack_ptr;
 
   *--stack = 0; // end envp
   stack -= envp_len;
@@ -209,41 +219,20 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
   *--stack = argv_len; // argc
 
-  proc->p_stack -= (proc->p_stack - (void *)stack);
+  stack_ptr -= (stack_ptr - (void *)stack);
 
-  /* Interrupt frame */
-  *--stack = 0x23;                     // ss
-  *--stack = (uintptr_t)proc->p_stack; // rsp
-  *--stack = 0x202;                    // rflags
-  *--stack = 0x2b;                     // cs
+  memset(&proc->trapframe, 0, sizeof(Registers));
+  proc->trapframe.ss = 0x23;
+  proc->trapframe.rsp = (uint64_t)stack_ptr;
+  proc->trapframe.rflags = (uint64_t)0x202;
+  proc->trapframe.rip = aux.ld_entry;
+  proc->trapframe.cs = (uint64_t)0x2b;
 
-  /* FIXME: This should depend on the kind of executable  */
-  *--stack = (u64)aux.ld_entry; // rip
-
-  *--stack = 0; // r8
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0; // ...
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0;
-  *--stack = 0; // r15
-
-  *--stack = 0; // rbp
-
-  *--stack = 0; // rdx
-  *--stack = 0; // rcx
-  *--stack = 0; // rbx
-  *--stack = 0; // rax
-  *--stack = 0; // rsi
-  *--stack = 0; // rdi
-
-  proc->p_stack = stack;
-  proc->mmap_base = MMAP_BASE;
   proc->fd_table[0] = vfs_open("/dev/tty0", 0);
   proc->fd_table[1] = vfs_open("/dev/tty0", 0);
   proc->fd_table[2] = vfs_open("/dev/tty0", 0);
 
+  proc->mmap_base = MMAP_BASE;
   proc->pid = 200;
   proc->next = 0;
 

@@ -21,14 +21,14 @@ void schedule(Registers *regs) {
     return;
   }
 
-  gp_current_process->p_stack = (void *)regs;
+  gp_current_process->trapframe = *regs;
 
   if (gp_current_process->next == NULL) {
     gp_current_process = gp_process_queue; // go to head
 
 #ifdef SCHEDULER_DEBUG
     kprintf("[SCHEDULER] Switching to head:\n");
-    dump_regs((Registers *)gp_current_process->p_stack);
+    dump_regs(&gp_current_process->trapframe);
 #endif
 
   } else if (gp_current_process->next != NULL) {
@@ -36,16 +36,16 @@ void schedule(Registers *regs) {
     gp_current_process = gp_current_process->next;
 #ifdef SCHEDULER_DEBUG
     kprintf("[SCHEDULER] Switching to next: \n");
-    dump_regs(gp_current_process->p_stack);
+    dump_regs(&gp_current_process->trapframe);
 #endif
   }
 
 #ifdef SCHEDULER_DEBUG
   kprintf(
       "[SCHEDULER]    Switching to proc with stack at %llx and %llx as cr3\n",
-      (void *)gp_current_process->p_stack, (void *)gp_current_process->cr3);
+      gp_current_process->trapframe, (void *)gp_current_process->cr3);
 #endif
 
-  switch_to_process(gp_current_process->p_stack,
+  switch_to_process(&gp_current_process->trapframe,
                     (void *)gp_current_process->cr3);
 }
