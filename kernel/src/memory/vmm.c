@@ -94,7 +94,7 @@ void vmm_map_range(PageTable *cr3, void *virt_start, void *phys_start,
   kprintf("[VMM] virt_end is 0x%x\n", virt_end);
 #endif
 
-  for (; vaddr < (virt_start + size); vaddr += PAGE_SIZE, paddr += PAGE_SIZE)
+  for (; vaddr <= (virt_start + size); vaddr += PAGE_SIZE, paddr += PAGE_SIZE)
     vmm_map_page(cr3, (uintptr_t)vaddr, (uintptr_t)paddr, flags);
 
   return;
@@ -144,38 +144,12 @@ PageTable *vmm_create_user_proc_pml4(ProcessControlBlock *proc) {
   PageTable *pml4 = (PageTable *)pmm_alloc_block();
   memset(PAGING_VIRTUAL_OFFSET + (void *)pml4, 0x0, PAGE_SIZE);
 
-  PageTable *kcr3 = vmm_get_current_cr3();
+  extern PageTable *kernel_cr3;
+  // PageTable *kcr3 = vmm_get_current_cr3();
 
-  for (int i = 256; i < 512; i++) {
-    pml4->entries[i] = kcr3->entries[i];
-  }
-
-  int kflags = PAGE_PRESENT | PAGE_WRITE;
-  int uflags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
-
-  /* kernel mapping */
-
-  /* mapping stacks */
-  int stack_size = 16 * PAGE_SIZE;
-  uintptr_t stack_base = (uintptr_t)proc->p_stack - (stack_size);
-  kprintf("[VMM]  Mapping userspace stack \n");
-  vmm_map_range(pml4, (void *)stack_base, (void *)stack_base, stack_size,
-                uflags);
-
-  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
-  range->virt_start = (void *)stack_base;
-  range->phys_start = (void *)stack_base;
-  range->size = stack_size;
-  range->page_flags = uflags;
-  range->next = NULL;
-
-  proc_add_vas_range(proc, range);
-
-  // LocalCpuData * lcd = get_cpu_struct(0);
-  /* map kernel stack */
-  // void* kstack_base = ((void*)lcd->syscall_kernel_stack) - stack_size;
-  // kprintf("[VMM]  Mapping kernel stack 0x%x\n", kstack_base);
-  // vmm_map_range(pml4, kstack_base, kstack_base, stack_size, kflags);
+  // copy higher half
+  for (int i = 256; i < 512; i++)
+    pml4->entries[i] = kernel_cr3->entries[i];
 
   return pml4;
 }

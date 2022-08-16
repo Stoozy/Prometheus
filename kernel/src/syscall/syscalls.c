@@ -105,7 +105,7 @@ int sys_write(int fd, char *ptr, int len) {
   File *file = gp_current_process->fd_table[fd];
   if (file) {
     kprintf("Writing to %s\n", file->name);
-    vfs_write(file, ptr, file->position, len);
+    vfs_write(file, (uint8_t *)ptr, file->position, len);
   } else {
     kprintf("File not open!\n");
     for (;;)
@@ -119,78 +119,62 @@ int sys_write(int fd, char *ptr, int len) {
   return len;
 }
 
-void *sys_vm_map(void *addr, size_t size, int prot, int flags, int fd,
-                 off_t offset) {
+void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
+                 int flags, int fd, off_t offset) {
 
   kprintf("[MMAP] Requesting %llu bytes\n", size);
   kprintf("[MMAP] Hint : 0x%llx\n", addr);
   kprintf("[MMAP] Size : 0x%llx\n", size);
 
-  extern ProcessControlBlock *gp_current_process;
+  kprintf("Current process at 0x%x\n", proc);
 
-  kprintf("Current process at 0x%x\n", gp_current_process);
-
-  if (!(flags & MAP_ANON)) {
-    kprintf("[MMAP] Non anonymous mapping\n");
-    File *file = gp_current_process->fd_table[fd];
-    if (file) {
-      kprintf("[MMAP]   Valid filedes\n");
-      size = file->size + file->size % 0x1000;
-      kprintf("[MMAP]   File size is %llu bytes\n", size);
-      goto l1;
-    }
-  } else {
-    // size isn't page aligned
-    if (size % PAGE_SIZE != 0) {
-      kprintf("[MMAP] Size wasn't page aligned");
-      return NULL;
-    }
-  l1:
-
-    int pages = (size / PAGE_SIZE) + 1;
-    void *phys_base = pmm_alloc_blocks(pages);
-
-    if (phys_base == NULL) {
-      // out of memory
-      for (;;)
-        kprintf("Out of memory\n");
-      return NULL;
-    }
-
-    memset(PAGING_VIRTUAL_OFFSET + phys_base, 0, pages * PAGE_SIZE);
-
-    void *virt_base = NULL;
-    if (flags & MAP_FIXED && addr != NULL) {
-      virt_base = addr;
-    } else {
-      virt_base = (void *)gp_current_process->mmap_base;
-      gp_current_process->mmap_base += size;
-    }
-
-    kprintf("[MMAP] Found free chunk at 0x%x phys\n", phys_base);
-    int page_flags = PAGE_USER | PAGE_PRESENT | PAGE_WRITE;
-
-    if (flags & PROT_WRITE)
-      page_flags |= PAGE_WRITE;
-
-    kprintf("Virt base is %x\n", virt_base);
-
-    vmm_map_range(
-        (void *)((u64)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET),
-        virt_base, phys_base, size, page_flags);
-
-    VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
-    range->virt_start = virt_base;
-    range->phys_start = phys_base;
-    range->size = pages * PAGE_SIZE;
-    range->page_flags = page_flags;
-
-    proc_add_vas_range(gp_current_process, range);
-
-    kprintf("[MMAP] Returning 0x%x\n", virt_base);
-
-    return virt_base;
+  // size isn't page aligned
+  if (size % PAGE_SIZE != 0) {
+    kprintf("[MMAP] Size wasn't page aligned");
+    return NULL;
   }
+  int pages = (size / PAGE_SIZE) + 1;
+  void *phys_base = pmm_alloc_blocks(pages);
+
+  if (phys_base == NULL) {
+    // out of memory
+    for (;;)
+      kprintf("Out of memory\n");
+    return NULL;
+  }
+
+  memset(PAGING_VIRTUAL_OFFSET + phys_base, 0, pages * PAGE_SIZE);
+
+  void *virt_base = NULL;
+  if (flags & MAP_FIXED && addr != NULL) {
+    virt_base = addr;
+  } else {
+    virt_base = (void *)proc->mmap_base;
+    proc->mmap_base += size;
+  }
+
+  kprintf("[MMAP] Found free chunk at 0x%x phys\n", phys_base);
+  int page_flags = PAGE_USER | PAGE_PRESENT | PAGE_WRITE;
+
+  if (flags & PROT_WRITE)
+    page_flags |= PAGE_WRITE;
+
+  kprintf("Virt base is %x\n", virt_base);
+
+  vmm_map_range((void *)((u64)proc->cr3 + PAGING_VIRTUAL_OFFSET), virt_base,
+                phys_base, size, page_flags);
+
+  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+  range->virt_start = virt_base;
+  range->phys_start = phys_base;
+  range->size = pages * PAGE_SIZE;
+  range->page_flags = page_flags;
+
+  proc_add_vas_range(proc, range);
+
+  kprintf("[MMAP] Returning 0x%x\n", virt_base);
+
+  return virt_base;
 
   kprintf("Returning NULL");
   return NULL;
@@ -276,12 +260,10 @@ int sys_execve(char *name, char **argv, char **env) { return -1; }
 int sys_fork(Registers *regs) {
   extern ProcessControlBlock *gp_current_process;
 
-  // gp_current_process->p_stack = (void *)regs;
-  dump_regs(gp_current_process->p_stack);
+  dump_regs(&gp_current_process->trapframe);
   ProcessControlBlock *child_proc = clone_process(gp_current_process, regs);
-  register_process(child_proc);
 
-  // kprintf("[SYS] Got child pid %d\n", child_proc->pid);
+  register_process(child_proc);
 
   return child_proc->pid;
 }
@@ -530,7 +512,9 @@ void syscall_dispatcher(Registers *regs) {
     int fd = regs->r13;
     off_t off = regs->r14;
 
-    void *ret = sys_vm_map(addr, size, prot, flags, fd, off);
+    extern ProcessControlBlock *gp_current_process;
+    void *ret =
+        sys_vm_map(gp_current_process, addr, size, prot, flags, fd, off);
     regs->r15 = (u64)ret;
 
     break;
