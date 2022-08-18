@@ -108,7 +108,7 @@ void vmm_map_kernel(PageTable *cr3) {
   }
 }
 
-PageTable *vmm_copy_vas(ProcessControlBlock *proc) {
+void vmm_copy_vas(ProcessControlBlock *new, ProcessControlBlock *orig) {
 
   PageTable *new_vas = (void *)(pmm_alloc_block() + PAGING_VIRTUAL_OFFSET);
   memset(new_vas, 0, sizeof(PageTable));
@@ -117,7 +117,7 @@ PageTable *vmm_copy_vas(ProcessControlBlock *proc) {
 
   kprintf("[VMM]    Cloning page map\n");
 
-  for (VASRangeNode *cnode = proc->vas; cnode; cnode = cnode->next) {
+  for (VASRangeNode *cnode = orig->vas; cnode; cnode = cnode->next) {
     kprintf("Mapping virtual 0x%x with size 0x%x\n", cnode->virt_start,
             cnode->size);
 
@@ -133,10 +133,22 @@ PageTable *vmm_copy_vas(ProcessControlBlock *proc) {
 
     vmm_map_range(new_vas, cnode->virt_start, clone_phys_addr, cnode->size,
                   cnode->page_flags);
+
+    // update cloned procs VAS
+    VASRangeNode *node = kmalloc(sizeof(VASRangeNode));
+    node->virt_start = cnode->virt_start;
+    node->phys_start = cnode->phys_start;
+    node->page_flags = cnode->page_flags;
+    node->size = cnode->size;
+    node->next = NULL;
+
+    proc_add_vas_range(new, node);
   }
 
   kprintf("[VMM]    Done cloning page map\n");
-  return (void *)new_vas - PAGING_VIRTUAL_OFFSET;
+  new->cr3 = (void *)new_vas - PAGING_VIRTUAL_OFFSET;
+
+  return;
 }
 
 PageTable *vmm_create_user_proc_pml4(ProcessControlBlock *proc) {
@@ -145,7 +157,6 @@ PageTable *vmm_create_user_proc_pml4(ProcessControlBlock *proc) {
   memset(PAGING_VIRTUAL_OFFSET + (void *)pml4, 0x0, PAGE_SIZE);
 
   extern PageTable *kernel_cr3;
-  // PageTable *kcr3 = vmm_get_current_cr3();
 
   // copy higher half
   for (int i = 256; i < 512; i++)
