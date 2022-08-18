@@ -12,15 +12,12 @@
 
 ProcessControlBlock *gp_process_queue = NULL;
 ProcessControlBlock *gp_current_process = NULL;
-
-extern void switch_to_process(void *new_stack, PageTable *cr3);
-
-extern void load_pagedir();
-extern u64 g_ticks;
-
+PageTable *kernel_cr3 = NULL;
 u64 g_procs = 0;
 
-PageTable *kernel_cr3;
+extern u64 g_ticks;
+extern void switch_to_process(void *new_stack, PageTable *cr3);
+extern void load_pagedir();
 
 void unmap_fd_from_proc(ProcessControlBlock *proc, int fd) {
   if (fd > MAX_PROC_FDS || fd < 0)
@@ -60,10 +57,7 @@ void kill_proc(ProcessControlBlock *proc) {
   // skip a node, and relink
   pcb->next = gp_current_process->next;
 
-  // free memory
-
-  // pmm_free_block((u64)node_to_remove->trapframe);
-  pmm_free_block((u64)node_to_remove);
+  // TODO: free memory
 
   // decrease global number of procs
   --g_procs;
@@ -139,7 +133,7 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
   pcb->trapframe.ss = 0x10;
   pcb->trapframe.rsp = (uint64_t)stack_ptr;
   pcb->trapframe.rflags = 0x202;
-  pcb->trapframe.cs = 0x28;
+  pcb->trapframe.cs = 0x08;
   pcb->trapframe.rip = (uint64_t)entry;
 
   pcb->cr3 = vmm_get_current_cr3(); // kernel cr3
@@ -148,20 +142,26 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
   return pcb;
 }
 
-#define MMAP_BASE 0xC000000000
 ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
 
   ProcessControlBlock *clone = kmalloc(sizeof(ProcessControlBlock));
   memset(clone, 0, sizeof(ProcessControlBlock));
   memcpy(clone, proc, sizeof(ProcessControlBlock));
 
-  clone->cr3 = vmm_copy_vas(proc);
-  clone->pid++;
-  clone->trapframe = *regs;
+  for (int i = 0; i < proc->fd_length; i++) {
+    File *copy_file = kmalloc(sizeof(File));
+    *copy_file = *(proc->fd_table[i]);
+    clone->fd_table[i] = copy_file;
+  }
 
-  clone->mmap_base = MMAP_BASE;
+  // reset vas so that proper phys addrs get put by vmm_copy_vas
   clone->vas = NULL;
   clone->next = NULL;
+
+  vmm_copy_vas(clone, proc);
+  clone->pid++;
+  clone->trapframe = *regs;
+  clone->mmap_base = MMAP_BASE;
 
   kprintf("Registers are at stack %x\n", regs);
   kprintf("Fork'd process has cr3: %x\n", clone->cr3);
@@ -208,16 +208,16 @@ void multitasking_init() {
   char *envp[4] = {"PATH=/usr/bin", "HOME=/", "TERM=linux", NULL};
   char *argvp[2] = {NULL};
 
-  ProcessControlBlock *fbpad =
-      create_elf_process("/usr/bin/fork_test", argvp, envp);
-  kprintf("Got process at %x\n", fbpad);
-  register_process(fbpad);
+  extern void refresh_screen_proc();
 
-  // extern void refresh_screen_proc();
-  // ProcessControlBlock *video_refresh =
-  //     create_kernel_process(refresh_screen_proc);
-  // register_process(video_refresh);
+  // ProcessControlBlock *fbpad =
+  //     create_elf_process("/usr/bin/fbpad", argvp, envp);
+  // kprintf("Got process at %x\n", fbpad);
+  // register_process(fbpad);
 
+  ProcessControlBlock *video_refresh =
+      create_kernel_process(refresh_screen_proc);
+  register_process(video_refresh);
   gp_current_process = gp_process_queue;
 
   kprintf("switching to process pid:%d\n", gp_current_process->pid);
