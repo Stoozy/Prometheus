@@ -16,14 +16,11 @@
 
 extern void load_pagedir(PageTable *);
 
-#define MMAP_BASE 0xC000000000
 #define LD_BASE 0xA000000
 
 u8 validate_elf(u8 *elf) {
-  if (elf[0] != 0x7f || elf[1] != 'E' || elf[2] != 'L' || elf[3] != 'F') {
-    /* invalid elf header */
-    return 0;
-  }
+  if (elf[0] != 0x7f || elf[1] != 'E' || elf[2] != 'L' || elf[3] != 'F')
+    return 0; /* invalid elf header */
 
   return 1;
 }
@@ -137,28 +134,27 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
     return NULL;
   }
 
-  // ProcessControlBlock * proc = (ProcessControlBlock*)pmm_alloc_block();
   ProcessControlBlock *proc =
       (ProcessControlBlock *)(kmalloc(sizeof(ProcessControlBlock)));
 
   memset(proc, 0, sizeof(ProcessControlBlock));
 
-  void *stack_ptr = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
-  void *stack_base = stack_ptr - (8 * PAGE_SIZE);
+  void *stack_ptr = pmm_alloc_blocks(STACK_BLOCKS) + (STACK_SIZE);
+  void *stack_base = stack_ptr - (STACK_SIZE);
 
   kprintf("Process stack at 0x%x\n", stack_ptr);
 
   proc->vas = NULL;
-  proc->cr3 = vmm_create_user_proc_pml4(proc);
+  proc->cr3 = vmm_create_user_proc_pml4(proc); // just maps kernel and returns
 
-  vmm_map_range(proc->cr3, stack_base, stack_base, 8 * PAGE_SIZE,
+  vmm_map_range(proc->cr3, stack_base, stack_base, STACK_SIZE,
                 PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
 
   VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
 
   range->virt_start = stack_base;
   range->phys_start = stack_base;
-  range->size = 8 * PAGE_SIZE;
+  range->size = STACK_SIZE;
   range->page_flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
   range->next = NULL;
 
@@ -228,9 +224,9 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   proc->trapframe.rip = aux.ld_entry;
   proc->trapframe.cs = (uint64_t)0x2b;
 
-  proc->fd_table[0] = vfs_open("/dev/tty0", 0);
-  proc->fd_table[1] = vfs_open("/dev/tty0", 0);
-  proc->fd_table[2] = vfs_open("/dev/tty0", 0);
+  proc->fd_table[0] = vfs_open("/dev/stdin", 0);
+  proc->fd_table[1] = vfs_open("/dev/stdout", 0);
+  proc->fd_table[2] = vfs_open("/dev/stderr", 0);
 
   proc->mmap_base = MMAP_BASE;
   proc->pid = 200;

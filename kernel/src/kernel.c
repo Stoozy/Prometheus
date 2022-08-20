@@ -10,9 +10,9 @@
 #include <memory/vmm.h>
 #include <typedefs.h>
 
+#include <drivers/fb.h>
 #include <drivers/pit.h>
 #include <drivers/serial.h>
-#include <drivers/video.h>
 
 #include <kprintf.h>
 #include <util.h>
@@ -178,6 +178,13 @@ void _start(struct stivale2_struct *boot_info) {
         kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
         tarfs = tarfs_init((u8 *)module.begin);
         vfs_init(tarfs);
+
+        extern void devfs_init(VfsNode *);
+        extern VfsNode *gp_root;
+        devfs_init(gp_root);
+
+      } else {
+        kprintf("INITRAMFS not found :(\n");
       }
     }
   }
@@ -186,31 +193,16 @@ void _start(struct stivale2_struct *boot_info) {
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
   if (framebuffer_tag)
-    screen_init(framebuffer_tag);
+    fb_init(framebuffer_tag);
+  // screen_init(framebuffer_tag);
   else
     hang();
-
-  extern void devfs_init(VfsNode *);
-  extern VfsNode *gp_root;
-
-  devfs_init(gp_root);
-
-  //File * root = vfs_open("/", 0);
-  //kprintf("Reading root directory entries\n");
-  //DirectoryEntry * entry = vfs_readdir(root);
-  //while(entry){
-  //  kprintf("%s\n", entry);
-  //  entry = vfs_readdir(root);
-  //}
-
-  //for(;;);
 
   cli();
   // smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") :
   // smp_init(smp_tag);
   sys_init();
 
-  // vfs_open("/usr/bin/bash", 0);
   // jump to userspace
   multitasking_init();
 }

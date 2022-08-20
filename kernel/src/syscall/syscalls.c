@@ -262,7 +262,6 @@ int sys_fork(Registers *regs) {
 
   dump_regs(&gp_current_process->trapframe);
   ProcessControlBlock *child_proc = clone_process(gp_current_process, regs);
-
   register_process(child_proc);
 
   return child_proc->pid;
@@ -408,6 +407,8 @@ int sys_fcntl(int fd, int request, va_list args) {
     return -1;
   }
   }
+
+  return 0;
 }
 
 int sys_poll(struct pollfd *fd, uint32_t count, int timeout) {
@@ -423,11 +424,14 @@ int sys_poll(struct pollfd *fd, uint32_t count, int timeout) {
       switch (pfd.events) {
       case POLLIN: {
         kprintf("POLLIN Waiting to read data...\n");
+        fd->revents = POLLIN;
         events++;
         break;
       }
       case POLLOUT: {
         kprintf("POLLIN Waiting to write data...\n");
+        fd->revents = POLLOUT;
+        events++;
         break;
       }
       default: {
@@ -437,6 +441,7 @@ int sys_poll(struct pollfd *fd, uint32_t count, int timeout) {
       }
     }
   }
+
   return events;
 }
 

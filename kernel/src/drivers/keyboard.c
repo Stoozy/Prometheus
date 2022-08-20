@@ -38,12 +38,20 @@ u8 kbdus[128] = {
 
 void handle_scan(u8 scan_code) {
 
-  if (scan_code < 128)
-    kprintf("%c", kbdus[scan_code]);
+  // if (scan_code < 128)
+  // kprintf("%c", kbdus[scan_code]);
 
   extern char g_term_buffer[0x1000];
-  memset(g_term_buffer, 0, 4096);
-  g_term_buffer[0] = kbdus[scan_code];
+
+  extern ProcessControlBlock *gp_current_process;
+  if (gp_current_process) {
+    File *in = gp_current_process->fd_table[0];
+    if (scan_code < 128)
+      vfs_write(in, &kbdus[scan_code], 0, 1);
+  }
+
+  // memset(g_term_buffer, 0, 4096);
+  // g_term_buffer[0] = kbdus[scan_code];
 
   // extern ProcessControlBlock *gp_current_process;
 

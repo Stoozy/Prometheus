@@ -59,9 +59,9 @@ typedef struct {
 void        vmm_map_page(PageTable * , uintptr_t , uintptr_t , int );
 PageTable * vmm_create_user_proc_pml4(ProcessControlBlock *);
 PageTable * vmm_create_kernel_proc_pml4(ProcessControlBlock *);
-PageTable * vmm_copy_vas(ProcessControlBlock*);
 PageTable * vmm_get_current_cr3();
 
+void        vmm_copy_vas(ProcessControlBlock*, ProcessControlBlock*);
 void        vmm_switch_page_directory(PageTable *);
 void        vmm_map_range(
                 PageTable * cr3, 

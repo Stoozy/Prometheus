@@ -8,6 +8,10 @@
 #include <memory/vmm.h>
 #include <proc/proc.h>
 
+#define STACK_SIZE  8*PAGE_SIZE
+#define STACK_BLOCKS 8
+#define MMAP_BASE 0xC000000000
+
 enum TaskState { READY, RUNNING, ZOMBIE };
 
 typedef struct vas_range_node VASRangeNode;

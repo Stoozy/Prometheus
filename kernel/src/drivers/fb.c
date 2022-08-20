@@ -55,8 +55,11 @@ void fb_init(struct stivale2_struct_tag_framebuffer *fb_info) {
 
   // discards small buffer created by devfs and assigns a new one
   // that is of the proper size
-  fb_dev->device = (uint64_t)kmalloc(fb0_fsi.mmio_len);
+  void *file_buf = kmalloc(fb0_fsi.mmio_len);
+  memset(file_buf, 0, fb0_fsi.mmio_len);
+  fb_dev->device = (uintptr_t)file_buf;
   fb_dev->size = fb0_fsi.mmio_len;
+  fb_dev->position = 0;
 
   // test write to fb file
   uint8_t *test_buf = kmalloc(fb0_fsi.mmio_len);
