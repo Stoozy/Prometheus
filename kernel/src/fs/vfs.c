@@ -4,12 +4,20 @@
 #include <kprintf.h>
 #include <string/string.h>
 
-FileSystem *gp_filesystems;
+FileSystem *gp_filesystems = NULL;
 VfsNode *gp_root;
 VfsOpenListNode *gp_open_list;
 
+Mountpoint *gp_mp_list;
+
+// TODO: have a mountpoint list containing filesystems
+//
+// open -> consult mountpoint list and get filesystem for the given path
+//  ex. open('/dev/fb0') should return devfs because of matching mount path /dev
+//      open('/abc/xyz') sould return tarfs because of matching mount path /
+
 /* check if a starts with b */
-static bool starts_with(const char *a, char *b) {
+static bool starts_with(const char *a, const char *b) {
   size_t alen = strlen(a);
   size_t blen = strlen(b);
 
@@ -27,101 +35,51 @@ static bool starts_with(const char *a, char *b) {
   return true;
 }
 
-static VfsNode *vfs_node_from_path(VfsNode *parent, const char *path) {
+static Mountpoint *mp_from_path(const char *path) {
+  int max_match_len = 0;
 
-  // kprintf("[VFS]  Getting node from path %s\n", path);
-  // kprintf("[VFS]  Parent is %s\n", parent->file->name);
+  Mountpoint *cmp = gp_mp_list;
+  Mountpoint *matching_mp = NULL;
 
-  if (strcmp("/", path) == 0)
-    return gp_root;
+  if (!cmp)
+    return NULL;
 
-  if (strcmp("..", path) == 0)
-    return parent->parent;
-
-  if (strcmp(".", path) == 0)
-    return parent;
-
-  size_t len = strlen(path);
-  size_t parent_len = strlen(parent->file->name);
-
-  /* Iterating vfs nodes children */
-  if (parent->children) {
-    kprintf("Root has children\n");
-    VfsNode *current_child = parent->children;
-    kprintf("Childs name is %s\n", current_child->file->name);
-
-    size_t cur_child_path_len = strlen(current_child->file->name);
-
-    if (starts_with(&path[parent_len], current_child->file->name) &&
-        strcmp(path, current_child->file->name) != 0) {
-      kprintf("Relative path is  is %s\n", &path[parent_len]);
-      kprintf("Found dir %s\n ", current_child->file->name);
-      return vfs_node_from_path(current_child,
-                                &path[parent_len + cur_child_path_len + 1]);
-      // return current_child;
-    } else if (strcmp(current_child->file->name, path) == 0) {
-      return current_child;
-    }
-
-    while (current_child->next) {
-      if (starts_with(&path[parent_len], current_child->file->name) &&
-          strcmp(path, current_child->file->name) != 0) {
-        kprintf("Found dir %s\n ", current_child->file->name);
-        return vfs_node_from_path(current_child,
-                                  &path[parent_len + cur_child_path_len + 1]);
-        // return current_child;
-      } else if (strcmp(current_child->file->name, path) == 0) {
-        return current_child;
-      }
-
-      current_child = current_child->next;
-    }
-  } else {
-    // child does not exist
-    // create file
-    File *file = parent->file->fs->open(path, 0);
-    if (file) {
-      VfsNode *node = kmalloc(sizeof(VfsNode));
-      node->file = file;
-      node->file->type = VFS_FILE;
-      return node;
+  for (; cmp; cmp = cmp->next) {
+    if (starts_with(path, cmp->path) && strlen(cmp->path) > max_match_len) {
+      matching_mp = cmp;
+      max_match_len = strlen(cmp->path);
     }
   }
 
-  File *file = parent->file->fs->finddir(parent, &path[1]);
+  return matching_mp;
+}
+static void vfs_fs_dump(void) {
+  kprintf("VFS FILESYSTEMS\n");
+  FileSystem *fs = gp_filesystems;
 
-  if (file) {
-    VfsNode *new_node = kmalloc(sizeof(VfsNode));
-    new_node->file = file;
-    new_node->parent = parent;
-    new_node->children = NULL;
-    new_node->next = NULL;
-    new_node->file->type = VFS_FILE;
+  for (; fs; fs = fs->next)
+    kprintf("%s\n", fs->name);
+}
+static void vfs_mounts_dump(void) {
+  kprintf("VFS MOUNTPOINTS\n");
+  Mountpoint *mp = gp_mp_list;
 
-    return new_node;
-  }
-
-  /* TODO:
-   *
-   * iterate the underlying fs
-   * to see if file actually exists
-   * otherwise, simply return null
-   */
-
-  return NULL;
+  for (; mp; mp = mp->next)
+    kprintf("%s mounted at %s\n", mp->fs->name, mp->path);
 }
 
-File *vfs_open(const char *filename, int flags) {
-  kprintf("[VFS]  Called open on %s\n", filename);
+File *vfs_open(const char *path, int flags) {
+  kprintf("[VFS]  Called open on %s\n", path);
+  Mountpoint *mp = mp_from_path(path);
+  if (!mp) {
+    kprintf("The file doesn't belong to any mounted filesystem\n");
+    vfs_mounts_dump();
 
-  VfsNode *node = vfs_node_from_path(gp_root, filename);
+    for (;;)
+      ;
+  }
 
-  if (node)
-    return node->file;
-
-  kprintf("[VFS] Node not found :(; while opening %s \n", filename);
-
-  return NULL;
+  return mp->fs->open(path, flags);
 }
 
 void vfs_close(File *file) {
@@ -153,6 +111,51 @@ ssize_t vfs_read(File *file, u8 *buffer, size_t off, size_t size) {
   return -1;
 }
 
+VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
+
+  if (!parent)
+    return NULL;
+
+  if (strcmp(parent->file->name, name) == 0)
+    return parent;
+
+  VfsNode *node = parent->children;
+
+  // check in-memory tree
+  for (; node; node = node->next)
+    if (strcmp(node->file->name, name) == 0)
+      return node;
+
+  // check underlying filesystem
+  File *found_file =
+      parent->file->fs->finddir(parent, name + strlen(parent->file->name));
+
+  if (found_file) {
+    kprintf("Found file %s in %s\n", name, parent->file->name);
+    // update in-memory tree
+    VfsNode *node = kmalloc(sizeof(VfsNode));
+    node->parent = parent;
+    node->file = found_file;
+    node->next = NULL;
+
+    // TODO: abstract this to another function
+    if (!parent->children)
+      parent->children = node;
+    else {
+
+      VfsNode *cur_child = parent->children;
+      while (cur_child->next)
+        cur_child = cur_child->next;
+      cur_child->next = node;
+    }
+
+    return node;
+  }
+
+  // not found
+  return NULL;
+}
+
 DirectoryEntry *vfs_readdir(File *file) {
   VfsNode *node = vfs_node_from_path(gp_root, file->name);
 
@@ -163,10 +166,8 @@ DirectoryEntry *vfs_readdir(File *file) {
 }
 
 ssize_t vfs_write(File *file, u8 *buffer, size_t off, size_t size) {
-
-  kprintf("Called write on %s\n", file->name);
+  kprintf("[VFS]    Called write on %s\n", file->name);
   if (file) {
-    file->position += off;
     size_t bytes = file->fs->write(file, size, buffer);
     return bytes;
   }
@@ -175,6 +176,8 @@ ssize_t vfs_write(File *file, u8 *buffer, size_t off, size_t size) {
 }
 
 void vfs_register_fs(FileSystem *fs, uint64_t device_id) {
+  kprintf("Registering filesystem %s\n", fs->name);
+
   if (gp_filesystems == NULL) {
     gp_filesystems = fs;
   } else {
@@ -185,6 +188,8 @@ void vfs_register_fs(FileSystem *fs, uint64_t device_id) {
     cur_fs->next = fs;
   }
 
+  kprintf("Registered filesystem %s\n", fs->name);
+  vfs_fs_dump();
   return;
 }
 
@@ -194,50 +199,89 @@ void vfs_unregister_fs(FileSystem *fs) {
   return;
 }
 
-static FileSystem *fs_from_path(const char *path) {
-  FileSystem *fs;
+static FileSystem *fs_from_name(const char *name) {
+  FileSystem *cfs = gp_filesystems;
 
-  /* TODO */
-
-  return fs;
-}
-
-bool vfs_mount(const char *src, const char *dst) {
-  /* trying to mount root */
-  if (dst[0] == '/' && dst[1] == 0 && gp_root != NULL)
-    return false;
-
-  FileSystem *fs = fs_from_path(src);
-  VfsNode *node = vfs_node_from_path(gp_root, dst);
-
-  if (node) {
-    node->file->type = VFS_MOUNTPOINT;
-    node->file = NULL;
-  } else {
-    /* trying to mount on non-existent dir */
-    return false;
+  if (!cfs) {
+    kprintf("FileSystem list is empty :(\n");
+    return NULL;
+  } else if (strcmp(cfs->name, name) == 0)
+    return cfs;
+  else {
+    while (cfs) {
+      kprintf("[VFS]  Found fs %s\n", cfs->name);
+      if (strcmp(cfs->name, name) == 0)
+        return cfs;
+      cfs = cfs->next;
+    }
   }
 
-  return true;
+  return NULL;
+}
+
+static void vfs_add_mountpoint(FileSystem *fs, const char *path) {
+  // kprintf("Mounting %s at %s\n", fs->name, path);
+  Mountpoint *cmp = gp_mp_list;
+
+  if (!cmp) {
+    gp_mp_list = kmalloc(sizeof(Mountpoint));
+    gp_mp_list->path = kmalloc(strlen(path) + 1);
+    strcpy(gp_mp_list->path, path);
+
+    gp_mp_list->fs = fs;
+    gp_mp_list->next = NULL;
+    return;
+  }
+
+  while (cmp->next)
+    cmp = cmp->next;
+
+  cmp->next = kmalloc(sizeof(Mountpoint));
+  cmp = cmp->next;
+
+  cmp->path = kmalloc(strlen(path));
+  strcpy(cmp->path, path);
+
+  cmp->fs = fs;
+  cmp->next = NULL;
+
+  kprintf("Mounted %s at %s\n", fs->name, path);
+
+  vfs_mounts_dump();
+
+  return;
+}
+
+int vfs_mount(const char *src, const char *dst, const char *fs_type,
+              uint64_t flags, const char *data) {
+  (void)src;
+
+  VfsNode *node = vfs_node_from_path(gp_root, dst);
+
+  if (!node) {
+    kprintf("Couldn't get vfs node for %s\n", dst);
+    for (;;)
+      ;
+  }
+
+  FileSystem *fs = fs_from_name(fs_type);
+  vfs_mounts_dump();
+
+  if (!fs) {
+    kprintf("FileSystem not found for %s\n", fs_type);
+    for (;;)
+      ;
+  }
+  node->file->fs = fs;
+  node->file->type |= VFS_MOUNTPOINT;
+
+  vfs_add_mountpoint(fs, dst);
+
+  return 0;
 }
 
 static void _vfs_rec_dump(VfsNode *node) {
   kprintf("Found %s\n", node->file->name);
-
-  if (node->file->type == VFS_DIRECTORY || node->file->type == VFS_MOUNTPOINT) {
-    kprintf("Is a directory. Iterating directory...\n");
-    if (node->children)
-      _vfs_rec_dump(node->children);
-    else
-      kprintf("No children\n");
-  }
-
-  if (node->next) {
-    kprintf("Checking next item in directory\n");
-    _vfs_rec_dump(node->next);
-  }
-
-  kprintf("Done iterating dir\n");
 
   return;
 }
@@ -261,25 +305,17 @@ void vfs_get_stat(const char *path, VfsNodeStat *res) {
   return;
 }
 
-void vfs_init(FileSystem *root_fs) {
+void vfs_init() {
   gp_root = kmalloc(sizeof(VfsNode));
 
-  gp_root->parent = NULL;
-
-  /* no need to iterate fs yet */
   gp_root->children = NULL;
 
   gp_root->file = kmalloc(sizeof(File));
   gp_root->file->name = kmalloc(2);
   gp_root->file->name[0] = '/';
   gp_root->file->name[1] = '\0';
-  gp_root->file->type = VFS_DIRECTORY | VFS_MOUNTPOINT;
+  gp_root->file->type = VFS_DIRECTORY;
+  gp_root->file->fs = NULL;
 
-  gp_root->file->fs = root_fs;
-  gp_root->file->position = 0;
-  gp_root->file->device = root_fs->device;
-  gp_root->parent = gp_root;
-
-  vfs_dump();
   return;
 }

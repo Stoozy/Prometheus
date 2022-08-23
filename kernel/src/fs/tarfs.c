@@ -5,13 +5,13 @@
 #include <config.h>
 #include <fs/tarfs.h>
 #include <fs/vfs.h>
-#include <kmalloc.h> 
+#include <kmalloc.h>
 #include <kprintf.h>
 #include <string/string.h>
 
 struct file *ustar_finddir(VfsNode *dir, const char *name);
 DirectoryEntry *ustar_readdir(VfsNode *dir, u32 index);
-uint64_t ustar_write(struct file *file, u64 size, u8 *buffer);
+uint64_t ustar_write(struct file *file, size_t size, u8 *buffer);
 uint64_t ustar_read(struct file *file, size_t size, u8 *buffer);
 void ustar_close(struct file *f);
 struct file *ustar_open(const char *filename, int flags);
@@ -21,7 +21,7 @@ FileSystem g_tarfs = {.name = "ustar\0",
                       .open = ustar_open,
                       .read = ustar_read,
                       .close = ustar_close,
-                      .write = NULL,
+                      .write = ustar_write,
                       .readdir = ustar_readdir,
                       .finddir = ustar_finddir};
 
@@ -68,10 +68,10 @@ uint64_t starts_with(const char *a, const char *b) {
   size_t alen = strlen(a);
   size_t blen = strlen(b);
 
-  if (alen < blen) 
+  if (alen < blen)
     return 0;
 
-  if(blen == 0)
+  if (blen == 0)
     return 0;
 
   int i = 0;
@@ -91,31 +91,32 @@ bool ends_with_slash(const char *str) {
   return false;
 }
 
-char * next_token(const char * str, char sep){
-  int i=0; 
-  while(i< strlen(str)){
-    if(str[i] == sep){
-      char * new = kmalloc(i+1);
+char *next_token(const char *str, char sep) {
+  int i = 0;
+  while (i < strlen(str)) {
+    if (str[i] == sep) {
+      char *new = kmalloc(i + 1);
       memcpy(new, str, i);
       new[i] = '\0';
       return new;
     }
 
-    i++; 
+    i++;
   }
   return NULL;
 }
 
-bool str_in_list(char ** list, int llen, char * str){
-  for(int i=0; i<llen; i++)
-    if(list[i] && strcmp(list[i], str) == 0)
+bool str_in_list(char **list, int llen, char *str) {
+  for (int i = 0; i < llen; i++)
+    if (list[i] && strcmp(list[i], str) == 0)
       return true;
   return false;
 }
 
-static DirectoryEntry * _ustar_read_dir_entries(unsigned char *archive,
-                                       const char *dir_path, uint32_t index) {
-  
+static DirectoryEntry *_ustar_read_dir_entries(unsigned char *archive,
+                                               const char *dir_path,
+                                               uint32_t index) {
+  return NULL;
 }
 
 UstarFile *ustar_search(unsigned char *archive, const char *filename) {
@@ -124,6 +125,7 @@ UstarFile *ustar_search(unsigned char *archive, const char *filename) {
   while (!memcmp(ptr + 257, "ustar", 5)) {
     int filesize = oct2bin(ptr + 0x7c, 11);
 
+    // kprintf("Found %s\n", ptr);
     if (!memcmp(ptr, filename, strlen(filename) + 1)) {
       UstarFile *file = (UstarFile *)ptr;
       return file;
@@ -164,8 +166,6 @@ void ustar_close(struct file *f) {
 }
 
 uint64_t ustar_read(struct file *file, size_t size, u8 *buffer) {
-  // TODO:
-  // return bytes read
 
   kprintf("[TARFS] Called read\n");
 
@@ -183,16 +183,17 @@ uint64_t ustar_read(struct file *file, size_t size, u8 *buffer) {
   return 0;
 }
 
-uint64_t ustar_write(struct file *file, u64 size, u8 *buffer) {
-  // TODO:
-  // return bytes written
+uint64_t ustar_write(struct file *file, size_t size, u8 *buffer) {
 
+  kprintf("ustar_write() is not implemented\n");
+  for (;;)
+    ;
   return 0;
 }
 
 DirectoryEntry *ustar_readdir(VfsNode *dir, u32 index) {
 
-  //kprintf("[TARFS] Readdir on %s \n", dir->file->name);
+  // kprintf("[TARFS] Readdir on %s \n", dir->file->name);
   /* make sure node is actually a directory */
   if (!(dir->file->type & VFS_DIRECTORY)) {
     kprintf("File is not a directory!\n");
@@ -201,10 +202,10 @@ DirectoryEntry *ustar_readdir(VfsNode *dir, u32 index) {
   }
 
   unsigned char *ptr = g_archive;
-  int i=0; 
-  //kprintf("Reading entries of %s\n", dir_path);
+  int i = 0;
+  // kprintf("Reading entries of %s\n", dir_path);
 
-  char ** entry_list = kmalloc(sizeof(char*) * index);
+  char **entry_list = kmalloc(sizeof(char *) * index);
 
   int inode = 0;
   while (!memcmp(ptr + 257, "ustar", 5)) {
@@ -212,15 +213,15 @@ DirectoryEntry *ustar_readdir(VfsNode *dir, u32 index) {
     UstarFile *file = (UstarFile *)ptr;
     inode++;
 
-    char * token = next_token(file->name, '/');
-    //kprintf("Got token %s\n", token);
+    char *token = next_token(file->name, '/');
+    // kprintf("Got token %s\n", token);
 
-    if(!str_in_list(entry_list, index, token)){
-      //kprintf("%s not in entry list\n", token);
-      //kprintf("Adding it to list\n");
+    if (!str_in_list(entry_list, index, token)) {
+      // kprintf("%s not in entry list\n", token);
+      // kprintf("Adding it to list\n");
       entry_list[i] = token;
-      if(i == index){
-        DirectoryEntry * entry = kmalloc(sizeof(DirectoryEntry));
+      if (i == index) {
+        DirectoryEntry *entry = kmalloc(sizeof(DirectoryEntry));
         memcpy(entry->name, file->name, 128);
         entry->ino = inode;
         entry->type = VFS_DIRECTORY;
@@ -229,8 +230,8 @@ DirectoryEntry *ustar_readdir(VfsNode *dir, u32 index) {
 
       i++;
       ptr += (((filesize + 511) / 512) + 1) * 512;
-    }else {
-      //kprintf("Found in entry list, skipping ... \n");
+    } else {
+      // kprintf("Found in entry list, skipping ... \n");
       ptr += (((filesize + 511) / 512) + 1) * 512;
       continue;
     }
@@ -264,23 +265,9 @@ struct file *ustar_finddir(VfsNode *dir, const char *name) {
   return NULL;
 }
 
-FileSystem *tarfs_init(u8 *archive) {
+void tarfs_init(u8 *archive) {
   g_archive = archive;
 
-  FileSystem *tarfs = &g_tarfs;
-
-  tarfs->open = &ustar_open;
-  tarfs->close = &ustar_close;
-  tarfs->read = &ustar_read;
-  tarfs->readdir = &ustar_readdir;
-  tarfs->finddir = &ustar_finddir;
-
-
-  /* read only tmp fs for now */
-  tarfs->write = NULL;
-  /*tarfs->write = &ustar_write;*/
-
-  tarfs->next = NULL;
-
-  return tarfs;
+  vfs_register_fs(&g_tarfs, 0);
+  vfs_mount(NULL, "/", "ustar", 0, 0);
 }

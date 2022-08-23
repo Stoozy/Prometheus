@@ -161,6 +161,8 @@ void _start(struct stivale2_struct *boot_info) {
   extern void sse_init();
   sse_init();
 
+  vfs_init();
+
   FileSystem *tarfs = NULL;
   if (modules_tag == NULL) {
     kprintf("[MAIN]   No modules found. Exiting.\n");
@@ -176,13 +178,10 @@ void _start(struct stivale2_struct *boot_info) {
       kprintf("\n");
       if (strcmp(module.string, "INITRAMFS") == 0) {
         kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
-        tarfs = tarfs_init((u8 *)module.begin);
-        vfs_init(tarfs);
 
-        extern void devfs_init(VfsNode *);
-        extern VfsNode *gp_root;
-        devfs_init(gp_root);
-
+        extern void devfs_init();
+        tarfs_init((u8 *)module.begin);
+        devfs_init();
       } else {
         kprintf("INITRAMFS not found :(\n");
       }

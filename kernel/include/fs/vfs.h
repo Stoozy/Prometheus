@@ -93,6 +93,13 @@ typedef struct vfs_node {
 }   VfsNode;
 
 
+typedef struct mountpoint {
+    char * path;
+    FileSystem * fs;
+    struct mountpoint * next;
+} Mountpoint;
+
+
 typedef struct open_list_node {
 
     VfsNode * vfs_node;
@@ -103,7 +110,6 @@ typedef struct open_list_node {
 
 void vfs_dump();
 
-bool vfs_mount(const char * src, const char * dst);
 
 File * vfs_open(const char * filename , int flags);
 void vfs_close(File * file);
@@ -113,8 +119,10 @@ DirectoryEntry * vfs_readdir(File * file);
 ssize_t vfs_write(File * file,  uint8_t * buffer, size_t off, size_t size);
 
 void  vfs_get_stat(const char * path, VfsNodeStat * res);
+
 void vfs_register_fs(FileSystem *, uint64_t device_id);
 void vfs_unregister_fs(FileSystem * fs);
+int vfs_mount(const char * src, const char * dst, const char * fs_type, uint64_t flags, const char * data);
 
-void vfs_init(FileSystem *);
+void vfs_init();
 
