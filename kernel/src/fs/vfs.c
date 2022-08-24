@@ -3,6 +3,7 @@
 #include <kmalloc.h>
 #include <kprintf.h>
 #include <string/string.h>
+#include <util.h>
 
 FileSystem *gp_filesystems = NULL;
 VfsNode *gp_root;
@@ -17,23 +18,6 @@ Mountpoint *gp_mp_list;
 //      open('/abc/xyz') sould return tarfs because of matching mount path /
 
 /* check if a starts with b */
-static bool starts_with(const char *a, const char *b) {
-  size_t alen = strlen(a);
-  size_t blen = strlen(b);
-
-  if (alen < blen) {
-    return false;
-  }
-
-  int i = 0;
-  while (i < blen) {
-    if (a[i] != b[i])
-      return false;
-    i++;
-  }
-
-  return true;
-}
 
 static Mountpoint *mp_from_path(const char *path) {
   int max_match_len = 0;
@@ -49,19 +33,24 @@ static Mountpoint *mp_from_path(const char *path) {
       matching_mp = cmp;
       max_match_len = strlen(cmp->path);
     }
+    // kprintf("%s doesn't start with %s\n", path, cmp->path);
   }
+
+  kprintf("[VFS]  File belongs to %s\n", matching_mp->fs->name);
 
   return matching_mp;
 }
 static void vfs_fs_dump(void) {
-  kprintf("VFS FILESYSTEMS\n");
+  kprintf("\n\nVFS FILESYSTEMS\n");
   FileSystem *fs = gp_filesystems;
 
   for (; fs; fs = fs->next)
     kprintf("%s\n", fs->name);
+
+  kprintf("\n");
 }
 static void vfs_mounts_dump(void) {
-  kprintf("VFS MOUNTPOINTS\n");
+  kprintf("\n\nVFS MOUNTPOINTS\n\n");
   Mountpoint *mp = gp_mp_list;
 
   for (; mp; mp = mp->next)
@@ -70,19 +59,22 @@ static void vfs_mounts_dump(void) {
 
 File *vfs_open(const char *path, int flags) {
   kprintf("[VFS]  Called open on %s\n", path);
+
   Mountpoint *mp = mp_from_path(path);
   if (!mp) {
     kprintf("The file doesn't belong to any mounted filesystem\n");
     vfs_mounts_dump();
-
     for (;;)
       ;
   }
 
-  return mp->fs->open(path, flags);
+  // pass mountpoint relative path
+  return mp->fs->open(path + strlen(mp->path), flags);
 }
 
 void vfs_close(File *file) {
+  // TODO
+  return;
   VfsOpenListNode *current_node = gp_open_list;
 
   while (current_node->next != NULL) {
@@ -99,8 +91,8 @@ void vfs_close(File *file) {
   }
 }
 
-ssize_t vfs_read(File *file, u8 *buffer, size_t off, size_t size) {
-  kprintf("[VFS]  Called read on %s for %d bytes\n", file->name, size);
+ssize_t vfs_read(File *file, u8 *buffer, size_t size) {
+  kprintf("[VFS]  Called read on %s for %llu bytes\n", file->name, size);
 
   if (file) {
     size_t bytes = file->fs->read(file, size, buffer);
@@ -165,10 +157,11 @@ DirectoryEntry *vfs_readdir(File *file) {
   return NULL;
 }
 
-ssize_t vfs_write(File *file, u8 *buffer, size_t off, size_t size) {
+ssize_t vfs_write(File *file, u8 *buffer, size_t size) {
   kprintf("[VFS]    Called write on %s\n", file->name);
   if (file) {
     size_t bytes = file->fs->write(file, size, buffer);
+    file->position += bytes;
     return bytes;
   }
 
@@ -239,7 +232,8 @@ static void vfs_add_mountpoint(FileSystem *fs, const char *path) {
   cmp->next = kmalloc(sizeof(Mountpoint));
   cmp = cmp->next;
 
-  cmp->path = kmalloc(strlen(path));
+  cmp->path = kmalloc(strlen(path) + 1);
+  memset(cmp->path, 0, strlen(path) + 1);
   strcpy(cmp->path, path);
 
   cmp->fs = fs;

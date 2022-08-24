@@ -1,8 +1,11 @@
 #include <abi-bits/fcntl.h>
+#include <drivers/fb.h>
 #include <fs/vfs.h>
 #include <kmalloc.h>
 #include <kprintf.h>
+#include <linux/fb.h>
 #include <string/string.h>
+#include <util.h>
 
 struct file *devfs_finddir(VfsNode *dir, const char *name);
 DirectoryEntry *devfs_readdir(VfsNode *dir, u32 index);
@@ -59,14 +62,23 @@ static File *devfs_entry_to_file(struct devfs_entry entry) {
   return file;
 }
 
+static size_t devfs_get_bufsize_from_name(const char *name) {
+  if (starts_with(name, "fb"))
+    return fb_getfscreeninfo().mmio_len;
+
+  return 0x1000; // default buffer size
+}
+
 static struct devfs_entry devfs_create(const char *name) {
+  size_t bufsize = devfs_get_bufsize_from_name(name);
+
   for (int i = 1; i < MAX_DEVICES; i++) {
     if (!g_devfs_root[i].inode) {
       g_devfs_root[i] = (struct devfs_entry){.name = 0,
                                              .inode = i,
                                              .type = VFS_CHARDEVICE,
-                                             .data = kmalloc(0x3E8000),
-                                             .size = 0x3E8000};
+                                             .data = kmalloc(bufsize),
+                                             .size = bufsize};
 
       if (strlen(name) > 256) {
         kprintf("Name too long :(\n");
@@ -114,33 +126,8 @@ struct file *devfs_open(const char *path, int flags) {
   kprintf("[DEVFS]    called open on %s\n", path);
   struct file *file = devfs_finddir(NULL, path);
 
-  if (!file)
+  if (!file && (flags & O_CREAT))
     return devfs_entry_to_file(devfs_create(path));
-
-  // if (!file) {
-  //   /* have to create file here */
-  //   struct file *file = kmalloc(sizeof(File));
-  //   memset(file, 0, sizeof(File));
-
-  //  file->type = VFS_FILE;
-  //  file->name = kmalloc(strlen(path));
-  //  strcpy(file->name, path);
-
-  //  file->fs = &g_devfs;
-
-  //  uint8_t *block = kmalloc(0x1000);
-  //  memset(block, 0, 0x1000);
-  //  file->device = (uintptr_t)block;
-  //  file->size = 0x1000;
-  //  file->position = 0;
-
-  //  VfsNode *dev_node = kmalloc(sizeof(VfsNode));
-  //  dev_node->file = file;
-
-  //  devfs_insert_node(dev_node);
-
-  //  return file;
-  //}
 
   return file;
 }
@@ -152,30 +139,24 @@ uint64_t devfs_write(struct file *file, size_t size, u8 *buffer) {
   }
 
   char *data_ptr = g_devfs_root[file->inode].data;
-  // char *data_ptr = (char *)file->device;
   //  kprintf("[DEVFS]  Writing to %s %s", file->name, buffer);
   memcpy(data_ptr + file->position, buffer, size);
   kprintf("[DEVFS]  Written to %s", file->name);
 
-  return 1;
+  return size;
 }
 
 uint64_t devfs_read(struct file *file, size_t size, u8 *buffer) {
-  kprintf("[DEVFS]  Called read on %s. File size is %d\n", file->name,
-          file->size);
-  if (file->position + size > file->size) {
-    kprintf("File position + size is %x\n", file->position + size);
-    kprintf("File size is  %d\n", file->size);
+  // kprintf("[DEVFS]  Called read on %s. File size is %d\n", file->name,
+  // file->size);
+
+  if (size > file->size)
     return 0;
-  }
 
-  char *data_ptr = (char *)file->device;
+  char *data = g_devfs_root[file->inode].data;
+  memcpy(buffer, data + file->position, size);
 
-  kprintf("Copying %u bytes\n", size);
-  memcpy(buffer, data_ptr + file->position, size);
-  kprintf("Read %u bytes\n", size);
-  // file->position += size;
-
+  kprintf("Read %c\n", buffer);
   return size;
 }
 

@@ -16,5 +16,7 @@ void set_bit(u8 *word, u8 bit);
 void clear_bit(u8 *word, u8 bit);
 bool check_bit(u8 *word, u8 bit);
 
+bool starts_with(const char *a, const char *b);
+
 void cli();
 void sti();

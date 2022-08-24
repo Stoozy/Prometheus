@@ -63,27 +63,6 @@ static u8 ustar_type_to_vfs_type(u8 type) {
   }
 }
 
-// return len if it does start with
-uint64_t starts_with(const char *a, const char *b) {
-  size_t alen = strlen(a);
-  size_t blen = strlen(b);
-
-  if (alen < blen)
-    return 0;
-
-  if (blen == 0)
-    return 0;
-
-  int i = 0;
-  while (i < blen) {
-    if (a[i] != b[i])
-      return 0;
-    i++;
-  }
-
-  return i;
-}
-
 bool ends_with_slash(const char *str) {
   int len = strlen(str);
   if (str[len - 1] == '\0' && str[len - 2] == '/')
@@ -152,6 +131,7 @@ struct file *ustar_open(const char *filename, int flags) {
   if (tar_file) {
     File *file = kmalloc(sizeof(File));
     file->size = ustar_decode_filesize(tar_file);
+    kprintf("File size is %lld bytes\n", file->size);
     file->name = (char *)filename;
     file->inode = (u64)((void *)tar_file);
     file->fs = &g_tarfs;

@@ -1,4 +1,7 @@
 #include <stdbool.h>
+#include <stdint.h>
+#include <string/string.h>
+#include <unistd.h>
 #include <util.h>
 
 void cli() { __asm__("cli"); }
@@ -136,3 +139,21 @@ void clear_bit(u8 *word, u8 bit) {
 }
 
 bool check_bit(u8 *word, u8 bit) { return *word & (1 << bit); }
+
+bool starts_with(const char *a, const char *b) {
+  size_t alen = strlen(a);
+  size_t blen = strlen(b);
+
+  if (alen < blen) {
+    return false;
+  }
+
+  int i = 0;
+  while (i < blen) {
+    if (a[i] != b[i])
+      return false;
+    i++;
+  }
+
+  return true;
+}
