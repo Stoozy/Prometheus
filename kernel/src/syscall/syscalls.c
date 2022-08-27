@@ -88,7 +88,7 @@ int sys_read(int file, char *ptr, size_t len) {
   struct file *f = gp_current_process->fd_table[file];
   vfs_dump();
   // kprintf("File ptr %x. Name %s. Device %x\n", f, f->name, f->device);
-  int bytes_read = vfs_read(f, (u8 *)ptr, f->position, len);
+  int bytes_read = vfs_read(f, (u8 *)ptr, len);
 
   return bytes_read;
 }
@@ -96,8 +96,8 @@ int sys_read(int file, char *ptr, size_t len) {
 int sys_write(int fd, char *ptr, int len) {
   extern ProcessControlBlock *gp_current_process;
 
-  if (fd == 1 || fd == 2)
-    kprintf("Writing data to stdout or stderr: %s\n", ptr);
+  // if (fd == 1 || fd == 2)
+  // kprintf("Writing data to stdout or stderr: %s\n", ptr);
 
   if (!valid_fd(fd))
     return -1;
@@ -105,7 +105,7 @@ int sys_write(int fd, char *ptr, int len) {
   File *file = gp_current_process->fd_table[fd];
   if (file) {
     kprintf("Writing to %s\n", file->name);
-    vfs_write(file, (uint8_t *)ptr, file->position, len);
+    vfs_write(file, (uint8_t *)ptr, len);
   } else {
     kprintf("File not open!\n");
     for (;;)
@@ -125,8 +125,43 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   kprintf("[MMAP] Requesting %llu bytes\n", size);
   kprintf("[MMAP] Hint : 0x%llx\n", addr);
   kprintf("[MMAP] Size : 0x%llx\n", size);
-
   kprintf("Current process at 0x%x\n", proc);
+
+  if (valid_fd(fd)) {
+    File *file = proc->fd_table[fd];
+    int pages = (size / PAGE_SIZE);
+
+    void *phys_base =
+        (void *)((file->inode & ~(0xfff)) - PAGING_VIRTUAL_OFFSET);
+
+    void *virt_base = NULL;
+    if (flags & MAP_FIXED && addr != NULL) {
+      virt_base = addr;
+    } else {
+      virt_base = (void *)proc->mmap_base;
+      proc->mmap_base += pages * PAGE_SIZE;
+    }
+
+    int page_flags = PAGE_USER | PAGE_PRESENT | PAGE_WRITE;
+
+    if (flags & PROT_WRITE)
+      page_flags |= PAGE_WRITE;
+
+    kprintf("Virt base is %x\n", virt_base);
+
+    vmm_map_range((void *)((u64)proc->cr3 + PAGING_VIRTUAL_OFFSET), virt_base,
+                  phys_base, size, page_flags);
+
+    VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+    range->virt_start = virt_base;
+    range->phys_start = phys_base;
+    range->size = pages * PAGE_SIZE;
+    range->page_flags = page_flags;
+
+    proc_add_vas_range(proc, range);
+
+    return virt_base;
+  }
 
   // size isn't page aligned
   if (size % PAGE_SIZE != 0) {
@@ -277,7 +312,10 @@ int sys_ioctl(int fd, unsigned long req, void *arg) {
 
   File *file = gp_current_process->fd_table[fd];
 
-  kprintf("Name is %s\n", file->name);
+  if (file->fs->ioctl)
+    return file->fs->ioctl(file, req, arg);
+
+  // kprintf("Name is %s\n", file->name);
   return 0;
 }
 
@@ -411,34 +449,22 @@ int sys_fcntl(int fd, int request, va_list args) {
   return 0;
 }
 
-int sys_poll(struct pollfd *fd, uint32_t count, int timeout) {
+int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
   int events = 0;
-  kprintf("[POLL] pollfd ptr %x; count %u; Timeout %d;\n", fd, count, timeout);
-
-  extern ProcessControlBlock *gp_current_process;
+  kprintf("[POLL] pollfd ptr %x; count %u; Timeout %d;\n", fds, count, timeout);
+  // forget timeout, just loop forever
   for (uint32_t i = 0; i < count; i++) {
-    struct pollfd pfd = fd[i];
-    if (valid_fd(pfd.fd)) {
-      File *file = gp_current_process->fd_table[i];
-      kprintf("Polling %s\n", file->name);
-      switch (pfd.events) {
-      case POLLIN: {
-        kprintf("POLLIN Waiting to read data...\n");
-        fd->revents = POLLIN;
-        events++;
-        break;
+    int fd = fds[i].fd;
+    if (valid_fd(fd)) {
+      extern ProcessControlBlock *gp_current_process;
+      struct file *file = gp_current_process->fd_table[fd];
+      if (!file->fs->poll)
+        kprintf("Poll is not implemented for %s :(\n", file->name);
+      else {
+        events += file->fs->poll(file, &fds[i]);
       }
-      case POLLOUT: {
-        kprintf("POLLIN Waiting to write data...\n");
-        fd->revents = POLLOUT;
-        events++;
-        break;
-      }
-      default: {
-        kprintf("POLLIN Unknown event...\n");
-        break;
-      }
-      }
+    } else {
+      kprintf("[POLL]   Invalid fd %d\n", fd);
     }
   }
 
