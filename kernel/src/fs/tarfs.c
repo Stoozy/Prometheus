@@ -17,13 +17,14 @@ void ustar_close(struct file *f);
 struct file *ustar_open(const char *filename, int flags);
 
 FileSystem g_tarfs = {.name = "ustar\0",
-                      .device = 0,
                       .open = ustar_open,
                       .read = ustar_read,
                       .close = ustar_close,
                       .write = ustar_write,
                       .readdir = ustar_readdir,
-                      .finddir = ustar_finddir};
+                      .finddir = ustar_finddir,
+                      .ioctl = NULL,
+                      .poll = NULL};
 
 static u8 *g_archive;
 

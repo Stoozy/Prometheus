@@ -51,6 +51,9 @@ void fb_init(struct stivale2_struct_tag_framebuffer *fb_info) {
   fb_init_vsi(fb_info, &fb0_vsi);
   fb_init_fsi(fb_info, &fb0_fsi);
 
+  extern void fbdev_init();
+  fbdev_init();
+
   File *fb_dev = vfs_open("/dev/fb0", 0);
 
   // discards small buffer created by devfs and assigns a new one
@@ -64,7 +67,7 @@ void fb_init(struct stivale2_struct_tag_framebuffer *fb_info) {
   // test write to fb file
   uint8_t *test_buf = kmalloc(fb0_fsi.mmio_len);
   memset(test_buf, 0x28, fb0_fsi.mmio_len);
-  vfs_write(fb_dev, test_buf, 0, fb0_fsi.mmio_len);
+  vfs_write(fb_dev, test_buf, fb0_fsi.mmio_len);
 
   return;
 }

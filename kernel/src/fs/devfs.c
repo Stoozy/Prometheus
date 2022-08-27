@@ -15,7 +15,6 @@ void devfs_close(struct file *f);
 struct file *devfs_open(const char *filename, int flags);
 
 FileSystem g_devfs = {.name = "devfs",
-                      .device = 0,
                       .open = devfs_open,
                       .read = devfs_read,
                       .close = devfs_close,
@@ -38,6 +37,10 @@ struct devfs_entry {
 typedef struct devfs_entry DevFsRoot[MAX_DEVICES];
 
 DevFsRoot g_devfs_root;
+
+extern struct fs *ptydev;
+extern struct fs *ttydev;
+extern struct fs *fbdev;
 
 /*
  * mount on /dev
@@ -123,13 +126,17 @@ DirectoryEntry *devfs_readdir(VfsNode *dir, u32 index) {
 
 /* path is relative to `/dev` */
 struct file *devfs_open(const char *path, int flags) {
-  kprintf("[DEVFS]    called open on %s\n", path);
-  struct file *file = devfs_finddir(NULL, path);
+  kprintf("[DEVFS] Opening %s\n", path);
 
-  if (!file && (flags & O_CREAT))
-    return devfs_entry_to_file(devfs_create(path));
+  if (starts_with(path, "pt"))
+    return ptydev->open(path, flags);
+  else if (starts_with(path, "tty"))
+    return ttydev->open(path, flags);
+  else if (starts_with(path, "fb")) {
+    return fbdev->open(path, flags);
+  }
 
-  return file;
+  return NULL;
 }
 
 uint64_t devfs_write(struct file *file, size_t size, u8 *buffer) {

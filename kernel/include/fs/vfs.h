@@ -1,5 +1,6 @@
 #pragma once
 
+#include <asm-generic/poll.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -35,13 +36,13 @@ typedef uint64_t (*read_func_t)(struct file *, size_t count, uint8_t * buf);
 typedef uint64_t (*write_func_t)(struct file *, size_t count, uint8_t * buf);
 typedef DirectoryEntry * (*readdir_func_t)(struct vfs_node *, uint32_t index);
 typedef struct file * (*finddir_func_t)(struct vfs_node *, const char * filename);
+typedef int (*ioctl_func_t)(struct file *, uint32_t request, void * arg);
+typedef int (*poll_func_t)(struct file *,  struct pollfd * fd);
 
 
 typedef struct fs {
 
     char * name;
-
-    uint64_t device;
 
     open_func_t     open;
     close_func_t    close;
@@ -49,6 +50,8 @@ typedef struct fs {
     write_func_t    write;
     readdir_func_t  readdir;
     finddir_func_t  finddir; 
+    ioctl_func_t    ioctl; 
+    poll_func_t     poll;
 
     struct fs * next;
 
@@ -70,13 +73,10 @@ typedef struct file {
     uint64_t device;
     uint64_t position;
     uint64_t size;
-
     uint8_t  mode;
-
     uint8_t  type;
 
     FileSystem  * fs;
-
     FileSystem  * next;
 
 } File;
