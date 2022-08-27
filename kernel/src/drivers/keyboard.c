@@ -47,7 +47,7 @@ void handle_scan(u8 scan_code) {
   if (gp_current_process) {
     File *in = gp_current_process->fd_table[0];
     if (scan_code < 128)
-      vfs_write(in, &kbdus[scan_code], 0, 1);
+      vfs_write(in, &kbdus[scan_code], 1);
   }
 
   // memset(g_term_buffer, 0, 4096);

@@ -173,10 +173,10 @@ void refresh_screen_proc() {
   struct fb_fix_screeninfo fb_fsi = fb_getfscreeninfo();
   uint8_t *backbuffer = kmalloc(fb_fsi.mmio_len);
 
-  vfs_read(fb_file, (void *)backbuffer, 0, fb_fsi.mmio_len);
   for (;;) {
     // seek
     fb_file->position = 0;
+    vfs_read(fb_file, (void *)backbuffer, fb_fsi.mmio_len);
     memcpy((u8 *)fb_fsi.mmio_start, (void *)backbuffer, fb_fsi.mmio_len);
     kprintf("Refreshed screen\n");
   }
