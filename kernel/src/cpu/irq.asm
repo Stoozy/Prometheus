@@ -75,17 +75,15 @@ irq0:
     iretq
 
 irq1:
-    pushfq
+    pushaq
     call irq1_handler
-    popfq
+    popaq
     iretq
  
 irq2:
     pushfq
-    cli
     call irq2_handler
     popfq
-    sti
     iretq
  
 irq3:
