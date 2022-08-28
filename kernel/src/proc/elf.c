@@ -54,7 +54,7 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
       kprintf("[ELF]  Got interpreter file path: %s\n", ld_path);
       File *ld_file = vfs_open(ld_path, 0);
       u8 *ld_data = kmalloc(ld_file->size);
-      int br = vfs_read(ld_file, ld_data, 0, ld_file->size);
+      int br = vfs_read(ld_file, ld_data, ld_file->size);
 
       if (!(br != 0 && validate_elf(ld_data)))
         continue;
@@ -128,7 +128,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   File *elf_file = vfs_open(path, 0);
 
   u8 *elf_data = kmalloc(elf_file->size);
-  int br = vfs_read(elf_file, elf_data, 0, elf_file->size);
+  int br = vfs_read(elf_file, elf_data, elf_file->size);
 
   if (!validate_elf(elf_data)) {
     return NULL;
@@ -224,13 +224,13 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   proc->trapframe.rip = aux.ld_entry;
   proc->trapframe.cs = (uint64_t)0x2b;
 
-  proc->fd_table[0] = vfs_open("/dev/stdin", 0);
-  proc->fd_table[1] = vfs_open("/dev/stdout", 0);
-  proc->fd_table[2] = vfs_open("/dev/stderr", 0);
+  proc->fd_table[0] = vfs_open("/dev/tty0", 0);
+  proc->fd_table[1] = vfs_open("/dev/tty0", 0);
+  proc->fd_table[2] = vfs_open("/dev/tty0", 0);
 
   proc->mmap_base = MMAP_BASE;
   proc->pid = 200;
-  proc->next = 0;
+  proc->state = READY;
 
   kprintf("fd 0 is at %x\n", proc->fd_table[0]);
   kprintf("fd 1 is at %x\n", proc->fd_table[1]);

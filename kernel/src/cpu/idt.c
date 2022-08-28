@@ -37,7 +37,6 @@ void exc6_handler(Registers *regs) {
 
 void irq0_handler(Registers *regs) {
   tick();
-
   outb(0x20, 0x20); /* EOI */
   schedule(regs);
 }

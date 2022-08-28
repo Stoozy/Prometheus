@@ -2,6 +2,14 @@
 #include <stdbool.h>
 #include <typedefs.h>
 
+#define MINORBITS       20
+#define MINORMASK       ((1U << MINORBITS) - 1)
+
+#define MAJOR(dev)      ((unsigned int) ((dev) >> MINORBITS))
+#define MINOR(dev)      ((unsigned int) ((dev) & MINORMASK))
+#define MKDEV(ma,mi)    (((ma) << MINORBITS) | (mi))
+
+
 i32 abs(i32 val);
 i64 ll_abs(i64 val);
 
@@ -20,3 +28,6 @@ bool starts_with(const char *a, const char *b);
 
 void cli();
 void sti();
+
+void spinlock_acquire(int *lock);
+void spinlock_release(int *lock);

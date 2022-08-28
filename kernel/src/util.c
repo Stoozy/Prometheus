@@ -7,6 +7,28 @@
 void cli() { __asm__("cli"); }
 void sti() { __asm__("sti"); }
 
+inline void spinlock_acquire(int *lock) {
+  // being used by another thread
+  while (*lock)
+    ;
+
+  // lock is acquired, so set the lock value
+  __asm__("lock     \
+          incl (%0)"
+          :
+          : "r"(lock)
+          : "memory");
+}
+
+inline void spinlock_release(int *lock) {
+
+  asm("lock \
+      decl (%0) "
+      :
+      : "r"(lock)
+      : "memory");
+}
+
 i32 abs(i32 val) {
   if (val < 0)
     return -val;

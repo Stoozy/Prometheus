@@ -1,3 +1,4 @@
+#include "proc/scheduler.h"
 #include <abi-bits/seek-whence.h>
 #include <abi-bits/vm-flags.h>
 #include <config.h>
@@ -52,7 +53,7 @@ char **environ = &__env;
 void sys_log_libc(const char *message) { kprintf(message); }
 
 int sys_exit() {
-  kill_current_proc();
+  /* TODO */
   return 0;
 }
 
@@ -297,7 +298,7 @@ int sys_fork(Registers *regs) {
 
   dump_regs(&gp_current_process->trapframe);
   ProcessControlBlock *child_proc = clone_process(gp_current_process, regs);
-  register_process(child_proc);
+  enqueue_process(child_proc);
 
   return child_proc->pid;
 }
@@ -315,7 +316,7 @@ int sys_ioctl(int fd, unsigned long req, void *arg) {
   if (file->fs->ioctl)
     return file->fs->ioctl(file, req, arg);
 
-  // kprintf("Name is %s\n", file->name);
+  kprintf("No ioctl implemented for %s\n", file->name);
   return 0;
 }
 

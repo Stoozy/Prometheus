@@ -6,5 +6,5 @@
 #undef SYSCALL_DEBUG
 #define VMM_DEBUG
 
-#define SMP_TIMESLICE 5
+#define PROC_TIMESLICE 10
 #define MAX_PROC_FDS 255

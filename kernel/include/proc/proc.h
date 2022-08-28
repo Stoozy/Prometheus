@@ -12,7 +12,7 @@
 #define STACK_BLOCKS 8
 #define MMAP_BASE 0xC000000000
 
-enum TaskState { READY, RUNNING, ZOMBIE };
+enum TaskState { READY, RUNNING, WAITING, ZOMBIE };
 
 typedef struct vas_range_node VASRangeNode;
 
@@ -31,20 +31,15 @@ typedef struct process_control_block {
   struct file * fd_table[MAX_PROC_FDS];
   int fd_length;
 
-  struct process_control_block *next;
 } ProcessControlBlock;
 
 void unmap_fd_from_proc(ProcessControlBlock *proc, int fd);
 int map_file_to_proc(ProcessControlBlock *proc, struct file *file);
-void multitasking_init();
 void kill_current_proc(void);
-void dump_list();
 void dump_proc_vas(ProcessControlBlock * );
-void schedule();
-
 void proc_add_vas_range(ProcessControlBlock * ,VASRangeNode *);
+void multitasking_init();
 
 ProcessControlBlock *create_process(void(void));
 ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs);
-void register_process(ProcessControlBlock *);
 

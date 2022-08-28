@@ -204,4 +204,5 @@ void _start(struct stivale2_struct *boot_info) {
 
   // jump to userspace
   multitasking_init();
+  hang();
 }
