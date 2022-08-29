@@ -1,13 +1,14 @@
 #include "kmalloc.h"
 #include "libc/abi-bits/fcntl.h"
+#include <drivers/tty.h>
 #include <fs/vfs.h>
 #include <kprintf.h>
+#include <stdint.h>
 #include <string/string.h>
 #include <util.h>
 
 #include <libc/asm/ioctls.h>
 
-#define TTY_BUF_SIZE 0x1000
 #define MAX_TTYS 8
 
 struct file *tty_open(const char *filename, int flags);
@@ -25,88 +26,141 @@ FileSystem ttyfs = {.open = tty_open,
                     .poll = tty_poll};
 
 struct fs *ttydev = &ttyfs;
-
-struct tty {
-  int id;
-
-  File *file;
-  char *buffer;
-  size_t buffer_size;
-
-  int lock;
-};
+Tty volatile *gp_active_tty = NULL;
 
 static struct tty g_ttys[MAX_TTYS];
+
 static int g_tty_counter = 0;
 
-static struct tty *tty_find(const char *name) {
-  for (int i = 0; i < MAX_TTYS; i++) {
-    if (strcmp(g_ttys[i].file->name, name) == 0) {
-      return &g_ttys[MAX_TTYS];
-    }
-  }
+static Tty *tty_find(const char *name) {
+  int id = name[3] - '0'; // ttyN
+  if (g_ttys[id].buffer_in)
+    return &g_ttys[id];
+
   return NULL;
 }
 
-struct file *tty_open(const char *filename, int flags) {
-  kprintf("[TTY]  opening new tty file\n");
-  struct tty *found = tty_find(filename);
+static File *file_from_tty(Tty *tty) {
+  File *file = kmalloc(sizeof(File));
+  file->name = kmalloc(strlen("ttyX\0"));
+  strcpy(file->name, "ttyX\0");
+  file->name[3] = '0' + tty->id;
 
-  if (found)
-    return found->file;
+  file->inode = tty->id;
+  file->size = TTY_BUF_SIZE;
+  file->fs = ttydev;
+  file->position = 0;
+  file->device = MKDEV(5, 0);
+
+  kprintf("[TTY]  Created %s with bufsize %d\n", file->name, file->size);
+  return file;
+}
+
+struct file *tty_open(const char *filename, int flags) {
+  kprintf("[TTY]  opening new tty file: %s\n", filename);
+  Tty *found = tty_find(filename);
+
+  if (found) {
+    kprintf("Found tty%d\n", found->id);
+    gp_active_tty = found;
+    return file_from_tty(found);
+  }
 
   // create tty
   if (g_tty_counter >= MAX_TTYS) {
     kprintf("Too many tty pairs\n");
     for (;;)
       ;
-  } else {
-    struct tty new_tty = (struct tty){.id = g_tty_counter,
-                                      .buffer = kmalloc(TTY_BUF_SIZE),
-                                      .buffer_size = TTY_BUF_SIZE,
-                                      .lock = 0};
+  }
+  struct tty new_tty = (struct tty){.id = g_tty_counter,
+                                    .buffer_in = NULL,
+                                    .in_size = TTY_BUF_SIZE,
+                                    .buffer_out = NULL,
+                                    .out_size = TTY_BUF_SIZE,
+                                    .inlock = 0,
+                                    .outlock = 0};
+  new_tty.buffer_out = kmalloc(TTY_BUF_SIZE);
+  new_tty.buffer_in = kmalloc(TTY_BUF_SIZE);
 
-    File *tty_file = kmalloc(sizeof(File));
-    tty_file->name = kmalloc(strlen(filename) + 1);
-    strcpy(tty_file->name, filename);
-    *(tty_file->name + strlen(filename)) = '\0'; // null terminate
-    tty_file->size = TTY_BUF_SIZE;
-    tty_file->position = 0;
-    tty_file->fs = ttydev;
-    tty_file->inode = g_tty_counter;
-    tty_file->device = MKDEV(5, 0);
+  g_ttys[g_tty_counter] = new_tty;
+  ++g_tty_counter;
 
-    g_ttys[g_tty_counter] = new_tty;
-    g_tty_counter++;
+  gp_active_tty = &new_tty;
 
-    kprintf("[TTY]  Created %s with bufsize %d\n", tty_file->name,
-            tty_file->size);
-    return tty_file;
-  };
+  return file_from_tty(&new_tty);
+}
 
-  return NULL;
+uint64_t tty_dev_write(Tty *tty, size_t size, unsigned char *buffer) {
+  kprintf("[TTY]  Writing to tty%d STUB\n", tty->id);
+  kprintf("buffer is at %x\n", tty->buffer_in);
+  for (size_t i = 0; i < size; i++)
+    kprintf("%c ", buffer[i]);
+
+  memcpy(tty->buffer_in, buffer, size);
+  tty->in = true;
+
+  return size;
 }
 
 uint64_t tty_write(struct file *file, size_t size, u8 *buffer) {
+  kprintf("[TTY]  Writing to %s STUB\n", file->name);
+  for (size_t i = 0; i < size; i++)
+    kprintf("%c ", buffer[i]);
 
-  kprintf("[TTY]  Writing to %s\n STUB", file->name);
-  return -1;
+  Tty tty = g_ttys[file->inode];
+  kprintf("Got tty buffer at %x\n", tty.buffer_out);
+  memcpy(tty.buffer_out + file->position, buffer, size);
+  // for (;;)
+  //   ;
+  return size;
 }
 
+void tty_flush(Tty *tty) { memset(tty->buffer_in, 0, TTY_BUF_SIZE); }
+
 uint64_t tty_read(struct file *file, size_t size, u8 *buffer) {
-  kprintf("[TTY]  Reading from %s STUB\n", file->name);
-  return -1;
+  kprintf("[TTY]  Reading from tty%d STUB\n", file->inode);
+  Tty tty = g_ttys[file->inode];
+  memcpy(buffer, tty.buffer_in, size);
+
+  tty_flush(&tty);
+  tty.in = false;
+
+  return size;
 }
 
 int tty_poll(struct file *file, struct pollfd *fd) {
-  kprintf("[TTY]  Polling %s    STUB\n", file->name);
-  return -1;
+  Tty tty = g_ttys[file->inode];
+
+  kprintf("[TTY]  Polling tty%d  STUB\n", file->inode);
+  int events = 0;
+  switch (fd->events) {
+  case POLLIN: {
+    kprintf("POLLIN\n");
+    if (tty.in) {
+      fd->revents |= POLLIN;
+      events++;
+    }
+    break;
+  }
+  case POLLOUT: {
+    kprintf("POLLOUT\n");
+    break;
+  }
+  default:
+    break;
+  }
+
+  if (events)
+    kprintf("Got event\n");
+
+  return events;
 }
 
 void tty_close(struct file *f) {}
 
 int tty_ioctl(struct file *file, uint32_t request, void *arg) {
 
+  kprintf("Called ioctl on tty%d\n", file->inode);
   // TODO
 
   return 0;

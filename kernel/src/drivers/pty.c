@@ -1,3 +1,4 @@
+#include <drivers/tty.h>
 #include <fs/vfs.h>
 #include <kmalloc.h>
 #include <kprintf.h>
@@ -26,24 +27,25 @@ FileSystem ptyfs = {.open = pty_open,
 
 struct fs *ptydev = &ptyfs;
 
-struct pty {
-  int id;
-
-  File *master;
-  File *slave;
-
-  char *master_buf;
-  char *slave_buf;
-
-  size_t master_buf_size;
-  size_t slave_buf_size;
-
-  int master_lock;
-  int slave_lock;
-};
-
-static struct pty g_ptys[MAX_PTYS];
+static Tty g_ptys[MAX_PTYS];
 static int g_pty_counter = 0;
+
+static struct file *file_from_pty(Tty *pty) {
+  File *file = kmalloc(sizeof(File));
+  file->name = kmalloc(strlen("pts/X\0"));
+  strcpy(file->name, "pts/X\0");
+  file->name[4] = '0' + pty->id;
+
+  file->inode = pty->id;
+  file->size = TTY_BUF_SIZE;
+  file->fs = ptydev;
+  file->position = 0;
+  file->device = MKDEV(5, 2);
+
+  kprintf("[PTY]  Created %s with bufsize %d\n", file->name, file->size);
+
+  return file;
+}
 
 struct file *pty_open(const char *filename, int flags) {
   kprintf("[PTY]  opening %s\n", filename);
@@ -56,70 +58,82 @@ struct file *pty_open(const char *filename, int flags) {
         ;
     } else {
 
-      struct pty new_pty = (struct pty){.id = g_pty_counter,
-                                        .master = NULL,
-                                        .slave = NULL,
-                                        .master_buf = kmalloc(PTY_BUF_SIZE),
-                                        .slave_buf = kmalloc(PTY_BUF_SIZE),
-                                        .master_buf_size = PTY_BUF_SIZE,
-                                        .slave_buf_size = PTY_BUF_SIZE,
-                                        .master_lock = 0,
-                                        .slave_lock = 0};
-
-      File *master_file = kmalloc(sizeof(File));
-      master_file->name = kmalloc(strlen("ptm/XYZ\0"));
-      memset(master_file->name, 0, strlen("ptm/XYZ\0"));
-      strcpy(master_file->name, "ptm/");
-      master_file->name[4] = '0' + g_pty_counter;
-      master_file->name[5] = '\0';
-
-      master_file->size = PTY_BUF_SIZE;
-      master_file->position = 0;
-      master_file->fs = ptydev;
-      master_file->inode = g_pty_counter;
-      master_file->device = MKDEV(5, 2);
-
-      File *slave_file = kmalloc(sizeof(File));
-      slave_file->name = kmalloc(strlen("pts/XYZ\0"));
-
-      // asprintf would be so nice here
-      memset(slave_file->name, 0, strlen("pts/XYZ\0"));
-      strcpy(slave_file->name, "pts/");
-      slave_file->name[4] = '0' + g_pty_counter;
-      slave_file->name[5] = '\0';
-
-      slave_file->size = PTY_BUF_SIZE;
-      slave_file->position = 0;
-      slave_file->fs = ptydev;
-      slave_file->device = MKDEV(136, g_pty_counter);
-
-      new_pty.master = master_file;
-      new_pty.slave = slave_file;
+      Tty new_pty = (Tty){.id = g_pty_counter,
+                          .buffer_in = NULL,
+                          .buffer_out = NULL,
+                          .in_size = PTY_BUF_SIZE,
+                          .out_size = PTY_BUF_SIZE};
+      new_pty.buffer_in = kmalloc(PTY_BUF_SIZE);
+      new_pty.buffer_out = kmalloc(PTY_BUF_SIZE);
+      new_pty.id = g_pty_counter;
 
       g_ptys[g_pty_counter] = new_pty;
       ++g_pty_counter;
 
       kprintf("[PTY]    Created master/slave pair\n");
-      return new_pty.master;
+      return file_from_pty(&new_pty);
     };
-
   } else if (starts_with(filename, "pts/")) {
-    // check if it's trying to open `/dev/pts/XYZ`
+    // check if it's trying to open `/dev/pts/X`
     // this works for now bc it only goes up to 8
     int id = filename[4] - '0';
     kprintf("[PTY]  pts id is %d\n", id);
-    return g_ptys[id].slave;
+    return file_from_pty(&g_ptys[id]);
   }
 
   return NULL;
 }
 
-uint64_t pty_write(struct file *file, size_t size, u8 *buffer) { return -1; }
-uint64_t pty_read(struct file *file, size_t size, u8 *buffer) { return -1; }
+uint64_t pty_write(struct file *file, size_t size, u8 *buffer) {
+  kprintf("[PTY]  Writing to %s STUB\n", file->name);
+  for (size_t i = 0; i < size; i++)
+    kprintf("%c ", buffer[i]);
+
+  Tty pty = g_ptys[file->inode];
+  kprintf("Got tty buffer at %x\n", pty.buffer_out);
+  memcpy(pty.buffer_out + file->position, buffer, size);
+  pty.in = true;
+  return size;
+}
+
+uint64_t pty_read(struct file *file, size_t size, u8 *buffer) {
+  kprintf("[PTY]  Reading from tty%d STUB\n", file->inode);
+  for (;;)
+    ;
+  Tty pty = g_ptys[file->inode];
+  memcpy(buffer, pty.buffer_out + file->position, size);
+  return size;
+}
 
 void pty_close(struct file *file) { return; }
 
-int pty_poll(struct file *file, struct pollfd *fd) { return 0; }
+int pty_poll(struct file *file, struct pollfd *fd) {
+  Tty pty = g_ptys[file->inode];
+
+  kprintf("[PTY]  Polling pts/%d  STUB\n", file->inode);
+  int events = 0;
+  switch (fd->events) {
+  case POLLIN: {
+    kprintf("POLLIN\n");
+    if (pty.in) {
+      fd->revents |= POLLIN;
+      events++;
+    }
+    break;
+  }
+  case POLLOUT: {
+    kprintf("POLLOUT\n");
+    break;
+  }
+  default:
+    break;
+  }
+
+  if (events)
+    kprintf("Got event\n");
+
+  return events;
+}
 
 int pty_ioctl(struct file *file, uint32_t request, void *arg) {
   if (MAJOR(file->device) == 136) {
@@ -130,12 +144,12 @@ int pty_ioctl(struct file *file, uint32_t request, void *arg) {
   switch (request) {
   case TIOCSPTLCK: {
     int *lock = (int *)arg;
-    g_ptys[file->inode].slave_lock = *lock;
+    g_ptys[file->inode].inlock = *lock;
     break;
   }
   case TIOCGPTN: {
     int *ptn = (int *)arg;
-    *ptn = MINOR(g_ptys[file->inode].slave->device);
+    *ptn = MINOR(g_ptys[file->inode].indev);
     break;
   }
   default:

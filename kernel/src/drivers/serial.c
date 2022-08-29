@@ -27,9 +27,9 @@ int serial_init() {
 int is_transmit_empty() { return inb(SERIAL_PORT + 5) & 0x20; }
 
 void write_serial(char a) {
-  while (is_transmit_empty() == 0) {}
+  while (is_transmit_empty() == 0)
+    ;
   outb(SERIAL_PORT, a);
-  return;
 }
 
 void turn_color_on() {

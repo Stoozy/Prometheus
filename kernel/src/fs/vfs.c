@@ -96,7 +96,6 @@ ssize_t vfs_read(File *file, u8 *buffer, size_t size) {
 
   if (file) {
     size_t bytes = file->fs->read(file, size, buffer);
-    file->position += size;
     return bytes;
   }
 
@@ -161,7 +160,6 @@ ssize_t vfs_write(File *file, u8 *buffer, size_t size) {
   kprintf("[VFS]    Called write on %s\n", file->name);
   if (file) {
     size_t bytes = file->fs->write(file, size, buffer);
-    file->position += bytes;
     return bytes;
   }
 

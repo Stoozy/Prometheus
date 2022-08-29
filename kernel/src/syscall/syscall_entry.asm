@@ -33,7 +33,6 @@ enable_sce:
 syscall_entry:
     cli
 
-    ;cld
     swapgs
 
     mov [gs:0x8], rsp       ; save process stack

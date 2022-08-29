@@ -126,7 +126,7 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
   ProcessControlBlock *pcb = kmalloc(sizeof(ProcessControlBlock));
   memset(pcb, 0, sizeof(ProcessControlBlock));
 
-  void *stack_ptr = (void *)pmm_alloc_block() + PAGE_SIZE;
+  void *stack_ptr = (void *)pmm_alloc_blocks(8) + 8 * PAGE_SIZE;
 
   memset(&pcb->trapframe, 0, sizeof(Registers));
 
@@ -206,14 +206,14 @@ void multitasking_init() {
   kernel_cr3 = vmm_get_current_cr3();
 
   char *envp[4] = {"PATH=/usr/bin", "HOME=/", "TERM=linux", NULL};
-  char *argvp[2] = {NULL};
+  char *argvp[2] = {"/usr/bin/yes", NULL};
 
   extern void refresh_screen_proc();
 
-  // ProcessControlBlock *fbpad =
-  //     create_elf_process("/usr/bin/fbpad", argvp, envp);
-  // kprintf("Got process at %x\n", fbpad);
-  // register_process(fbpad);
+  ProcessControlBlock *fbpad =
+      create_elf_process("/usr/bin/nomterm", argvp, envp);
+  kprintf("Got process at %x\n", fbpad);
+  register_process(fbpad);
 
   ProcessControlBlock *video_refresh =
       create_kernel_process(refresh_screen_proc);

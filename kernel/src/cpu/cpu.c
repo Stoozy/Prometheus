@@ -11,12 +11,13 @@ LocalCpuData cpus[MAX_CORES];
 void cpu_init(u8 id) {
   kprintf("Initializing CPU #%lu\n", id);
 
-  void *addr = pmm_alloc_blocks(8) + (8 * PAGE_SIZE);
+  void *addr = pmm_alloc_blocks(16) + (16 * PAGE_SIZE);
 
   extern void panic();
   if (addr != NULL) {
     cpus[id].syscall_kernel_stack = (u64 *)(PAGING_VIRTUAL_OFFSET + addr);
     kprintf("kernel stack at 0x%x\n", addr);
+    kprintf("kernel stack base at 0x%x\n", addr - (16 * PAGE_SIZE));
   } else {
     kprintf("OUT OF MEMORY\n");
     panic();

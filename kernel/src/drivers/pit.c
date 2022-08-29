@@ -16,7 +16,7 @@ void pit_init(u32 hz) {
   outb(0x40, (u8)((divisor & 0xff00) >> 8));
 }
 
-void sleep(u32 ms) {
+void _sleep(u32 ms) {
   /* loop until estimated ticks reached */
   u64 eticks = g_ticks + ms;
   kprintf("Sleeping: %d\n", g_ticks);
