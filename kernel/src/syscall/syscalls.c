@@ -16,7 +16,9 @@
 
 #include <abi-bits/fcntl.h>
 #include <linux/poll.h>
+#include <proc/elf.h>
 
+#include <libc/abi-bits/auxv.h>
 #include <stdarg.h>
 
 typedef long int off_t;
@@ -290,7 +292,138 @@ int sys_tcb_set(void *ptr) {
   return 0;
 }
 
-int sys_execve(char *name, char **argv, char **env) { return -1; }
+// for (;;) {
+//   kprintf("Called exec on %s\n", name);
+//   kprintf("ARGS:  \n");
+//   int n = 0;
+//   while (argv[n]) {
+//     kprintf("%s\n", argv[n]);
+//     n++;
+//   }
+//   kprintf("ENV:  \n");
+//   n = 0;
+//   while (env[n]) {
+//     kprintf("%s\n", env[n]);
+//     n++;
+//   }
+// }
+
+int sys_execve(char *name, char **argvp, char **envp) {
+  extern ProcessControlBlock *gp_current_process;
+
+  // free the entire vas
+  VASRangeNode *vas = gp_current_process->vas;
+  while (vas->next) {
+    size_t blocks = vas->size / PAGE_SIZE;
+    kprintf("Freeing virt: %x; phys %x; blocks: %d\n", vas->virt_start,
+            vas->phys_start, blocks);
+    pmm_free_blocks((uintptr_t)vas->phys_start, blocks);
+
+    VASRangeNode *tmp = vas;
+    vas = vas->next;
+    kfree(tmp);
+  }
+
+  File *elf_file = vfs_open(name, O_RDONLY);
+  u8 *elf_data = kmalloc(elf_file->size);
+  vfs_read(elf_file, elf_data, elf_file->size);
+
+  gp_current_process->cr3 =
+      (void *)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET;
+
+  extern void load_pagedir(PageTable *);
+  PageTable *tmp = vmm_get_current_cr3();
+  load_pagedir(kernel_cr3);
+  Auxval aux = load_elf_segments(gp_current_process, elf_data);
+  load_pagedir(tmp);
+
+  void *stack_ptr = pmm_alloc_blocks(STACK_BLOCKS) + (STACK_SIZE);
+  void *stack_base = stack_ptr - (STACK_SIZE);
+
+  vmm_map_range(gp_current_process->cr3, stack_base, stack_base, STACK_SIZE,
+                PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
+
+  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+
+  range->virt_start = stack_base;
+  range->phys_start = stack_base;
+  range->size = STACK_SIZE;
+  range->page_flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+  range->next = NULL;
+
+  proc_add_vas_range(gp_current_process, range);
+
+  uint64_t *stack = (uint64_t *)(stack_ptr);
+
+  int envp_len;
+  for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
+    size_t length = strlen(envp[envp_len]);
+    stack = (void *)stack - length - 1;
+    memcpy(stack, envp[envp_len], length);
+  }
+
+  int argv_len;
+  for (argv_len = 0; argvp[argv_len] != NULL; argv_len++) {
+    size_t length = strlen(argvp[argv_len]);
+    stack = (void *)stack - length - 1;
+    memcpy(stack, argvp[argv_len], length);
+  }
+
+  stack = (uint64_t *)(((uintptr_t)stack / 16) * 16);
+
+  if (((argv_len + envp_len + 1) & 1) != 0) {
+    stack--;
+  }
+
+  *--stack = 0;
+  *--stack = 0;
+  *--stack = aux.entry;
+  *--stack = AT_ENTRY;
+  *--stack = aux.phent;
+  *--stack = AT_PHENT;
+  *--stack = aux.phnum;
+  *--stack = AT_PHNUM;
+  *--stack = aux.phdr;
+  *--stack = AT_PHDR;
+
+  uintptr_t old_rsp = (uintptr_t)stack_ptr;
+
+  *--stack = 0; // end envp
+  stack -= envp_len;
+  for (int i = 0; i < envp_len; i++) {
+    old_rsp -= strlen(envp[i]) + 1;
+    stack[i] = old_rsp;
+  }
+
+  *--stack = 0; // end argvp
+  stack -= argv_len;
+  for (int i = 0; i < argv_len; i++) {
+    old_rsp -= strlen(argvp[i]) + 1;
+    stack[i] = old_rsp;
+  }
+
+  *--stack = argv_len; // argc
+
+  stack_ptr -= (stack_ptr - (void *)stack);
+
+  memset(&gp_current_process->trapframe, 0, sizeof(Registers));
+  gp_current_process->trapframe.ss = 0x23;
+  gp_current_process->trapframe.rip = aux.ld_entry;
+  gp_current_process->trapframe.rsp = (uint64_t)stack_ptr;
+  gp_current_process->trapframe.rflags = (uint64_t)0x202;
+  gp_current_process->trapframe.cs = (uint64_t)0x2b;
+
+  gp_current_process->cr3 =
+      (void *)gp_current_process->cr3 - PAGING_VIRTUAL_OFFSET;
+  gp_current_process->mmap_base = MMAP_BASE;
+  ++gp_current_process->pid;
+
+  extern void switch_to_process(void *new_stack, PageTable *cr3);
+  switch_to_process(&gp_current_process->trapframe, gp_current_process->cr3);
+
+  // should never reach
+  return 0;
+}
 
 int sys_fork(Registers *regs) {
   extern ProcessControlBlock *gp_current_process;
@@ -316,7 +449,7 @@ int sys_ioctl(int fd, unsigned long req, void *arg) {
     return file->fs->ioctl(file, req, arg);
 
   // kprintf("Name is %s\n", file->name);
-  return 0;
+  return -1;
 }
 
 pid_t sys_getpid() {
@@ -344,25 +477,29 @@ int sys_dup2(int fd, int flags, int fd2) {
   extern ProcessControlBlock *gp_current_process;
 
   if (fd < 0 || fd > MAX_PROC_FDS) {
-    kprintf("Invalid fd %d\n", fd);
+    kprintf("[DUP2] Invalid fd %d\n", fd);
     return -1;
   }
 
   File *file = gp_current_process->fd_table[fd];
 
   if (!file) {
-    kprintf("file doesn't exist\n");
+    kprintf("[DUP2] File doesn't exist\n");
     return -1;
   }
+
+  kprintf("Copying fd %d; name: %s\n", fd, file->name);
 
   File *file2 = gp_current_process->fd_table[fd2];
 
   if (file2) {
     file2->fs->close(file2);
+    gp_current_process->fd_table[fd2] = NULL;
   }
 
   // refer to the same file
   gp_current_process->fd_table[fd2] = file;
+  kprintf("New fd %d name: %s\n", fd2, gp_current_process->fd_table[fd2]->name);
 
   return fd2;
 }
@@ -461,7 +598,7 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
       if (!file->fs->poll)
         kprintf("Poll is not implemented for %s :(\n", file->name);
       else {
-        events += file->fs->poll(file, &fds[i]);
+        events += file->fs->poll(file, fds[i]);
       }
     } else {
       kprintf("[POLL]   Invalid fd %d\n", fd);
@@ -620,6 +757,11 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_READDIR: {
     regs->r15 = sys_readdir(regs->r8, (DirectoryEntry *)regs->r9, regs->r10);
+    break;
+  }
+  case SYS_EXEC: {
+    regs->r15 =
+        sys_execve((char *)regs->r8, (char **)regs->r9, (char **)regs->r10);
     break;
   }
 
