@@ -82,6 +82,7 @@ int sys_close(int fd) {
   vmm_switch_page_directory(kernel_cr3);
   extern ProcessControlBlock *gp_current_process;
   unmap_fd_from_proc(gp_current_process, fd);
+  kprintf("Closed fd %d\n", fd);
   return 0;
 }
 
@@ -480,7 +481,7 @@ int sys_dup(int fd, int flags) {
   return new_fd;
 }
 
-int sys_dup2(int fd, int flags, int fd2) {
+int sys_dup2(int fd, int flags, int new_fd) {
 
   extern ProcessControlBlock *gp_current_process;
 
@@ -498,18 +499,18 @@ int sys_dup2(int fd, int flags, int fd2) {
 
   kprintf("Copying fd %d; name: %s\n", fd, file->name);
 
-  File *file2 = gp_current_process->fd_table[fd2];
+  File *file2 = gp_current_process->fd_table[new_fd];
 
   if (file2) {
     file2->fs->close(file2);
-    gp_current_process->fd_table[fd2] = NULL;
   }
 
   // refer to the same file
-  gp_current_process->fd_table[fd2] = file;
-  kprintf("New fd %d name: %s\n", fd2, gp_current_process->fd_table[fd2]->name);
+  gp_current_process->fd_table[new_fd] = file;
+  kprintf("New fd %d name: %s\n", new_fd,
+          gp_current_process->fd_table[new_fd]->name);
 
-  return fd2;
+  return new_fd;
 }
 
 int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
@@ -652,6 +653,7 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_CLOSE: {
     kprintf("[SYS]  CLOSE CALLED\n");
+    regs->r15 = sys_close(regs->r8);
     break;
   }
   case SYS_READ: {
