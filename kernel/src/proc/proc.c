@@ -151,6 +151,11 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
   for (int i = 0; i < proc->fd_length; i++) {
     File *copy_file = kmalloc(sizeof(File));
     *copy_file = *(proc->fd_table[i]);
+
+    // copy_file->name = kmalloc(strlen(proc->fd_table[i]->name) + 1);
+    // strcpy(copy_file->name, proc->fd_table[i]->name);
+    // copy_file->name[strlen(proc->fd_table[i]->name)] = '\0';
+
     clone->fd_table[i] = copy_file;
   }
 
@@ -161,7 +166,7 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
   vmm_copy_vas(clone, proc);
   clone->pid++;
   clone->trapframe = *regs;
-  clone->mmap_base = MMAP_BASE;
+  clone->mmap_base = proc->mmap_base;
 
   kprintf("Registers are at stack %x\n", regs);
   kprintf("Fork'd process has cr3: %x\n", clone->cr3);
@@ -205,15 +210,16 @@ void multitasking_init() {
   // save kernel page tables
   kernel_cr3 = vmm_get_current_cr3();
 
-  char *envp[4] = {"PATH=/usr/bin", "HOME=/", "TERM=linux", NULL};
-  char *argvp[2] = {"/usr/bin/yes", NULL};
+  char *envp[5] = {"SHELL=/usr/bin/bash", "PATH=/usr/bin", "HOME=/",
+                   "TERM=linux", NULL};
+  char *argvp[3] = {NULL};
 
   extern void refresh_screen_proc();
 
-  ProcessControlBlock *fbpad =
+  ProcessControlBlock *nomterm =
       create_elf_process("/usr/bin/nomterm", argvp, envp);
-  kprintf("Got process at %x\n", fbpad);
-  register_process(fbpad);
+  kprintf("Got process at %x\n", nomterm);
+  register_process(nomterm);
 
   ProcessControlBlock *video_refresh =
       create_kernel_process(refresh_screen_proc);

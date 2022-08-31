@@ -1,5 +1,6 @@
 #pragma once
 
+#include "memory/vmm.h"
 #include <proc/proc.h>
 
 // TODO: Convert the enums to #defines so that they work with #ifdef.

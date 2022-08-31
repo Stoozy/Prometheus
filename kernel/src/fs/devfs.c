@@ -60,7 +60,6 @@ static File *devfs_entry_to_file(struct devfs_entry entry) {
   file->position = 0;
   file->size = entry.size;
   file->type = entry.type;
-  file->next = NULL;
 
   return file;
 }

@@ -31,6 +31,7 @@ void exc6_handler(Registers *regs) {
   outb(0x20, 0x20);
   kprintf("Exception occured\n");
   kprintf("Invalid opcode.\n");
+  asm("sti");
   for (;;)
     ;
 }
@@ -128,10 +129,13 @@ void irq15_handler() {
 }
 
 void dummy_handler() {
-  kprintf("Exception occured\n");
-  __asm__ volatile("cli; hlt");
+  // kprintf("Exception occured\n");
+
   outb(0xA0, 0x20);
   outb(0x20, 0x20); /* EOI */
+  __asm__ volatile("cli; hlt");
+  for (;;)
+    ;
 }
 
 void idt_init() {

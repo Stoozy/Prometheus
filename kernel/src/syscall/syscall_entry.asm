@@ -32,6 +32,7 @@ enable_sce:
 
 syscall_entry:
     cli
+    ;cld
 
     swapgs
 

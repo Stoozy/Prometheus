@@ -148,15 +148,23 @@ void ustar_close(struct file *f) {
 
 uint64_t ustar_read(struct file *file, size_t size, u8 *buffer) {
 
-  kprintf("[TARFS] Called read\n");
+  kprintf("[TARFS] Called read for %llu bytes\n", size);
 
   UstarFile *tar_fp = (UstarFile *)file->inode;
+  size_t filesize = oct2bin(tar_fp->size, 12);
   char *sof = ((char *)(tar_fp)) + 512;
   char *begin = sof + file->position;
   kprintf("[TARFS] File data: %s\n", sof);
   if (tar_fp) {
     kprintf("[TARFS] Valid file\n");
-    kprintf("Copying data over to %x (%llu bytes)\n", buffer, size);
+    if (filesize < file->position + size) {
+      kprintf("Copying data over to %x (%lu bytes) from %x\n", buffer, filesize,
+              begin);
+      memcpy(buffer, begin, filesize);
+      return filesize;
+    }
+    kprintf("Copying data over to %x (%lu bytes) from %x\n", buffer, size,
+            begin);
     memcpy(buffer, begin, size);
     return size;
   }
@@ -236,7 +244,6 @@ struct file *ustar_finddir(VfsNode *dir, const char *name) {
     vfs_file->size = ustar_decode_filesize(file);
     vfs_file->position = 0;
     vfs_file->device = 0;
-    vfs_file->next = NULL;
 
     vfs_file->fs = &g_tarfs;
 

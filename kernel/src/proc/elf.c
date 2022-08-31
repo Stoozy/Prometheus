@@ -1,3 +1,4 @@
+#include "abi-bits/fcntl.h"
 #include "cpu/cpu.h"
 #include <proc/elf.h>
 #include <proc/proc.h>
@@ -72,19 +73,20 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
         u64 offset = ldph->p_vaddr & (PAGE_SIZE - 1);
         u64 blocks = (ldph->p_memsz / PAGE_SIZE) + 2;
 
-        void *paddr = pmm_alloc_blocks(blocks);
+        void *paddr = pmm_alloc_blocks(blocks) + PAGING_VIRTUAL_OFFSET;
         void *vaddr = (void *)(LD_BASE + (ldph->p_vaddr & ~(0xfff)));
 
         memset(paddr, 0, ldph->p_memsz);
         memcpy(paddr + offset, (ld_data + ldph->p_offset), ldph->p_filesz);
 
         int page_flags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
-        vmm_map_range(vas, vaddr, paddr, blocks * PAGE_SIZE, page_flags);
+        vmm_map_range(vas, vaddr, paddr - PAGING_VIRTUAL_OFFSET,
+                      blocks * PAGE_SIZE, page_flags);
 
         VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
 
         range->virt_start = vaddr;
-        range->phys_start = paddr;
+        range->phys_start = paddr - PAGING_VIRTUAL_OFFSET;
         range->size = blocks * PAGE_SIZE;
         range->page_flags = page_flags;
         range->next = NULL;
@@ -224,9 +226,9 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   proc->trapframe.rip = aux.ld_entry;
   proc->trapframe.cs = (uint64_t)0x2b;
 
-  proc->fd_table[0] = vfs_open("/dev/tty0", 0);
-  proc->fd_table[1] = vfs_open("/dev/tty0", 0);
-  proc->fd_table[2] = vfs_open("/dev/tty0", 0);
+  proc->fd_table[0] = vfs_open("/dev/tty0", O_RDONLY);
+  proc->fd_table[1] = vfs_open("/dev/tty0", O_WRONLY);
+  proc->fd_table[2] = vfs_open("/dev/tty0", O_WRONLY);
 
   proc->mmap_base = MMAP_BASE;
   proc->pid = 200;

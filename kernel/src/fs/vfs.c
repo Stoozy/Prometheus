@@ -122,11 +122,12 @@ VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
       parent->file->fs->finddir(parent, name + strlen(parent->file->name));
 
   if (found_file) {
-    kprintf("Found file %s in %s\n", name, parent->file->name);
+    kprintf("[VFS]  Found file %s in %s\n", name, parent->file->name);
     // update in-memory tree
     VfsNode *node = kmalloc(sizeof(VfsNode));
     node->parent = parent;
     node->file = found_file;
+    node->file->type = VFS_FILE;
     node->next = NULL;
 
     // TODO: abstract this to another function
