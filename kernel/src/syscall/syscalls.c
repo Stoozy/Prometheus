@@ -13,6 +13,7 @@
 #include <syscall/syscalls.h>
 #include <typedefs.h>
 #include <unistd.h>
+#include <util.h>
 
 #include <abi-bits/fcntl.h>
 #include <linux/poll.h>
@@ -313,34 +314,39 @@ int sys_execve(char *name, char **argvp, char **envp) {
 
   // free the entire vas
   VASRangeNode *vas = gp_current_process->vas;
-  while (vas->next) {
-    size_t blocks = vas->size / PAGE_SIZE;
-    kprintf("Freeing virt: %x; phys %x; blocks: %d\n", vas->virt_start,
-            vas->phys_start, blocks);
-    pmm_free_blocks((uintptr_t)vas->phys_start, blocks);
+  // while (vas->next) {
+  //   size_t blocks = vas->size / PAGE_SIZE;
+  //   kprintf("Freeing virt: %x; phys %x; blocks: %d\n", vas->virt_start,
+  //           vas->phys_start, blocks);
+  //   pmm_free_blocks((uintptr_t)vas->phys_start, blocks);
 
-    VASRangeNode *tmp = vas;
-    vas = vas->next;
-    kfree(tmp);
-  }
+  //  VASRangeNode *tmp = vas;
+  //  vas = vas->next;
+  //  kfree(tmp);
+  //}
 
   File *elf_file = vfs_open(name, O_RDONLY);
   u8 *elf_data = kmalloc(elf_file->size);
   vfs_read(elf_file, elf_data, elf_file->size);
 
-  gp_current_process->cr3 =
-      (void *)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET;
+  gp_current_process->cr3 = pmm_alloc_block() + PAGING_VIRTUAL_OFFSET;
+  //(void *)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET;
 
   extern void load_pagedir(PageTable *);
   PageTable *tmp = vmm_get_current_cr3();
   load_pagedir(kernel_cr3);
   Auxval aux = load_elf_segments(gp_current_process, elf_data);
-  load_pagedir(tmp);
 
-  void *stack_ptr = pmm_alloc_blocks(STACK_BLOCKS) + (STACK_SIZE);
+  for (int i = 256; i < 512; i++)
+    gp_current_process->cr3->entries[i] = kernel_cr3->entries[i];
+
+  load_pagedir(tmp);
+  void *stack_ptr =
+      pmm_alloc_blocks(STACK_BLOCKS) + STACK_SIZE + PAGING_VIRTUAL_OFFSET;
   void *stack_base = stack_ptr - (STACK_SIZE);
 
-  vmm_map_range(gp_current_process->cr3, stack_base, stack_base, STACK_SIZE,
+  vmm_map_range(gp_current_process->cr3, stack_base - PAGING_VIRTUAL_OFFSET,
+                stack_base - PAGING_VIRTUAL_OFFSET, STACK_SIZE,
                 PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
 
   VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
@@ -392,14 +398,14 @@ int sys_execve(char *name, char **argvp, char **envp) {
   stack -= envp_len;
   for (int i = 0; i < envp_len; i++) {
     old_rsp -= strlen(envp[i]) + 1;
-    stack[i] = old_rsp;
+    stack[i] = old_rsp - PAGING_VIRTUAL_OFFSET;
   }
 
   *--stack = 0; // end argvp
   stack -= argv_len;
   for (int i = 0; i < argv_len; i++) {
     old_rsp -= strlen(argvp[i]) + 1;
-    stack[i] = old_rsp;
+    stack[i] = old_rsp - PAGING_VIRTUAL_OFFSET;
   }
 
   *--stack = argv_len; // argc
@@ -409,7 +415,9 @@ int sys_execve(char *name, char **argvp, char **envp) {
   memset(&gp_current_process->trapframe, 0, sizeof(Registers));
   gp_current_process->trapframe.ss = 0x23;
   gp_current_process->trapframe.rip = aux.ld_entry;
-  gp_current_process->trapframe.rsp = (uint64_t)stack_ptr;
+  gp_current_process->trapframe.rsp =
+      (uint64_t)stack_ptr - PAGING_VIRTUAL_OFFSET;
+
   gp_current_process->trapframe.rflags = (uint64_t)0x202;
   gp_current_process->trapframe.cs = (uint64_t)0x2b;
 
@@ -588,8 +596,9 @@ int sys_fcntl(int fd, int request, va_list args) {
 
 int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
   int events = 0;
-  kprintf("[POLL] pollfd ptr %x; count %u; Timeout %d;\n", fds, count, timeout);
-  // forget timeout, just loop forever
+  // kprintf("[POLL] pollfd ptr %x; count %u; Timeout %d;\n", fds, count,
+  // timeout);
+  //  forget timeout, just loop forever
   for (uint32_t i = 0; i < count; i++) {
     int fd = fds[i].fd;
     if (valid_fd(fd)) {
@@ -598,7 +607,7 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
       if (!file->fs->poll)
         kprintf("Poll is not implemented for %s :(\n", file->name);
       else {
-        events += file->fs->poll(file, fds[i]);
+        events += file->fs->poll(file, &fds[i]);
       }
     } else {
       kprintf("[POLL]   Invalid fd %d\n", fd);
@@ -739,7 +748,7 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_FCNTL: {
     kprintf("[SYS]  FCNTL CALLED\n");
-    regs->r15 = sys_fcntl(regs->r8, regs->r9, regs->r10);
+    regs->r15 = sys_fcntl(regs->r8, regs->r9, (void *)regs->r10);
     break;
   }
   case SYS_POLL: {
