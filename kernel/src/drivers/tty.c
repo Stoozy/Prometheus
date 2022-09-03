@@ -1,158 +1,185 @@
 #include "kmalloc.h"
-#include "libc/abi-bits/fcntl.h"
+#include "kprintf.h"
 #include <drivers/tty.h>
-#include <fs/vfs.h>
-#include <kprintf.h>
-#include <stdint.h>
+#include <fs/devfs.h>
 #include <string/string.h>
 #include <util.h>
 
-#include <libc/asm/ioctls.h>
+struct tty g_tty_table[MAX_TTYS];
+static uint8_t g_tty_counter;
 
-#define MAX_TTYS 8
+// could be as many as total number of ttys
+struct tty_ldisc g_ldiscs[MAX_TTYS];
+struct tty_driver g_tty_drivers[MAX_TTYS];
+static struct tty_driver default_tty_driver;
 
-ssize_t tty_dev_write(Tty tty, size_t size, unsigned char *buffer);
-struct file *tty_open(const char *filename, int flags);
-uint64_t tty_write(struct file *file, size_t size, u8 *buffer);
-uint64_t tty_read(struct file *file, size_t size, u8 *buffer);
-void tty_close(struct file *f);
+File *tty_open(const char *filename, int flags);
+void tty_close(struct file *);
+size_t tty_read(struct file *, size_t, uint8_t *buf);
+size_t tty_write(struct file *, size_t, uint8_t *buf);
 int tty_ioctl(struct file *, uint32_t request, void *arg);
-int tty_poll(struct file *, struct pollfd *pfd);
+int tty_poll(struct file *, struct pollfd *, int timeout);
 
-FileSystem ttyfs = {.open = tty_open,
-                    .read = tty_read,
-                    .write = tty_write,
-                    .close = tty_close,
-                    .ioctl = tty_ioctl,
-                    .poll = tty_poll};
+FileSystem tty_fops = {.open = tty_open,
+                       .close = tty_close,
+                       .read = tty_read,
+                       .write = tty_write,
+                       .ioctl = tty_ioctl,
+                       .poll = tty_poll};
 
-struct fs *ttydev = &ttyfs;
-Tty *gp_active_tty = NULL;
+/* initializes new device */
 
-static struct tty g_ttys[MAX_TTYS];
+struct tty *tty_init_dev(struct tty_driver driver) {
+  struct tty new_tty = (struct tty){.driver = driver};
 
-static int g_tty_counter = 0;
+  g_tty_table[g_tty_counter] = new_tty;
+  ++g_tty_counter;
 
-static Tty *tty_find(const char *name) {
-  int id = name[3] - '0'; // ttyN
-  if (g_ttys[id].buffer_in)
-    return &g_ttys[id];
-
-  return NULL;
+  return &g_tty_table[g_tty_counter - 1];
 }
 
-static File *file_from_tty(Tty *tty) {
+File *tty_open(const char *filename, int flags) {
+  kprintf("[TTY]  Called open on %s\n", filename);
+
+  struct tty *new_tty = tty_init_dev(default_tty_driver);
+
+  // ttyN
+  int minor = filename[4] - '0';
+
+  if (minor > MAX_TTYS)
+    return NULL;
+
   File *file = kmalloc(sizeof(File));
-  file->name = kmalloc(strlen("ttyX") + 1);
-  strcpy(file->name, "ttyX");
-  file->name[3] = '0' + tty->id;
-  file->name[4] = '\0';
-
-  file->inode = tty->id;
-  file->size = TTY_BUF_SIZE;
-  file->fs = ttydev;
+  file->size = TTY_BUFSIZE;
+  file->device = MKDEV(new_tty->driver.dev_major, minor);
+  file->fs = &tty_fops;
   file->position = 0;
-  file->device = MKDEV(5, 0);
+  file->private_data = new_tty;
 
-  kprintf("[TTY]  Created %s with bufsize %d\n", file->name, file->size);
+  file->name = kmalloc(strlen(filename));
+  strcpy(file->name, filename);
+
   return file;
 }
 
-struct file *tty_open(const char *filename, int flags) {
-  kprintf("[TTY]  opening new tty file: %s\n", filename);
-  Tty *found = tty_find(filename);
-
-  if (found) {
-    kprintf("Found tty%d\n", found->id);
-    // gp_active_tty = found;
-    return file_from_tty(found);
-  }
-
-  // create tty
-  if (g_tty_counter >= MAX_TTYS) {
-    kprintf("Too many tty pairs\n");
-    for (;;)
-      ;
-  }
-  struct tty new_tty = (struct tty){.id = g_tty_counter,
-                                    .buffer_in = kmalloc(TTY_BUF_SIZE),
-                                    .buffer_out = kmalloc(TTY_BUF_SIZE),
-                                    .in_size = TTY_BUF_SIZE,
-                                    .out_size = TTY_BUF_SIZE,
-                                    .inlock = 0,
-                                    .outlock = 0};
-  // new_tty.buffer_in = kmalloc(TTY_BUF_SIZE);
-  // new_tty.buffer_out = kmalloc(TTY_BUF_SIZE);
-
-  g_ttys[g_tty_counter] = new_tty;
-
-  gp_active_tty = &g_ttys[g_tty_counter];
-  ++g_tty_counter;
-
-  return file_from_tty(&new_tty);
+void tty_close(struct file *file) {
+  // TODO
+  return;
 }
 
-uint64_t tty_write(struct file *file, size_t size, u8 *buffer) {
-  kprintf("[TTY]  Writing to %s STUB\n", file->name);
-  for (size_t i = 0; i < size; i++)
-    kprintf("%c ", buffer[i]);
-
-  Tty tty = g_ttys[file->inode];
-  kprintf("Got tty buffer at %x\n", tty.buffer_out);
-  memcpy(tty.buffer_out + file->position, buffer, size);
-  // for (;;)
-  //   ;
-  return size;
+size_t tty_read(struct file *file, size_t size, uint8_t *buf) {
+  struct tty *tty = file->private_data;
+  if (tty)
+    return tty->driver.read(tty, size, buf);
+  return 0;
 }
 
-void tty_flush(Tty *tty) { memset(tty->buffer_in, 0, TTY_BUF_SIZE); }
-
-uint64_t tty_read(struct file *file, size_t size, u8 *buffer) {
-  kprintf("[TTY]  Reading from tty%d STUB\n", file->inode);
-  Tty tty = g_ttys[file->inode];
-  memcpy(buffer, tty.buffer_in, size);
-
-  // tty_flush(&tty);
-  tty.in = false;
-
-  return size;
+size_t tty_write(struct file *file, size_t size, uint8_t *buf) {
+  struct tty *tty = file->private_data;
+  if (tty)
+    return tty->driver.write(tty, size, buf);
+  return 0;
 }
-
-int tty_poll(struct file *file, struct pollfd *pfd) {
-  Tty tty = g_ttys[file->inode];
-
-  kprintf("[TTY]  Polling tty%d  STUB\n", file->inode);
-  int events = 0;
-  switch (pfd->events) {
-  case POLLIN: {
-    // kprintf("POLLIN\n");
-    if (tty.in) {
-      pfd->revents |= POLLIN;
-      events++;
-      tty.in = false;
-    }
-    break;
-  }
-  case POLLOUT: {
-    kprintf("POLLOUT\n");
-    break;
-  }
-  default:
-    break;
-  }
-
-  if (events)
-    kprintf("Got event\n");
-
-  return events;
-}
-
-void tty_close(struct file *f) {}
 
 int tty_ioctl(struct file *file, uint32_t request, void *arg) {
+  struct tty *tty = file->private_data;
+  if (tty)
+    return tty->driver.ioctl(tty, request, arg);
+  return 0;
+}
 
-  kprintf("Called ioctl on %s\n", file->name);
-  // TODO
+int tty_poll(struct file *file, struct pollfd *pfd, int timeout) {
+  struct tty *tty = file->private_data;
+  if (tty)
+    return tty->driver.poll(tty, pfd, timeout);
 
   return 0;
+}
+
+size_t tty_default_read(struct tty *tty, size_t size, uint8_t *buffer) {
+  // TODO: notify on full buffer
+
+  // just use the primary buffer
+  __asm__("cli");
+  if (tty->flip.primary_idx > TTY_BUFSIZE)
+    tty->flip.primary_idx = 0;
+
+  int pos = tty->flip.primary_idx;
+  memcpy(buffer, &tty->flip.primary[pos], TTY_BUFSIZE - pos);
+
+  __asm__("sti");
+
+  return 0;
+}
+
+size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer) {
+  // TODO: notify on full buffer
+
+  // just use the primary buffer
+  __asm__("cli");
+  if (tty->flip.primary_idx > TTY_BUFSIZE)
+    tty->flip.primary_idx = 0;
+
+  int pos = tty->flip.primary_idx;
+  memcpy(&tty->flip.primary[pos], buffer, TTY_BUFSIZE - pos);
+  tty->flip.primary_idx += size;
+
+  __asm__("sti");
+
+  return 0;
+}
+
+void tty_default_put_char(struct tty *tty, char c) {
+
+  // just use the primary buffer
+
+  __asm__("cli");
+  if (tty->flip.primary_idx > TTY_BUFSIZE)
+    tty->flip.primary_idx = 0;
+
+  tty->flip.primary[tty->flip.primary_idx] = c;
+  ++tty->flip.primary_idx;
+
+  __asm__("sti");
+}
+
+void tty_default_flush_chars(struct tty *tty) {
+  // TODO
+}
+
+size_t tty_default_write_room(struct tty *tty) {
+  return TTY_BUFSIZE - tty->flip.primary_idx;
+}
+
+int tty_default_set_termios(struct tty *tty, struct termios tios) {
+  tty->tios = tios;
+  return 0;
+}
+
+int tty_default_set_ldisc(struct tty *tty, struct tty_ldisc ldisc) {
+  tty->ldisc = ldisc;
+  return 0;
+}
+
+int tty_default_ioctl(struct tty *tty, uint64_t request, void *arg) {
+  // TODO
+  return 0;
+}
+
+void tty_init() {
+  default_tty_driver =
+      (struct tty_driver){.tty_table = &g_tty_table[0],
+                          .driver_name = "tty",
+                          .name = "tty",
+                          .dev_major = 5,
+                          .num_devices = MAX_TTYS,
+                          .read = tty_default_read,
+                          .write = tty_default_write,
+                          .flush_chars = tty_default_flush_chars,
+                          .write_room = tty_default_write_room,
+                          .set_termios = tty_default_set_termios,
+                          .set_ldisc = tty_default_set_ldisc,
+                          .ioctl = tty_default_ioctl};
+
+  devfs_register_chrdev(TTY_MAJOR, MAX_TTYS, "tty", &tty_fops);
 }

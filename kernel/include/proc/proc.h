@@ -12,7 +12,7 @@
 #define STACK_BLOCKS 8
 #define MMAP_BASE 0xC000000000
 
-enum TaskState { READY, RUNNING, ZOMBIE };
+enum TaskState { READY, RUNNING, ZOMBIE, WAITING};
 
 typedef struct vas_range_node VASRangeNode;
 

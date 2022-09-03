@@ -214,13 +214,12 @@ void multitasking_init() {
                    "TERM=linux", NULL};
   char *argvp[3] = {NULL};
 
+  // ProcessControlBlock *nomterm =
+  //     create_elf_process("/usr/bin/nomterm", argvp, envp);
+  // kprintf("Got process at %x\n", nomterm);
+  // register_process(nomterm);
+
   extern void refresh_screen_proc();
-
-  ProcessControlBlock *nomterm =
-      create_elf_process("/usr/bin/nomterm", argvp, envp);
-  kprintf("Got process at %x\n", nomterm);
-  register_process(nomterm);
-
   ProcessControlBlock *video_refresh =
       create_kernel_process(refresh_screen_proc);
   register_process(video_refresh);

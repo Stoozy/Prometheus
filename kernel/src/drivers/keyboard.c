@@ -115,69 +115,46 @@ unsigned char kbdse_alt[128] = {
 };
 
 static size_t kbd_write_to_tty(size_t size, u8 *buffer) {
-  extern struct ptm *g_ptm;
-  if (g_ptm) {
-    memcpy(g_ptm->buffer, buffer, size);
-    g_ptm->in = true;
-  } else {
-    extern Tty *gp_active_tty;
-    Tty *tty = gp_active_tty;
-    if (tty->buffer_in) {
-      memcpy(tty->buffer_in, buffer, size);
-      tty->in = true;
-      return size;
-    } else {
-      kprintf("No buffer :( id is %d\n", tty->id);
-      for (;;)
-        ;
-    }
-  }
 
+  // TODO
   return 0;
 }
 
 void handle_scan(u8 scan_code) {
   // TODO check for key release, and then write to tty
-  extern Tty *gp_active_tty;
 
-  if (gp_active_tty) {
-    switch (scan_code) {
-    case 0x2a: /* shift down */
-    case 0x36: /* right shift down */
-      shift_down = true;
-      break;
-    case 0xaa: /* shift up */
-    case 0xb6: /* right shift up */
-      shift_down = false;
-      break;
-    case 0x1d: /* ctrl down */
-      ctrl_down = true;
-      break;
-    case 0x9d: /* ctrl up */
-      ctrl_down = false;
-      break;
+  switch (scan_code) {
+  case 0x2a: /* shift down */
+  case 0x36: /* right shift down */
+    shift_down = true;
+    break;
+  case 0xaa: /* shift up */
+  case 0xb6: /* right shift up */
+    shift_down = false;
+    break;
+  case 0x1d: /* ctrl down */
+    ctrl_down = true;
+    break;
+  case 0x9d: /* ctrl up */
+    ctrl_down = false;
+    break;
 
-    case 0x38: /* alt down */
-      alt_down = true;
+  case 0x38: /* alt down */
+    alt_down = true;
+    break;
+  case 0xb8: /* alt up */
+    alt_down = false;
+    break;
+  default:
+    if (scan_code & 0x80)
       break;
-    case 0xb8: /* alt up */
-      alt_down = false;
-      break;
-    default:
-      if (scan_code & 0x80)
-        break;
-      if (shift_down)
-        kbd_write_to_tty(1, &kbdse_shift[scan_code]);
-      else if (alt_down)
-        kbd_write_to_tty(1, &kbdse_alt[scan_code]);
-      else
-        kbd_write_to_tty(1, &kbdmix[scan_code]);
+    if (shift_down)
+      kbd_write_to_tty(1, &kbdse_shift[scan_code]);
+    else if (alt_down)
+      kbd_write_to_tty(1, &kbdse_alt[scan_code]);
+    else
+      kbd_write_to_tty(1, &kbdmix[scan_code]);
 
-      break;
-    }
-  } else {
-
-    for (;;)
-      kprintf("No active tty :(");
+    break;
   }
 }

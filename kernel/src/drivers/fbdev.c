@@ -69,6 +69,8 @@ struct file *fb_open(const char *filename, int flags) {
 
   if (fb.data)
     return file_from_fb(fb);
+  else
+    return fb_create(filename);
 
   return NULL;
 }
@@ -115,4 +117,4 @@ int fb_ioctl(struct file *file, uint32_t request, void *arg) {
   return 0;
 }
 
-void fbdev_init() { fb_create("fb0"); }
+void fbdev_init() { devfs_register_chrdev(29, 1, "fb", fbdev); }
