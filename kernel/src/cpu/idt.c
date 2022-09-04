@@ -37,10 +37,11 @@ void exc6_handler(Registers *regs) {
 }
 
 void irq0_handler(Registers *regs) {
-  tick();
+  u64 t = tick();
 
   outb(0x20, 0x20); /* EOI */
-  schedule(regs);
+  if (t % SMP_TIMESLICE == 0)
+    schedule(regs);
 }
 
 void irq1_handler() {
@@ -237,10 +238,7 @@ void idt_init() {
   idt_ptr.limit = (u16)(sizeof(IDTEntry) * 256) - 1;
 
   kprintf("[IDT]  IDT address: 0x%x\n", &idt[0]);
-
   __asm__ volatile("lidt %0" ::"memory"(idt_ptr));
-  //__asm__ volatile ("sti");
-
   kprintf("[IDT]  Initialized IDT!\n");
 
   return;

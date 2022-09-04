@@ -37,7 +37,7 @@ typedef uint64_t (*write_func_t)(struct file *, size_t count, uint8_t * buf);
 typedef DirectoryEntry * (*readdir_func_t)(struct vfs_node *, uint32_t index);
 typedef struct file * (*finddir_func_t)(struct vfs_node *, const char * filename);
 typedef int (*ioctl_func_t)(struct file *, uint32_t request, void * arg);
-typedef int (*poll_func_t)(struct file *,  struct pollfd * fd);
+typedef int (*poll_func_t)(struct file *,  struct pollfd * fd, int timeout);
 
 
 typedef struct fs {

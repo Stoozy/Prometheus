@@ -25,6 +25,7 @@
 #include <string/string.h>
 #include <syscall/syscalls.h>
 
+#include <drivers/tty.h>
 #include <syscall/syscalls.h>
 
 u64 k_start;
@@ -133,6 +134,8 @@ void panic() {
 
 void _start(struct stivale2_struct *boot_info) {
 
+  __asm__("cli");
+
   serial_init(); /* init debugging */
 
   struct stivale2_struct_tag_memmap *meminfo =
@@ -191,17 +194,12 @@ void _start(struct stivale2_struct *boot_info) {
   struct stivale2_struct_tag_framebuffer *framebuffer_tag =
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
-  if (framebuffer_tag)
-    fb_init(framebuffer_tag);
-  // screen_init(framebuffer_tag);
-  else
+  if (!framebuffer_tag)
     hang();
 
-  cli();
-  // smp_tag == NULL ? kprintf("[SMP]  SMP tag was not found.\n") :
-  // smp_init(smp_tag);
-  sys_init();
+  fb_init(framebuffer_tag);
 
-  // jump to userspace
+  tty_init();
+  sys_init();
   multitasking_init();
 }

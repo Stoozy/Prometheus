@@ -5,6 +5,6 @@
 
 void pit_init(u32 hz);
 void Sleep(u32 ms);
-void tick();
+u64 tick();
 
 #endif

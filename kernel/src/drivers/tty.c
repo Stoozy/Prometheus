@@ -41,10 +41,10 @@ struct tty *tty_init_dev(struct tty_driver driver) {
 File *tty_open(const char *filename, int flags) {
   kprintf("[TTY]  Called open on %s\n", filename);
 
-  struct tty *new_tty = tty_init_dev(default_tty_driver);
-
   // ttyN
   int minor = filename[4] - '0';
+
+  struct tty *new_tty = tty_init_dev(default_tty_driver);
 
   if (minor > MAX_TTYS)
     return NULL;

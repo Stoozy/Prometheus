@@ -67,29 +67,29 @@ int sys_open(const char *name, int flags, ...) {
   if (file == NULL)
     return -1;
 
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
 
   // error on overflow
-  if (gp_current_process->fd_length > MAX_PROC_FDS)
+  if (running->fd_length > MAX_PROC_FDS)
     return -1;
 
-  int fd = map_file_to_proc(gp_current_process, file);
+  int fd = map_file_to_proc(running, file);
 
   return fd;
 }
 
 int sys_close(int fd) {
   vmm_switch_page_directory(kernel_cr3);
-  extern ProcessControlBlock *gp_current_process;
-  unmap_fd_from_proc(gp_current_process, fd);
+  extern ProcessControlBlock *running;
+  unmap_fd_from_proc(running, fd);
   kprintf("Closed fd %d\n", fd);
   return 0;
 }
 
 int sys_read(int file, char *ptr, size_t len) {
 
-  extern ProcessControlBlock *gp_current_process;
-  struct file *f = gp_current_process->fd_table[file];
+  extern ProcessControlBlock *running;
+  struct file *f = running->fd_table[file];
   vfs_dump();
   // kprintf("File ptr %x. Name %s. Device %x\n", f, f->name, f->device);
   int bytes_read = vfs_read(f, (u8 *)ptr, len);
@@ -98,7 +98,7 @@ int sys_read(int file, char *ptr, size_t len) {
 }
 
 int sys_write(int fd, char *ptr, int len) {
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
 
   // if (fd == 1 || fd == 2)
   // kprintf("Writing data to stdout or stderr: %s\n", ptr);
@@ -106,7 +106,7 @@ int sys_write(int fd, char *ptr, int len) {
   if (!valid_fd(fd))
     return -1;
 
-  File *file = gp_current_process->fd_table[fd];
+  File *file = running->fd_table[fd];
   if (file) {
     kprintf("Writing to %s\n", file->name);
     vfs_write(file, (uint8_t *)ptr, len);
@@ -221,8 +221,8 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
 
 off_t sys_seek(int fd, off_t offset, int whence) {
 
-  extern ProcessControlBlock *gp_current_process;
-  File *file = gp_current_process->fd_table[fd];
+  extern ProcessControlBlock *running;
+  File *file = running->fd_table[fd];
 
   if (!file) {
     kprintf("File dne: %d\n", fd);
@@ -237,16 +237,15 @@ off_t sys_seek(int fd, off_t offset, int whence) {
   switch (whence) {
   case SEEK_CUR:
     kprintf("[SYS_SEEK] whence is SEEK_CUR\n");
-    gp_current_process->fd_table[fd]->position += offset;
+    running->fd_table[fd]->position += offset;
     break;
   case SEEK_SET:
     kprintf("[SYS_SEEK] whence is SEEK_SET\n");
-    gp_current_process->fd_table[fd]->position = offset;
+    running->fd_table[fd]->position = offset;
     break;
   case SEEK_END:
     kprintf("[SYS_SEEK] whence is SEEK_END\n");
-    gp_current_process->fd_table[fd]->position =
-        gp_current_process->fd_table[fd]->size + offset;
+    running->fd_table[fd]->position = running->fd_table[fd]->size + offset;
     break;
   default:
     kprintf("[SYS_SEEK] Whence is none\n");
@@ -254,15 +253,15 @@ off_t sys_seek(int fd, off_t offset, int whence) {
   }
 
   kprintf("\n");
-  return gp_current_process->fd_table[fd]->position;
+  return running->fd_table[fd]->position;
 }
 
 int sys_fstat(int fd, VfsNodeStat *statbuf) {
   if (fd > MAX_PROC_FDS || fd < 0)
     kprintf("[SYS_STAT] Invalid FD");
 
-  extern ProcessControlBlock *gp_current_process;
-  File *file = gp_current_process->fd_table[fd];
+  extern ProcessControlBlock *running;
+  File *file = running->fd_table[fd];
 
   if (!file)
     kprintf("[SYS_FSTAT]  File not open\n");
@@ -311,10 +310,10 @@ int sys_tcb_set(void *ptr) {
 // }
 
 int sys_execve(char *name, char **argvp, char **envp) {
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
 
   // free the entire vas
-  VASRangeNode *vas = gp_current_process->vas;
+  VASRangeNode *vas = running->vas;
   // while (vas->next) {
   //   size_t blocks = vas->size / PAGE_SIZE;
   //   kprintf("Freeing virt: %x; phys %x; blocks: %d\n", vas->virt_start,
@@ -330,23 +329,23 @@ int sys_execve(char *name, char **argvp, char **envp) {
   u8 *elf_data = kmalloc(elf_file->size);
   vfs_read(elf_file, elf_data, elf_file->size);
 
-  gp_current_process->cr3 = pmm_alloc_block() + PAGING_VIRTUAL_OFFSET;
-  //(void *)gp_current_process->cr3 + PAGING_VIRTUAL_OFFSET;
+  running->cr3 = pmm_alloc_block() + PAGING_VIRTUAL_OFFSET;
+  //(void *)running->cr3 + PAGING_VIRTUAL_OFFSET;
 
   extern void load_pagedir(PageTable *);
   PageTable *tmp = vmm_get_current_cr3();
   load_pagedir(kernel_cr3);
-  Auxval aux = load_elf_segments(gp_current_process, elf_data);
+  Auxval aux = load_elf_segments(running, elf_data);
 
   for (int i = 256; i < 512; i++)
-    gp_current_process->cr3->entries[i] = kernel_cr3->entries[i];
+    running->cr3->entries[i] = kernel_cr3->entries[i];
 
   load_pagedir(tmp);
   void *stack_ptr =
       pmm_alloc_blocks(STACK_BLOCKS) + STACK_SIZE + PAGING_VIRTUAL_OFFSET;
   void *stack_base = stack_ptr - (STACK_SIZE);
 
-  vmm_map_range(gp_current_process->cr3, stack_base - PAGING_VIRTUAL_OFFSET,
+  vmm_map_range(running->cr3, stack_base - PAGING_VIRTUAL_OFFSET,
                 stack_base - PAGING_VIRTUAL_OFFSET, STACK_SIZE,
                 PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
 
@@ -358,7 +357,7 @@ int sys_execve(char *name, char **argvp, char **envp) {
   range->page_flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
   range->next = NULL;
 
-  proc_add_vas_range(gp_current_process, range);
+  proc_add_vas_range(running, range);
 
   uint64_t *stack = (uint64_t *)(stack_ptr);
 
@@ -413,46 +412,44 @@ int sys_execve(char *name, char **argvp, char **envp) {
 
   stack_ptr -= (stack_ptr - (void *)stack);
 
-  memset(&gp_current_process->trapframe, 0, sizeof(Registers));
-  gp_current_process->trapframe.ss = 0x23;
-  gp_current_process->trapframe.rip = aux.ld_entry;
-  gp_current_process->trapframe.rsp =
-      (uint64_t)stack_ptr - PAGING_VIRTUAL_OFFSET;
+  memset(&running->trapframe, 0, sizeof(Registers));
+  running->trapframe.ss = 0x23;
+  running->trapframe.rip = aux.ld_entry;
+  running->trapframe.rsp = (uint64_t)stack_ptr - PAGING_VIRTUAL_OFFSET;
 
-  gp_current_process->trapframe.rflags = (uint64_t)0x202;
-  gp_current_process->trapframe.cs = (uint64_t)0x2b;
+  running->trapframe.rflags = (uint64_t)0x202;
+  running->trapframe.cs = (uint64_t)0x2b;
 
-  gp_current_process->cr3 =
-      (void *)gp_current_process->cr3 - PAGING_VIRTUAL_OFFSET;
-  gp_current_process->mmap_base = MMAP_BASE;
-  ++gp_current_process->pid;
+  running->cr3 = (void *)running->cr3 - PAGING_VIRTUAL_OFFSET;
+  running->mmap_base = MMAP_BASE;
+  ++running->pid;
 
   extern void switch_to_process(void *new_stack, PageTable *cr3);
-  switch_to_process(&gp_current_process->trapframe, gp_current_process->cr3);
+  switch_to_process(&running->trapframe, running->cr3);
 
   // should never reach
   return 0;
 }
 
 int sys_fork(Registers *regs) {
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
 
-  dump_regs(&gp_current_process->trapframe);
-  ProcessControlBlock *child_proc = clone_process(gp_current_process, regs);
+  dump_regs(&running->trapframe);
+  ProcessControlBlock *child_proc = clone_process(running, regs);
   register_process(child_proc);
 
   return child_proc->pid;
 }
 
 int sys_ioctl(int fd, unsigned long req, void *arg) {
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
   kprintf("Request is %x\n", req);
   kprintf("FD is %d\n", fd);
   if (!(valid_fd(fd))) {
     return -1; // Invalid fd
   }
 
-  File *file = gp_current_process->fd_table[fd];
+  File *file = running->fd_table[fd];
 
   if (file->fs->ioctl)
     return file->fs->ioctl(file, req, arg);
@@ -462,35 +459,35 @@ int sys_ioctl(int fd, unsigned long req, void *arg) {
 }
 
 pid_t sys_getpid() {
-  extern ProcessControlBlock *gp_current_process;
-  return gp_current_process->pid;
+  extern ProcessControlBlock *running;
+  return running->pid;
 }
 
 int sys_dup(int fd, int flags) {
 
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
 
   if (!valid_fd(fd)) {
     kprintf("Invalid fd %d\n", fd);
     return -1;
   }
 
-  File *file = gp_current_process->fd_table[fd];
-  int new_fd = map_file_to_proc(gp_current_process, file);
+  File *file = running->fd_table[fd];
+  int new_fd = map_file_to_proc(running, file);
 
   return new_fd;
 }
 
 int sys_dup2(int fd, int flags, int new_fd) {
 
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
 
   if (fd < 0 || fd > MAX_PROC_FDS) {
     kprintf("[DUP2] Invalid fd %d\n", fd);
     return -1;
   }
 
-  File *file = gp_current_process->fd_table[fd];
+  File *file = running->fd_table[fd];
 
   if (!file) {
     kprintf("[DUP2] File doesn't exist\n");
@@ -499,16 +496,15 @@ int sys_dup2(int fd, int flags, int new_fd) {
 
   kprintf("Copying fd %d; name: %s\n", fd, file->name);
 
-  File *file2 = gp_current_process->fd_table[new_fd];
+  File *file2 = running->fd_table[new_fd];
 
   if (file2) {
     file2->fs->close(file2);
   }
 
   // refer to the same file
-  gp_current_process->fd_table[new_fd] = file;
-  kprintf("New fd %d name: %s\n", new_fd,
-          gp_current_process->fd_table[new_fd]->name);
+  running->fd_table[new_fd] = file;
+  kprintf("New fd %d name: %s\n", new_fd, running->fd_table[new_fd]->name);
 
   return new_fd;
 }
@@ -519,9 +515,9 @@ int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
   if (max_size < sizeof(DirectoryEntry))
     return -1;
 
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
 
-  File *file = gp_current_process->fd_table[handle];
+  File *file = running->fd_table[handle];
   if (!file) {
     kprintf("Invalid open stream\n");
     return -1;
@@ -539,12 +535,12 @@ int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
 
 int sys_fcntl(int fd, int request, va_list args) {
 
-  extern ProcessControlBlock *gp_current_process;
+  extern ProcessControlBlock *running;
   switch (request) {
   case F_SETFD: {
     kprintf("F_SETFD\n");
     if (valid_fd(fd)) {
-      File *fp = gp_current_process->fd_table[fd];
+      File *fp = running->fd_table[fd];
       if (fp) {
         int flags = va_arg(args, int);
         fp->mode |= flags;
@@ -556,7 +552,7 @@ int sys_fcntl(int fd, int request, va_list args) {
   case F_GETFD: {
     kprintf("F_GETFD\n");
     if (valid_fd(fd)) {
-      File *fp = gp_current_process->fd_table[fd];
+      File *fp = running->fd_table[fd];
       if (fp) {
         return fp->mode;
       }
@@ -565,7 +561,7 @@ int sys_fcntl(int fd, int request, va_list args) {
   }
   case F_GETFL: {
     if (valid_fd(fd)) {
-      File *fp = gp_current_process->fd_table[fd];
+      File *fp = running->fd_table[fd];
       if (fp) {
         return fp->status;
       }
@@ -576,7 +572,7 @@ int sys_fcntl(int fd, int request, va_list args) {
   case F_SETFL: {
     kprintf("F_SETFL\n");
     if (valid_fd(fd)) {
-      File *fp = gp_current_process->fd_table[fd];
+      File *fp = running->fd_table[fd];
       if (fp) {
         int status = va_arg(args, int);
         fp->status = status;
@@ -603,12 +599,12 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
   for (uint32_t i = 0; i < count; i++) {
     int fd = fds[i].fd;
     if (valid_fd(fd)) {
-      extern ProcessControlBlock *gp_current_process;
-      struct file *file = gp_current_process->fd_table[fd];
+      extern ProcessControlBlock *running;
+      struct file *file = running->fd_table[fd];
       if (!file->fs->poll)
         kprintf("Poll is not implemented for %s :(\n", file->name);
       else {
-        events += file->fs->poll(file, &fds[i]);
+        events += file->fs->poll(file, &fds[i], timeout);
       }
     } else {
       kprintf("[POLL]   Invalid fd %d\n", fd);
@@ -691,9 +687,8 @@ void syscall_dispatcher(Registers *regs) {
     int fd = regs->r13;
     off_t off = regs->r14;
 
-    extern ProcessControlBlock *gp_current_process;
-    void *ret =
-        sys_vm_map(gp_current_process, addr, size, prot, flags, fd, off);
+    extern ProcessControlBlock *running;
+    void *ret = sys_vm_map(running, addr, size, prot, flags, fd, off);
     regs->r15 = (u64)ret;
 
     break;
