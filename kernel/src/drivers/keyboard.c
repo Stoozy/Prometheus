@@ -1,3 +1,4 @@
+#include "memory/vmm.h"
 #include <drivers/keyboard.h>
 #include <drivers/tty.h>
 #include <fs/vfs.h>
@@ -5,9 +6,20 @@
 #include <proc/proc.h>
 #include <string/string.h>
 
+#define KBD_BUFSIZE 32
+
+struct {
+  int writePos;
+  int readPos;
+  uint8_t buffer[KBD_BUFSIZE];
+  size_t len;
+} keyboard_buffer = {0, 0, {0}};
+
 static bool shift_down = false;
 static bool alt_down = false;
 static bool ctrl_down = false;
+
+ProcessQueue kbd_wait_queue = {0, NULL, NULL};
 
 unsigned char kbdmix[128] = {
     0,    27,  '1', '2',        '3',  '4', '5', '6', '7',  '8', /* 9 */
@@ -41,6 +53,7 @@ unsigned char kbdmix[128] = {
     0,                                                  /* F12 Key */
     0, /* All other keys are undefined */
 };
+
 unsigned char kbdse_shift[128] = {
     0,    27,  '!',  '\"', '#',  0 /* shift+4 */,
     '%',  '&', '/',  '(',        /* 9 */
@@ -114,10 +127,60 @@ unsigned char kbdse_alt[128] = {
     0, /* All other keys are undefined */
 };
 
-static size_t kbd_write_to_tty(size_t size, u8 *buffer) {
+void kbd_write_to_buffer(uint8_t c) {
+  if (keyboard_buffer.len == KBD_BUFSIZE) {
+    // buffer is full
+    // TODO
+    for (;;)
+      kprintf("Keyboard buffer full\n");
+  }
 
-  // TODO
-  return 0;
+  keyboard_buffer.buffer[keyboard_buffer.writePos] = c;
+  keyboard_buffer.len++;
+  keyboard_buffer.writePos++;
+
+  if (keyboard_buffer.writePos == KBD_BUFSIZE)
+    keyboard_buffer.writePos = 0;
+
+  // data available so wake up first waiting process
+  if (kbd_wait_queue.first) {
+    pqueue_remove(&kbd_wait_queue, kbd_wait_queue.first);
+    unblock_process(kbd_wait_queue.first);
+  }
+}
+
+uint8_t kbd_read_from_buffer() {
+  if (keyboard_buffer.len == 0) {
+
+    // buffer is empty
+    // block the current running process
+    kprintf("No data available. Blocking current task\n");
+    extern ProcessControlBlock *running;
+    pqueue_insert(&kbd_wait_queue, running);
+    block_process(running, WAITING);
+
+    // note: this loop is done  a few times
+    // until it's time to switch tasks and once
+    // more after the process wakes up at which
+    // point the keyboard_buffer should be readable
+
+    for (;;)
+      if (keyboard_buffer.len != 0) {
+        for (;;)
+          kprintf("Got char \n");
+        goto done_waiting;
+      }
+  }
+
+done_waiting:
+  uint8_t ret = keyboard_buffer.buffer[keyboard_buffer.writePos];
+  keyboard_buffer.len--;
+  keyboard_buffer.readPos++;
+
+  if (keyboard_buffer.readPos == KBD_BUFSIZE)
+    keyboard_buffer.readPos = 0;
+
+  return ret;
 }
 
 void handle_scan(u8 scan_code) {
@@ -149,11 +212,11 @@ void handle_scan(u8 scan_code) {
     if (scan_code & 0x80)
       break;
     if (shift_down)
-      kbd_write_to_tty(1, &kbdse_shift[scan_code]);
+      kbd_write_to_buffer(kbdse_shift[scan_code]);
     else if (alt_down)
-      kbd_write_to_tty(1, &kbdse_alt[scan_code]);
+      kbd_write_to_buffer(kbdse_alt[scan_code]);
     else
-      kbd_write_to_tty(1, &kbdmix[scan_code]);
+      kbd_write_to_buffer(kbdmix[scan_code]);
 
     break;
   }
