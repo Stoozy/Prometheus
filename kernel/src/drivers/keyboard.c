@@ -8,9 +8,9 @@
 
 #define KBD_BUFSIZE 32
 
-struct {
-  int writePos;
-  int readPos;
+volatile struct {
+  int write_pos;
+  int read_pos;
   uint8_t buffer[KBD_BUFSIZE];
   size_t len;
 } keyboard_buffer = {0, 0, {0}};
@@ -135,17 +135,17 @@ void kbd_write_to_buffer(uint8_t c) {
       kprintf("Keyboard buffer full\n");
   }
 
-  keyboard_buffer.buffer[keyboard_buffer.writePos] = c;
+  keyboard_buffer.buffer[keyboard_buffer.write_pos] = c;
   keyboard_buffer.len++;
-  keyboard_buffer.writePos++;
+  keyboard_buffer.write_pos++;
 
-  if (keyboard_buffer.writePos == KBD_BUFSIZE)
-    keyboard_buffer.writePos = 0;
+  if (keyboard_buffer.write_pos == KBD_BUFSIZE)
+    keyboard_buffer.write_pos = 0;
 
-  // data available so wake up first waiting process
+  // data available, so wake up first waiting process
   if (kbd_wait_queue.first) {
-    pqueue_remove(&kbd_wait_queue, kbd_wait_queue.first);
     unblock_process(kbd_wait_queue.first);
+    pqueue_remove(&kbd_wait_queue, kbd_wait_queue.first);
   }
 }
 
@@ -163,22 +163,22 @@ uint8_t kbd_read_from_buffer() {
     // until it's time to switch tasks and once
     // more after the process wakes up at which
     // point the keyboard_buffer should be readable
-
     for (;;)
       if (keyboard_buffer.len != 0) {
-        for (;;)
-          kprintf("Got char \n");
         goto done_waiting;
       }
   }
 
 done_waiting:
-  uint8_t ret = keyboard_buffer.buffer[keyboard_buffer.writePos];
-  keyboard_buffer.len--;
-  keyboard_buffer.readPos++;
 
-  if (keyboard_buffer.readPos == KBD_BUFSIZE)
-    keyboard_buffer.readPos = 0;
+  uint8_t ret = keyboard_buffer.buffer[keyboard_buffer.read_pos];
+  for (;;)
+    kprintf("Got char %c from keyboard \n", ret);
+  keyboard_buffer.len--;
+  keyboard_buffer.read_pos++;
+
+  if (keyboard_buffer.read_pos == KBD_BUFSIZE)
+    keyboard_buffer.read_pos = 0;
 
   return ret;
 }

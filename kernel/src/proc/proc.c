@@ -15,49 +15,74 @@ extern u64 g_ticks;
 extern void switch_to_process(void *new_stack, PageTable *cr3);
 extern void load_pagedir();
 
-volatile ProcessQueue ready_queue = {0, NULL, NULL};
-volatile ProcessQueue wait_queue = {0, NULL, NULL};
-volatile ProcessControlBlock *running = NULL;
+ProcessQueue ready_queue = {0, NULL, NULL};
+ProcessQueue wait_queue = {0, NULL, NULL};
+ProcessControlBlock *running = NULL;
 
 PageTable *kernel_cr3 = NULL;
 
+void dump_queue(ProcessQueue *pqueue) {
+  ProcessControlBlock *cproc = pqueue->first;
+  kprintf("There are %d processes in this queue\n", pqueue->count);
+  for (; cproc; cproc = cproc->next) {
+    kprintf("Process at %x\n", cproc);
+  }
+}
+
 void pqueue_insert(ProcessQueue *queue, ProcessControlBlock *proc) {
-  if (queue->first == NULL)
+  kprintf("Inserting %x\n", proc);
+
+  if (!proc)
+    return;
+
+  if (queue->first == NULL) {
     queue->first = queue->last = proc;
+    ++queue->count;
+    return;
+  }
 
   // append to last
+  kprintf("Old last %x\n", queue->last);
   queue->last->next = proc;
   queue->last = queue->last->next;
-  queue->last->next = NULL;
+  kprintf("New last %x\n", queue->last);
 
   ++queue->count;
 }
 
 void pqueue_remove(ProcessQueue *queue, ProcessControlBlock *proc) {
   kprintf("Removing process at %x\n", proc);
-  if (queue->first == proc) {
-    if (queue->last == proc) {
-      queue->first = queue->last = NULL;
-      --queue->count;
-      proc->next = NULL;
-      return;
+
+  // TODO
+  if (!queue->first)
+    return;
+
+  if (proc != queue->first) {
+    ProcessControlBlock *cproc = queue->first;
+    ProcessControlBlock *nproc = cproc->next;
+
+    while (nproc->next) {
+      if (nproc == proc) {
+        cproc->next = proc->next;
+        --queue->count;
+      }
+
+      nproc = nproc->next;
+      cproc = cproc->next;
     }
 
+    // last item
+    if (nproc == proc) {
+      queue->last = cproc;
+      --queue->count;
+    }
+
+  } else if (proc == queue->first && proc == queue->last) {
+    queue->first = queue->last = NULL;
+    --queue->count;
+  } else if (proc == queue->first) {
     queue->first = queue->first->next;
     --queue->count;
-    proc->next = NULL;
-    return;
-  }
-
-  ProcessControlBlock *cproc = queue->first;
-  while (cproc) {
-    if (cproc->next == proc) {
-      cproc->next = proc->next;
-      --queue->count;
-      proc->next = NULL;
-      return;
-    }
-    cproc = cproc->next;
   }
 
   return;
@@ -94,8 +119,9 @@ void task_a() {
   extern uint8_t kbd_read_from_buffer();
   for (;;) {
     kprintf("Running task A ...\n");
-    // uint8_t c = kbd_read_from_buffer();
-    // kprintf("Got character %c\n", c);
+    uint8_t c = kbd_read_from_buffer();
+    for (;;)
+      kprintf("Task A woke up, got character %c \n", c);
   }
 }
 
@@ -106,14 +132,6 @@ void task_b() {
 void idle_task() {
   for (;;)
     kprintf("Idling...\n");
-}
-
-void dump_queue(ProcessQueue *pqueue) {
-  ProcessControlBlock *cproc = pqueue->first;
-  kprintf("There are %d processes in this queue\n", pqueue->count);
-  for (; cproc; cproc = cproc->next) {
-    kprintf("Process at %x\n", cproc);
-  }
 }
 
 void dump_proc_vas(ProcessControlBlock *proc) {
@@ -211,8 +229,11 @@ void block_process(ProcessControlBlock *proc, int reason) {
 
 void unblock_process(ProcessControlBlock *proc) {
   proc->state = READY;
-  pqueue_remove(&wait_queue, proc);
+
+  dump_queue(&ready_queue);
   pqueue_insert(&ready_queue, proc);
+  kprintf("\n unblocked %x\n\n", proc);
+  dump_queue(&ready_queue);
   return;
 }
 

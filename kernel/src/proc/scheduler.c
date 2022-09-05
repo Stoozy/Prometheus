@@ -23,15 +23,21 @@ void schedule(Registers *regs) {
   // save registers
   running->trapframe = *regs;
 
+  extern void dump_queue(ProcessQueue *);
   if (running->state == WAITING) {
+    ProcessControlBlock *next =
+        running->next == NULL ? ready_queue.first : running->next;
+
+    kprintf("Removing %x from ready queue\n", running);
     pqueue_remove(&ready_queue, running);
-    pqueue_insert(&wait_queue, running);
+    dump_queue(&ready_queue);
+    running = next;
+    goto next;
   }
 
-  if (running->next == NULL)
-    running = ready_queue.first; // go to head
-  else
-    running = running->next; // move to next proc
+  running = running->next == NULL ? ready_queue.first : running->next;
+
+next:
 
   running->state = RUNNING;
 
@@ -40,9 +46,6 @@ void schedule(Registers *regs) {
 
   kprintf("Ready Queue\n");
   dump_queue(&ready_queue);
-
-  kprintf("Wait Queue\n");
-  dump_queue(&wait_queue);
 
   kprintf("[SCHEDULER]    Switching to proc with trapframe at %llx and %llx as "
           "cr3\n",
