@@ -1,9 +1,9 @@
 #include <fcntl.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
+#include <libk/util.h>
 #include <string/string.h>
-#include <util.h>
 
 FileSystem *gp_filesystems = NULL;
 VfsNode *gp_root;

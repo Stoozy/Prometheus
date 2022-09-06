@@ -2,7 +2,6 @@
 
 global load_idt
 
-global exc6
 
 global irq0
 global irq1
@@ -21,8 +20,6 @@ global irq13
 global irq14
 global irq15
 global dummy_irq 
-
-extern exc6_handler
 
 extern irq0_handler
 extern irq1_handler
@@ -51,20 +48,11 @@ hang:
     call hang
 
 dummy_irq:
-    pushaq
+    push rax
     call dummy_handler 
     call hang
 
-exc6:
-    pushaq
-    mov rdi, rsp
 
-    call exc6_handler
-
-    ; never reaches
-    popaq
-    iretq
- 
 irq0:
     pushaq
     mov rdi, rsp
@@ -81,87 +69,87 @@ irq1:
     iretq
  
 irq2:
-    pushfq
+    pushaq
     call irq2_handler
-    popfq
+    popaq
     iretq
  
 irq3:
-    pushfq
+    pushaq
     call irq3_handler
-    popfq
+    popaq
     iretq
  
 irq4:
-    pushfq
+    pushaq
     call irq4_handler
-    popfq
+    popaq
     iretq
  
 irq5:
-    pushfq
+    pushaq
     call irq5_handler
-    popfq
+    popaq
     iretq
  
 irq6:
-    pushfq
+    pushaq
     call irq6_handler
-    popfq
+    popaq
     iretq
  
 irq7:
-    pushfq
+    pushaq
     call irq7_handler
-    popfq
+    popaq
     iretq
  
 irq8:
-    pushfq
+    pushaq
     call irq8_handler
-    popfq
+    popaq
     iretq
  
 irq9:
-    pushfq
+    pushaq
     call irq9_handler
-    popfq
+    popaq
     iretq
  
 irq10:
-    pushfq
+    pushaq
     call irq10_handler
-    popfq
+    popaq
     iretq
  
 irq11:
-    pushfq
+    pushaq
     call irq11_handler
-    popfq
+    popaq
     iretq
  
 irq12:
-    pushfq
+    pushaq
     call irq12_handler
-    popfq
+    popaq
     iretq
  
 irq13:
-    pushfq
+    pushaq
     call irq13_handler
-    popfq
+    popaq
     iretq
  
 irq14:
-    pushfq
+    pushaq
     call irq14_handler
-    popfq
+    popaq
     iretq
  
 irq15:
-    pushfq
+    pushaq
     call irq15_handler
-    popfq
+    popaq
     iretq
 
 

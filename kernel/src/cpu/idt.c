@@ -1,7 +1,7 @@
 #include <cpu/idt.h>
 
-#include <kprintf.h>
-#include <typedefs.h>
+#include <libk/kprintf.h>
+#include <libk/typedefs.h>
 
 #include <drivers/pit.h>
 #include <drivers/serial.h>
@@ -27,20 +27,12 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags) {
 
 void dump_stack(u64 *stack) {}
 
-void exc6_handler(Registers *regs) {
-  outb(0x20, 0x20);
-  kprintf("Exception occured\n");
-  kprintf("Invalid opcode.\n");
-  asm("sti");
-  for (;;)
-    ;
-}
-
 void irq0_handler(Registers *regs) {
-  u64 t = tick();
+  tick();
 
   outb(0x20, 0x20); /* EOI */
-  if (t % SMP_TIMESLICE == 0)
+  extern u64 g_ticks;
+  if (g_ticks % SMP_TIMESLICE == 0)
     schedule(regs);
 }
 
@@ -130,18 +122,13 @@ void irq15_handler() {
 }
 
 void dummy_handler() {
-  // kprintf("Exception occured\n");
-
-  outb(0xA0, 0x20);
-  outb(0x20, 0x20); /* EOI */
-  __asm__ volatile("cli; hlt");
+  __asm__ volatile("cli");
+  kprintf("Exception occured\n");
   for (;;)
     ;
 }
 
 void idt_init() {
-
-  // kprintf("Initializing IDT\n");
 
   extern int irq0();
   extern int irq1();
@@ -213,8 +200,6 @@ void idt_init() {
 
   for (int i = 0; i < 32; i++)
     idt_set_descriptor(i, (uint64_t)dummy_irq_addr, 0x8e);
-
-  idt_set_descriptor(6, exc6_handler, 0x8e);
 
   idt_set_descriptor(32, irq0_addr, 0x8e);
   idt_set_descriptor(33, irq1_addr, 0x8e);

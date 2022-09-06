@@ -1,12 +1,12 @@
-#include <kprintf.h>
+#include <libk/kprintf.h>
+#include <libk/typedefs.h>
+#include <libk/util.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <string/string.h>
-#include <typedefs.h>
 
 #include <drivers/serial.h>
-#include <util.h>
 
 extern int ssfn_putc(uint32_t);
 static bool is_digit(char c) { return (c > 47 && c < 58); }

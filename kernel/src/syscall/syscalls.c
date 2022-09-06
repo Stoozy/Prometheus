@@ -3,21 +3,21 @@
 #include <config.h>
 #include <cpu/cpu.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
+#include <libk/typedefs.h>
+#include <libk/util.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
 #include <proc/proc.h>
 #include <stdint.h>
 #include <string/string.h>
 #include <syscall/syscalls.h>
-#include <typedefs.h>
-#include <unistd.h>
-#include <util.h>
 
 #include <abi-bits/fcntl.h>
 #include <linux/poll.h>
 #include <proc/elf.h>
+#include <unistd.h>
 
 #include <libc/abi-bits/auxv.h>
 #include <stdarg.h>
@@ -52,7 +52,14 @@ char *__env = {0};
  * variables */
 char **environ = &__env;
 
-void sys_log_libc(const char *message) { kprintf(message); }
+void sys_log_libc(const char *message) {
+  extern void turn_color_on();
+  extern void turn_color_off();
+
+  turn_color_on();
+  kprintf(message);
+  turn_color_off();
+}
 
 int sys_exit() {
   kill_current_proc();
@@ -450,6 +457,7 @@ int sys_ioctl(int fd, unsigned long req, void *arg) {
   }
 
   File *file = running->fd_table[fd];
+  kprintf("File is at %x\n", file);
 
   if (file->fs->ioctl)
     return file->fs->ioctl(file, req, arg);
@@ -496,11 +504,8 @@ int sys_dup2(int fd, int flags, int new_fd) {
 
   kprintf("Copying fd %d; name: %s\n", fd, file->name);
 
-  File *file2 = running->fd_table[new_fd];
-
-  if (file2) {
-    file2->fs->close(file2);
-  }
+  // FIXME: call underlying fs close
+  running->fd_table[new_fd] = NULL;
 
   // refer to the same file
   running->fd_table[new_fd] = file;

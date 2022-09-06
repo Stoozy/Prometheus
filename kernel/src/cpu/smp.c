@@ -7,7 +7,7 @@
 #include <cpu/gdt.h>
 #include <cpu/idt.h>
 #include <drivers/pit.h>
-#include <kprintf.h>
+#include <libk/kprintf.h>
 #include <string/string.h>
 
 #include <memory/pmm.h>

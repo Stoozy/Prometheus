@@ -1,8 +1,8 @@
+#include <libk/util.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string/string.h>
 #include <unistd.h>
-#include <util.h>
 
 void cli() { __asm__("cli"); }
 void sti() { __asm__("sti"); }

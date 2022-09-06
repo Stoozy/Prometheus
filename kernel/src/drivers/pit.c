@@ -1,7 +1,7 @@
 #include <cpu/io.h>
 #include <drivers/pit.h>
-#include <kprintf.h>
-#include <typedefs.h>
+#include <libk/kprintf.h>
+#include <libk/typedefs.h>
 
 volatile u64 g_ticks = 0;
 
@@ -26,9 +26,9 @@ void _sleep(u32 ms) {
 }
 
 /* called by irq0 */
-u64 tick() {
+void tick() {
 #ifdef PIT_DEBUG
   kprintf("[PIT]  Ticks: %llu\n", g_ticks);
 #endif
-  return ++g_ticks;
+  ++g_ticks;
 }

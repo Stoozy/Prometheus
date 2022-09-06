@@ -1,11 +1,11 @@
 #include <abi-bits/fcntl.h>
 #include <drivers/fb.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
+#include <libk/util.h>
 #include <linux/fb.h>
 #include <string/string.h>
-#include <util.h>
 
 #define TTY_MAJOR 5
 #define VIDEO_MAJOR 29

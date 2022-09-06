@@ -1,7 +1,7 @@
 #include "memory/vmm.h"
 #include <config.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
 #include <proc/proc.h>
 
 extern void switch_to_process(void *new_stack, PageTable *cr3);
@@ -47,9 +47,9 @@ next:
   kprintf("Ready Queue\n");
   dump_queue(&ready_queue);
 
-  kprintf("[SCHEDULER]    Switching to proc with trapframe at %llx and %llx as "
-          "cr3\n",
-          running->trapframe, (void *)running->cr3);
+  kprintf("Switching to process at %x\n", running);
+  kprintf("CR3 at  %x\n", running->cr3);
+  kprintf("Trapframe at  %x\n", &running->trapframe);
 #endif
 
   // finally, switch

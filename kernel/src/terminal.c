@@ -1,10 +1,9 @@
 #include "abi-bits/fcntl.h"
 #include "drivers/tty.h"
-#include "kmalloc.h"
-#include "kprintf.h"
+#include "libk/kprintf.h"
 #include <drivers/fb.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
+#include <libk/kmalloc.h>
 #include <linux/fb.h>
 #include <misc/ssfn.h>
 #include <string/string.h>
@@ -75,7 +74,7 @@ void terminal_main() {
 
   int cx = 0, cy = 0;
   for (;;) {
-    if (vfs_read(tty_file, &g_term_buffer[0], 1) <= 0)
+    if (vfs_read(tty_file, &g_term_buffer[0], 1024) <= 0)
       continue;
 
     size_t len = 0;

@@ -1,8 +1,8 @@
 #include <cpu/cpu.h>
-#include <kprintf.h>
+#include <libk/kprintf.h>
+#include <libk/typedefs.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
-#include <typedefs.h>
 
 #define MAX_CORES 255
 

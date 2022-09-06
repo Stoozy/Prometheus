@@ -1,19 +1,23 @@
+#include "libk/kmalloc.h"
+#include "libk/ringbuffer.h"
 #include "memory/vmm.h"
 #include <drivers/keyboard.h>
 #include <drivers/tty.h>
 #include <fs/vfs.h>
-#include <kprintf.h>
+#include <libk/kprintf.h>
 #include <proc/proc.h>
 #include <string/string.h>
 
 #define KBD_BUFSIZE 32
 
-volatile struct {
-  int write_pos;
-  int read_pos;
-  uint8_t buffer[KBD_BUFSIZE];
-  size_t len;
-} keyboard_buffer = {0, 0, {0}};
+RingBuffer *kbd_rb = NULL;
+
+// volatile struct {
+//   int write_pos;
+//   int read_pos;
+//   uint8_t buffer[KBD_BUFSIZE];
+//   size_t len;
+// } keyboard_buffer = {0, 0, {0}};
 
 static bool shift_down = false;
 static bool alt_down = false;
@@ -128,19 +132,8 @@ unsigned char kbdse_alt[128] = {
 };
 
 void kbd_write_to_buffer(uint8_t c) {
-  if (keyboard_buffer.len == KBD_BUFSIZE) {
-    // buffer is full
-    // TODO
-    for (;;)
-      kprintf("Keyboard buffer full\n");
-  }
 
-  keyboard_buffer.buffer[keyboard_buffer.write_pos] = c;
-  keyboard_buffer.len++;
-  keyboard_buffer.write_pos++;
-
-  if (keyboard_buffer.write_pos == KBD_BUFSIZE)
-    keyboard_buffer.write_pos = 0;
+  rb_push(kbd_rb, &c);
 
   // data available, so wake up first waiting process
   if (kbd_wait_queue.first) {
@@ -149,8 +142,9 @@ void kbd_write_to_buffer(uint8_t c) {
   }
 }
 
-uint8_t kbd_read_from_buffer() {
-  if (keyboard_buffer.len == 0) {
+u8 kbd_read_from_buffer() {
+  u8 uc;
+  if (!rb_pop(kbd_rb, &uc)) {
 
     // buffer is empty
     // block the current running process
@@ -164,23 +158,17 @@ uint8_t kbd_read_from_buffer() {
     // more after the process wakes up at which
     // point the keyboard_buffer should be readable
     for (;;)
-      if (keyboard_buffer.len != 0) {
+      if (rb_pop(kbd_rb, &uc)) {
         goto done_waiting;
       }
   }
 
 done_waiting:
 
-  uint8_t ret = keyboard_buffer.buffer[keyboard_buffer.read_pos];
   for (;;)
-    kprintf("Got char %c from keyboard \n", ret);
-  keyboard_buffer.len--;
-  keyboard_buffer.read_pos++;
+    kprintf("Got char %c from keyboard \n", uc);
 
-  if (keyboard_buffer.read_pos == KBD_BUFSIZE)
-    keyboard_buffer.read_pos = 0;
-
-  return ret;
+  return uc;
 }
 
 void handle_scan(u8 scan_code) {
@@ -220,4 +208,9 @@ void handle_scan(u8 scan_code) {
 
     break;
   }
+}
+
+void kbd_init() {
+  kbd_rb = kmalloc(sizeof(RingBuffer));
+  rb_init(kbd_rb, KBD_BUFSIZE, sizeof(u8));
 }

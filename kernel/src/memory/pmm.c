@@ -1,11 +1,11 @@
 #include <stddef.h>
 
-#include <kprintf.h>
+#include <libk/kprintf.h>
+#include <libk/util.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
 #include <stivale2.h>
 #include <string/string.h>
-#include <util.h>
 
 u64 total_blocks = PMM_MAX_BITMAPS * PMM_BLOCKS_PER_BYTE;
 u64 total_bmaps;

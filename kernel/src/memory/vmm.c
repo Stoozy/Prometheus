@@ -5,14 +5,14 @@
 #include <config.h>
 #include <cpu/cpu.h>
 #include <drivers/video.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
+#include <libk/typedefs.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
 #include <proc/proc.h>
 #include <stivale2.h>
 #include <string/string.h>
-#include <typedefs.h>
 
 extern void load_pagedir(PageTable *);
 

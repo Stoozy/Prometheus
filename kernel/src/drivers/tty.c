@@ -1,9 +1,10 @@
-#include "kmalloc.h"
-#include "kprintf.h"
 #include <drivers/tty.h>
 #include <fs/devfs.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
+#include <libk/ringbuffer.h>
+#include <libk/util.h>
 #include <string/string.h>
-#include <util.h>
 
 struct tty g_tty_table[MAX_TTYS];
 static uint8_t g_tty_counter;
@@ -30,36 +31,44 @@ FileSystem tty_fops = {.open = tty_open,
 /* initializes new device */
 
 struct tty *tty_init_dev(struct tty_driver driver) {
-  struct tty new_tty = (struct tty){.driver = driver};
+  g_tty_table[g_tty_counter] = (struct tty){.driver = driver};
 
-  g_tty_table[g_tty_counter] = new_tty;
-  ++g_tty_counter;
+  return &g_tty_table[g_tty_counter++];
+}
 
-  return &g_tty_table[g_tty_counter - 1];
+static File *file_from_tty(struct tty *tty, int minor) {
+  File *file = kmalloc(sizeof(File));
+  file->size = TTY_BUFSIZE;
+  file->device = MKDEV(tty->driver.dev_major, minor);
+  file->fs = &tty_fops;
+  file->position = 0;
+  file->private_data = tty;
+
+  file->name = kmalloc(strlen("ttyX") + 1);
+  memcpy(file->name, "ttyX\0", 5);
+  file->name[3] = minor + '0';
+
+  return file;
 }
 
 File *tty_open(const char *filename, int flags) {
   kprintf("[TTY]  Called open on %s\n", filename);
 
-  // ttyN
-  int minor = filename[4] - '0';
-
-  struct tty *new_tty = tty_init_dev(default_tty_driver);
+  int minor = filename[3] - '0';
 
   if (minor > MAX_TTYS)
     return NULL;
 
-  File *file = kmalloc(sizeof(File));
-  file->size = TTY_BUFSIZE;
-  file->device = MKDEV(new_tty->driver.dev_major, minor);
-  file->fs = &tty_fops;
-  file->position = 0;
-  file->private_data = new_tty;
+  kprintf("Minor is %d\n", minor);
 
-  file->name = kmalloc(strlen(filename));
-  strcpy(file->name, filename);
+  // first search for it
 
-  return file;
+  if (g_tty_table[minor].driver.dev_major)
+    return file_from_tty(&g_tty_table[minor], minor);
+
+  struct tty *new_tty = tty_init_dev(default_tty_driver);
+  kprintf("Tty not found, making a new one\n");
+  return file_from_tty(new_tty, minor);
 }
 
 void tty_close(struct file *file) {
@@ -76,8 +85,16 @@ size_t tty_read(struct file *file, size_t size, uint8_t *buf) {
 
 size_t tty_write(struct file *file, size_t size, uint8_t *buf) {
   struct tty *tty = file->private_data;
-  if (tty)
-    return tty->driver.write(tty, size, buf);
+  if (tty) {
+
+    if (tty->driver.write) {
+
+      return tty->driver.write(tty, size, buf);
+    } else {
+      kprintf("Write not implemented :(\n");
+    }
+  }
+
   return 0;
 }
 
@@ -97,59 +114,39 @@ int tty_poll(struct file *file, struct pollfd *pfd, int timeout) {
 }
 
 size_t tty_default_read(struct tty *tty, size_t size, uint8_t *buffer) {
-  // TODO: notify on full buffer
 
-  // just use the primary buffer
-  __asm__("cli");
-  if (tty->flip.primary_idx > TTY_BUFSIZE)
-    tty->flip.primary_idx = 0;
+  kprintf("[TTY]  Default read called\n");
+  // if (tty->flip.primary_idx > TTY_BUFSIZE)
+  // tty->flip.primary_idx = 0;
 
-  int pos = tty->flip.primary_idx;
-  memcpy(buffer, &tty->flip.primary[pos], TTY_BUFSIZE - pos);
+  int pos = 0;
+  memcpy(buffer, &tty->input_buffer, size);
 
-  __asm__("sti");
-
-  return 0;
+  return size;
 }
 
 size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer) {
   // TODO: notify on full buffer
 
-  // just use the primary buffer
-  __asm__("cli");
-  if (tty->flip.primary_idx > TTY_BUFSIZE)
-    tty->flip.primary_idx = 0;
+  kprintf("[TTY]  Default write called\n");
+  kprintf("Data: ");
+  for (int i = 0; i < size; i++)
+    kprintf("%c ", buffer[i]);
+  kprintf("\n");
 
-  int pos = tty->flip.primary_idx;
-  memcpy(&tty->flip.primary[pos], buffer, TTY_BUFSIZE - pos);
-  tty->flip.primary_idx += size;
+  memcpy(&tty->output_buffer, buffer, size);
 
-  __asm__("sti");
-
-  return 0;
+  kprintf("Returning %d\n", size);
+  return size;
 }
 
-void tty_default_put_char(struct tty *tty, char c) {
-
-  // just use the primary buffer
-
-  __asm__("cli");
-  if (tty->flip.primary_idx > TTY_BUFSIZE)
-    tty->flip.primary_idx = 0;
-
-  tty->flip.primary[tty->flip.primary_idx] = c;
-  ++tty->flip.primary_idx;
-
-  __asm__("sti");
-}
+void tty_default_put_char(struct tty *tty, char c) {}
 
 void tty_default_flush_chars(struct tty *tty) {
   // TODO
 }
 
-size_t tty_default_write_room(struct tty *tty) {
-  return TTY_BUFSIZE - tty->flip.primary_idx;
-}
+size_t tty_default_write_room(struct tty *tty) { return 0; }
 
 int tty_default_set_termios(struct tty *tty, struct termios tios) {
   tty->tios = tios;

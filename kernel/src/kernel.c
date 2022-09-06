@@ -5,17 +5,18 @@
 #include <cpu/idt.h>
 #include <cpu/io.h>
 #include <cpu/smp.h>
-#include <kmalloc.h>
+#include <libk/kmalloc.h>
+#include <libk/typedefs.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
-#include <typedefs.h>
 
 #include <drivers/fb.h>
+#include <drivers/keyboard.h>
 #include <drivers/pit.h>
 #include <drivers/serial.h>
 
-#include <kprintf.h>
-#include <util.h>
+#include <libk/kprintf.h>
+#include <libk/util.h>
 
 #include <proc/elf.h>
 #include <proc/proc.h>
@@ -197,6 +198,7 @@ void _start(struct stivale2_struct *boot_info) {
   if (!framebuffer_tag)
     hang();
 
+  kbd_init();
   fb_init(framebuffer_tag);
 
   tty_init();

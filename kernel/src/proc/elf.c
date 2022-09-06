@@ -6,14 +6,14 @@
 #include <abi-bits/auxv.h>
 #include <config.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
+#include <libk/typedefs.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
 #include <proc/proc.h>
 #include <stdint.h>
 #include <string/string.h>
-#include <typedefs.h>
 
 extern void load_pagedir(PageTable *);
 
@@ -132,13 +132,11 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   u8 *elf_data = kmalloc(elf_file->size);
   int br = vfs_read(elf_file, elf_data, elf_file->size);
 
-  if (!validate_elf(elf_data)) {
+  if (!validate_elf(elf_data))
     return NULL;
-  }
 
   ProcessControlBlock *proc =
       (ProcessControlBlock *)(kmalloc(sizeof(ProcessControlBlock)));
-
   memset(proc, 0, sizeof(ProcessControlBlock));
 
   void *stack_ptr = pmm_alloc_blocks(STACK_BLOCKS) + (STACK_SIZE);
@@ -220,11 +218,14 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   stack_ptr -= (stack_ptr - (void *)stack);
 
   memset(&proc->trapframe, 0, sizeof(Registers));
+
   proc->trapframe.ss = 0x23;
-  proc->trapframe.rsp = (uint64_t)stack_ptr;
-  proc->trapframe.rflags = (uint64_t)0x202;
+  proc->trapframe.cs = 0x2b;
+  proc->trapframe.rsp = (uintptr_t)stack_ptr;
+  proc->trapframe.rflags = 0x202;
   proc->trapframe.rip = aux.ld_entry;
-  proc->trapframe.cs = (uint64_t)0x2b;
+
+  memset(proc->fd_table, 0, sizeof(uintptr_t) * MAX_PROC_FDS);
 
   proc->fd_table[0] = vfs_open("/dev/tty0", O_RDONLY);
   proc->fd_table[1] = vfs_open("/dev/tty0", O_WRONLY);

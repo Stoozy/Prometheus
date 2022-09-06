@@ -1,7 +1,7 @@
 #include <drivers/fb.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
 #include <linux/fb.h>
 #include <string/string.h>
 struct fb_var_screeninfo fb0_vsi;

@@ -1,5 +1,5 @@
 #include <cpu/gdt.h>
-#include <kprintf.h>
+#include <libk/kprintf.h>
 #include <memory/pmm.h>
 #include <string/string.h>
 

@@ -3,8 +3,8 @@
 #include <config.h>
 #include <drivers/video.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
 #include <memory/pmm.h>
 #include <proc/elf.h>
 #include <proc/proc.h>
@@ -24,13 +24,13 @@ PageTable *kernel_cr3 = NULL;
 void dump_queue(ProcessQueue *pqueue) {
   ProcessControlBlock *cproc = pqueue->first;
   kprintf("There are %d processes in this queue\n", pqueue->count);
+  kprintf("Head: %x; Tail: %x;\n", pqueue->first, pqueue->last);
   for (; cproc; cproc = cproc->next) {
     kprintf("Process at %x\n", cproc);
   }
 }
 
 void pqueue_insert(ProcessQueue *queue, ProcessControlBlock *proc) {
-  kprintf("Inserting %x\n", proc);
 
   if (!proc)
     return;
@@ -42,11 +42,8 @@ void pqueue_insert(ProcessQueue *queue, ProcessControlBlock *proc) {
   }
 
   // append to last
-  kprintf("Old last %x\n", queue->last);
   queue->last->next = proc;
   queue->last = queue->last->next;
-  kprintf("New last %x\n", queue->last);
-
   ++queue->count;
 }
 
@@ -192,11 +189,11 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
   memset(clone, 0, sizeof(ProcessControlBlock));
   memcpy(clone, proc, sizeof(ProcessControlBlock));
 
-  for (int i = 0; i < proc->fd_length; i++) {
-    File *copy_file = kmalloc(sizeof(File));
-    *copy_file = *(proc->fd_table[i]);
-    clone->fd_table[i] = copy_file;
-  }
+  // for (int i = 0; i < proc->fd_length; i++) {
+  //   File *copy_file = kmalloc(sizeof(File));
+  //   *copy_file = *(proc->fd_table[i]);
+  //   clone->fd_table[i] = copy_file;
+  // }
 
   // reset vas so that proper phys addrs get put by vmm_copy_vas
   clone->vas = NULL;
@@ -230,6 +227,7 @@ void block_process(ProcessControlBlock *proc, int reason) {
 void unblock_process(ProcessControlBlock *proc) {
   proc->state = READY;
 
+  proc->next = NULL;
   dump_queue(&ready_queue);
   pqueue_insert(&ready_queue, proc);
   kprintf("\n unblocked %x\n\n", proc);
@@ -246,31 +244,31 @@ void multitasking_init() {
 
   char *envp[5] = {"SHELL=/usr/bin/bash", "PATH=/usr/bin", "HOME=/",
                    "TERM=linux", NULL};
-  char *argvp[3] = {NULL};
+  char *argvp[1] = {NULL};
 
   // ProcessControlBlock *nomterm =
   //     create_elf_process("/usr/bin/nomterm", argvp, envp);
   // kprintf("Got process at %x\n", nomterm);
   // register_process(nomterm);
 
+  extern void refresh_screen_proc();
+  extern void terminal_main();
+
+  register_process(create_kernel_process(task_a));
   register_process(create_kernel_process(idle_task));
   register_process(create_kernel_process(task_b));
-  register_process(create_kernel_process(task_a));
 
-  // extern void terminal_main();
-  // ProcessControlBlock *kterm = create_kernel_process(terminal_main);
-  // register_process(kterm);
+  // ProcessControlBlock *bash = create_elf_process("/usr/bin/bash", argvp,
+  // envp); register_process(bash);
 
-  // extern void refresh_screen_proc();
-  // ProcessControlBlock *video_refresh =
-  //     create_kernel_process(refresh_screen_proc);
-  // register_process(video_refresh);
+  // register_process(create_kernel_process(refresh_screen_proc));
+  // register_process(create_kernel_process(terminal_main));
 
   running = ready_queue.first;
   kprintf("Ready queue has %d procs\n", ready_queue.count);
   dump_queue(&ready_queue);
-  dump_queue(&wait_queue);
 
+  dump_regs(&ready_queue.first->trapframe);
   kprintf("switching to process pid:%d\n", running->pid);
   switch_to_process(&running->trapframe, (void *)running->cr3);
   return;

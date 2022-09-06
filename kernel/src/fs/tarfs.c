@@ -1,12 +1,12 @@
-#include "kprintf.h"
+#include "libk/kprintf.h"
 #include <dirent.h>
 #include <stdarg.h>
 
 #include <config.h>
 #include <fs/tarfs.h>
 #include <fs/vfs.h>
-#include <kmalloc.h>
-#include <kprintf.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
 #include <string/string.h>
 
 struct file *ustar_finddir(VfsNode *dir, const char *name);
