@@ -1,7 +1,7 @@
 #ifndef SERIAL_DRIVER_H
 #define SERIAL_DRIVER_H
 
-#include <typedefs.h>
+#include <libk/typedefs.h>
 #include <cpu/io.h>
 
 #define SERIAL_PORT 0x3f8

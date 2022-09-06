@@ -1,6 +1,6 @@
 #pragma once
 
-#include <typedefs.h>
+#include <libk/typedefs.h>
 #include <fs/vfs.h>
 
 #define USTAR_TYPE_NORMAL       0x0

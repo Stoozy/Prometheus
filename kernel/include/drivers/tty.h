@@ -80,7 +80,8 @@ struct tty {
     void * driver_data;
     
 
-    struct flip_buffer flip;    
+    uint8_t input_buffer[TTY_BUFSIZE];
+    uint8_t output_buffer[TTY_BUFSIZE];
     struct tty_ldisc ldisc;
     struct termios tios;
 

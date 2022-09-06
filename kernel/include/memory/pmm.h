@@ -1,7 +1,6 @@
-#ifndef _PMM_H 
-#define _PMM_H
+#pragma once
 
-#include <typedefs.h>
+#include <libk/typedefs.h>
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -22,5 +21,4 @@ u64         pmm_get_block_count();
 
 void        pmm_dump();
 
-#endif
 
