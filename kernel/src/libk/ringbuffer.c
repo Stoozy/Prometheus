@@ -33,12 +33,13 @@ int rb_push(RingBuffer *rb, void *item) {
 int rb_pop(RingBuffer *rb, void *item) {
   if (rb->len == 0)
     return 0; // Buffer is empty
+
   memcpy(item, rb->buffer + (rb->tail * rb->tsize), rb->tsize);
 
   if (rb->tail == rb->cap)
     rb->tail = 0;
 
-  rb->tail--;
+  rb->tail++;
   rb->len--;
 
   return 1;
