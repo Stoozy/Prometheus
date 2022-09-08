@@ -1,5 +1,6 @@
 #pragma once
 #include "libc/abi-bits/termios.h"
+#include "libk/ringbuffer.h"
 #include <fs/vfs.h>
 #include <proc/proc.h>
 #include <libc/termios.h>
@@ -9,13 +10,6 @@
 #define MAX_TTYS        8
 
 struct tty;
-
-struct flip_buffer { 
-    int primary_idx, secondary_idx;
-    unsigned char primary[TTY_BUFSIZE];
-    unsigned char secondary[TTY_BUFSIZE];
-};
-
 
 struct tty_ldisc {
     int magic;
@@ -51,6 +45,7 @@ struct tty_driver {
     int dev_major;
     int num_devices;
 
+
     size_t (*read)          (struct tty *, size_t, uint8_t* );
     size_t (*write)         (struct tty *, size_t, uint8_t* );
     void   (*put_char)      (struct tty *, char c);
@@ -80,8 +75,9 @@ struct tty {
     void * driver_data;
     
 
-    uint8_t input_buffer[TTY_BUFSIZE];
-    uint8_t output_buffer[TTY_BUFSIZE];
+    RingBuffer * ibuf;
+    RingBuffer * obuf;
+
     struct tty_ldisc ldisc;
     struct termios tios;
 

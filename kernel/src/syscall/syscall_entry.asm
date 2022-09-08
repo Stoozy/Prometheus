@@ -31,7 +31,7 @@ enable_sce:
 ; ret   r15
 
 syscall_entry:
-    cli
+    ;cli
     ;cld
 
     swapgs

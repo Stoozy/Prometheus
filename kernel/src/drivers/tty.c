@@ -1,10 +1,16 @@
+#include "memory/vmm.h"
+#include "proc/proc.h"
 #include <drivers/tty.h>
 #include <fs/devfs.h>
 #include <libk/kmalloc.h>
 #include <libk/kprintf.h>
 #include <libk/ringbuffer.h>
 #include <libk/util.h>
+#include <stdint.h>
 #include <string/string.h>
+
+struct tty *gp_active_tty;
+ProcessQueue tty_wait_queue;
 
 struct tty g_tty_table[MAX_TTYS];
 static uint8_t g_tty_counter;
@@ -31,7 +37,14 @@ FileSystem tty_fops = {.open = tty_open,
 /* initializes new device */
 
 struct tty *tty_init_dev(struct tty_driver driver) {
-  g_tty_table[g_tty_counter] = (struct tty){.driver = driver};
+  RingBuffer *in = kmalloc(sizeof(RingBuffer));
+  RingBuffer *out = kmalloc(sizeof(RingBuffer));
+
+  rb_init(in, TTY_BUFSIZE, sizeof(uint8_t));
+  rb_init(out, TTY_BUFSIZE, sizeof(uint8_t));
+
+  g_tty_table[g_tty_counter] =
+      (struct tty){.driver = driver, .ibuf = in, .obuf = out};
 
   return &g_tty_table[g_tty_counter++];
 }
@@ -68,6 +81,8 @@ File *tty_open(const char *filename, int flags) {
 
   struct tty *new_tty = tty_init_dev(default_tty_driver);
   kprintf("Tty not found, making a new one\n");
+
+  gp_active_tty = new_tty;
   return file_from_tty(new_tty, minor);
 }
 
@@ -78,8 +93,9 @@ void tty_close(struct file *file) {
 
 size_t tty_read(struct file *file, size_t size, uint8_t *buf) {
   struct tty *tty = file->private_data;
-  if (tty)
+  if (tty->driver.read)
     return tty->driver.read(tty, size, buf);
+
   return 0;
 }
 
@@ -113,28 +129,60 @@ int tty_poll(struct file *file, struct pollfd *pfd, int timeout) {
   return 0;
 }
 
+static void echo(struct tty *tty, uint8_t val) {
+  asm("cli");
+  rb_push(tty->obuf, &val);
+  asm("sti");
+}
+
 size_t tty_default_read(struct tty *tty, size_t size, uint8_t *buffer) {
 
-  kprintf("[TTY]  Default read called\n");
-  // if (tty->flip.primary_idx > TTY_BUFSIZE)
-  // tty->flip.primary_idx = 0;
+  kprintf("[TTY]  Default read called for %d bytes\n", size);
 
-  int pos = 0;
-  memcpy(buffer, &tty->input_buffer, size);
+  int s = 0;
 
-  return size;
+read:
+  asm("cli");
+  for (; s < size; s++)
+    if (!rb_pop(tty->ibuf, &buffer[s]))
+      break;
+    else
+      echo(tty, buffer[s]);
+
+  asm("sti");
+  if (s == 0)
+    goto read;
+
+  // should be in line disc
+
+  return s;
 }
 
 size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer) {
-  // TODO: notify on full buffer
-
   kprintf("[TTY]  Default write called\n");
   kprintf("Data: ");
-  for (int i = 0; i < size; i++)
-    kprintf("%c ", buffer[i]);
-  kprintf("\n");
 
-  memcpy(&tty->output_buffer, buffer, size);
+  // TODO: find a better way
+  gp_active_tty = tty;
+
+  asm("cli");
+  for (int i = 0; i < size; i++) {
+    if (!rb_push(tty->obuf, &buffer[i]))
+      for (;;)
+        kprintf("Buffer full :(\n");
+
+    kprintf("%c ", ((char *)tty->obuf->buffer)[i]);
+  }
+  kprintf("\n");
+  kprintf("New length is %d\n", tty->obuf->len);
+
+  asm("sti");
+  // if (tty_wait_queue.last) {
+  //   asm("cli");
+  //   unblock_process(tty_wait_queue.last);
+  //   pqueue_remove(&tty_wait_queue, tty_wait_queue.last);
+  //   asm("sti");
+  // }
 
   kprintf("Returning %d\n", size);
   return size;

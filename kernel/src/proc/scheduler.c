@@ -15,14 +15,7 @@ extern ProcessQueue ready_queue;
 extern ProcessQueue wait_queue;
 extern ProcessControlBlock *running;
 
-void schedule(Registers *regs) {
-  // not enough procs
-  if (ready_queue.count == 0)
-    return;
-
-  // save registers
-  running->trapframe = *regs;
-
+static ProcessControlBlock *get_next() {
   extern void dump_queue(ProcessQueue *);
   if (running->state == WAITING) {
     ProcessControlBlock *next =
@@ -31,14 +24,22 @@ void schedule(Registers *regs) {
     kprintf("Removing %x from ready queue\n", running);
     pqueue_remove(&ready_queue, running);
     dump_queue(&ready_queue);
-    running = next;
-    goto next;
+    return next;
   }
 
-  running = running->next == NULL ? ready_queue.first : running->next;
+  return running->next == NULL ? ready_queue.first : running->next;
+}
 
-next:
+void schedule(Registers *regs) {
+  __asm__("cli");
+  // not enough procs
+  if (ready_queue.count == 0)
+    return;
 
+  // save registers
+  running->trapframe = *regs;
+
+  running = get_next();
   running->state = RUNNING;
 
 #ifdef SCHEDULER_DEBUG
@@ -52,6 +53,5 @@ next:
   kprintf("Trapframe at  %x\n", &running->trapframe);
 #endif
 
-  // finally, switch
   switch_to_process(&running->trapframe, (void *)running->cr3);
 }

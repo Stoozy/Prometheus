@@ -115,7 +115,6 @@ int sys_write(int fd, char *ptr, int len) {
 
   File *file = running->fd_table[fd];
   if (file) {
-    kprintf("Writing to %s\n", file->name);
     vfs_write(file, (uint8_t *)ptr, len);
   } else {
     kprintf("File not open!\n");

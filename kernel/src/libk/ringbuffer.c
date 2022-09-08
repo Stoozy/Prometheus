@@ -13,7 +13,7 @@ void rb_init(RingBuffer *rb, size_t cap, size_t tsize) {
 }
 
 void rb_destroy(RingBuffer *rb) {
-  // TODO: do a proper kernel malloc
+  // TODO: a proper kernel allocator
 }
 
 int rb_push(RingBuffer *rb, void *item) {
@@ -31,8 +31,11 @@ int rb_push(RingBuffer *rb, void *item) {
 }
 
 int rb_pop(RingBuffer *rb, void *item) {
+  if (!rb || !item)
+    return 0;
+
   if (rb->len == 0)
-    return 0; // Buffer is empty
+    return 0;
 
   memcpy(item, rb->buffer + (rb->tail * rb->tsize), rb->tsize);
 

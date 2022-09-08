@@ -2,6 +2,7 @@
 #include "drivers/tty.h"
 #include "libk/kprintf.h"
 #include <drivers/fb.h>
+#include <drivers/tty.h>
 #include <fs/vfs.h>
 #include <libk/kmalloc.h>
 #include <linux/fb.h>
@@ -12,7 +13,7 @@
 #define FONT_HEIGHT 16
 
 #define TERM_WIDTH 200
-#define TERM_HEIGHT 80
+#define TERM_HEIGHT 100
 
 #define TERM_BUFSIZE 0x1000
 
@@ -70,20 +71,31 @@ void terminal_main() {
   backbuffer = (uint32_t *)fb_file->inode;
   fb_vsi = fb_getvscreeninfo();
 
-  File *tty_file = vfs_open("/dev/tty0", O_RDONLY);
+  // File *tty_file = vfs_open("/dev/tty0", O_RDONLY);
 
+  extern struct tty *gp_active_tty;
   int cx = 0, cy = 0;
   for (;;) {
-    if (vfs_read(tty_file, &g_term_buffer[0], 1024) <= 0)
+    kprintf("Running terminal ... \n");
+    if (!gp_active_tty)
       continue;
 
+    // size_t br = vfs_read(tty_file, &g_term_buffer[0], TERM_BUFSIZE);
+
+    // size_t br = gp_active_tty->driver.read(gp_active_tty, TERM_BUFSIZE,
+    //&g_term_buffer[0]);
+    // kprintf("[TERM] Got %d bytes\n", br);
+    // for (int i = 0; i < br; i++) {
+    // kprintf(" %c ", g_term_buffer[i]);
+    //}
+    kprintf("\n");
+
     size_t len = 0;
-    while (g_term_buffer[len]) {
-      uint8_t ch = g_term_buffer[len];
-      if (!ch)
+    while (len < TERM_BUFSIZE) {
+      if (!rb_pop(gp_active_tty->obuf, &g_term_buffer[len]))
         break;
 
-      switch (ch) {
+      switch (g_term_buffer[len]) {
       case '\n':
         cy++;
         cx = 0;
@@ -95,10 +107,11 @@ void terminal_main() {
         term_screen[cy][cx] =
             (tchar_t){.c = g_term_buffer[len], .fg = WHITE, .bg = BLACK};
         cx++;
-        redraw_screen();
       };
 
       ++len;
     }
+
+    redraw_screen();
   }
 }

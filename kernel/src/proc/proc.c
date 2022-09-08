@@ -26,7 +26,7 @@ void dump_queue(ProcessQueue *pqueue) {
   kprintf("There are %d processes in this queue\n", pqueue->count);
   kprintf("Head: %x; Tail: %x;\n", pqueue->first, pqueue->last);
   for (; cproc; cproc = cproc->next) {
-    kprintf("Process at %x\n", cproc);
+    kprintf("Process at %x; Next %x\n", cproc, cproc->next);
   }
 }
 
@@ -51,35 +51,37 @@ void pqueue_remove(ProcessQueue *queue, ProcessControlBlock *proc) {
   kprintf("Removing process at %x\n", proc);
 
   // TODO
-  if (!queue->first)
+
+  if (proc == queue->first) {
+    if (queue->first->next)
+      queue->first = queue->first->next;
+    else
+      queue->first = queue->last = NULL;
+
+    --queue->count;
     return;
+  }
 
-  if (proc != queue->first) {
-    ProcessControlBlock *cproc = queue->first;
-    ProcessControlBlock *nproc = cproc->next;
+  ProcessControlBlock *cproc = queue->first;
+  ProcessControlBlock *nproc = cproc->next;
 
-    while (nproc->next) {
-      if (nproc == proc) {
-        cproc->next = proc->next;
-        --queue->count;
-      }
-
-      nproc = nproc->next;
-      cproc = cproc->next;
-    }
-
-    // last item
+  while (nproc->next) {
     if (nproc == proc) {
-      queue->last = cproc;
+      cproc->next = proc->next;
       --queue->count;
+      return;
     }
 
-  } else if (proc == queue->first && proc == queue->last) {
-    queue->first = queue->last = NULL;
+    nproc = nproc->next;
+    cproc = cproc->next;
+  }
+
+  // last item
+  if (nproc == proc) {
+    cproc->next = NULL;
+    queue->last = cproc;
     --queue->count;
-  } else if (proc == queue->first) {
-    queue->first = queue->first->next;
-    --queue->count;
+    return;
   }
 
   return;
@@ -221,17 +223,15 @@ void block_process(ProcessControlBlock *proc, int reason) {
   // because the registers have to
   // be saved once the interrupt fires
   proc->state = reason;
+  kprintf("Blocking process at %x\n", proc);
   return;
 }
 
 void unblock_process(ProcessControlBlock *proc) {
   proc->state = READY;
-
   proc->next = NULL;
-  dump_queue(&ready_queue);
   pqueue_insert(&ready_queue, proc);
   kprintf("\n unblocked %x\n\n", proc);
-  dump_queue(&ready_queue);
   return;
 }
 
@@ -254,15 +254,14 @@ void multitasking_init() {
   extern void refresh_screen_proc();
   extern void terminal_main();
 
-  register_process(create_kernel_process(task_a));
-  register_process(create_kernel_process(idle_task));
-  register_process(create_kernel_process(task_b));
+  // register_process(create_kernel_process(task_a));
+  // register_process(create_kernel_process(idle_task));
+  // register_process(create_kernel_process(task_b));
 
-  // ProcessControlBlock *bash = create_elf_process("/usr/bin/bash", argvp,
-  // envp); register_process(bash);
-
-  // register_process(create_kernel_process(refresh_screen_proc));
-  // register_process(create_kernel_process(terminal_main));
+  register_process(create_kernel_process(terminal_main));
+  ProcessControlBlock *bash = create_elf_process("/usr/bin/bash", argvp, envp);
+  register_process(bash);
+  register_process(create_kernel_process(refresh_screen_proc));
 
   running = ready_queue.first;
   kprintf("Ready queue has %d procs\n", ready_queue.count);

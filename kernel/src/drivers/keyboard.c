@@ -10,14 +10,10 @@
 
 #define KBD_BUFSIZE 32
 
-RingBuffer *kbd_rb = NULL;
+extern struct tty *gp_active_tty;
+extern ProcessQueue ready_queue;
 
-// volatile struct {
-//   int write_pos;
-//   int read_pos;
-//   uint8_t buffer[KBD_BUFSIZE];
-//   size_t len;
-// } keyboard_buffer = {0, 0, {0}};
+RingBuffer *kbd_rb = NULL;
 
 static bool shift_down = false;
 static bool alt_down = false;
@@ -133,12 +129,19 @@ unsigned char kbdse_alt[128] = {
 
 void kbd_write_to_buffer(uint8_t c) {
 
-  rb_push(kbd_rb, &c);
+  if (!gp_active_tty) {
 
-  // data available, so wake up first waiting process
-  if (kbd_wait_queue.first) {
-    unblock_process(kbd_wait_queue.first);
-    pqueue_remove(&kbd_wait_queue, kbd_wait_queue.first);
+    rb_push(kbd_rb, &c);
+
+    // data available, so wake up first waiting process
+    if (kbd_wait_queue.last) {
+      unblock_process(kbd_wait_queue.last);
+      pqueue_remove(&kbd_wait_queue, kbd_wait_queue.last);
+    }
+
+  } else {
+    rb_push(gp_active_tty->ibuf, &c);
+    kprintf("Wrote %c to tty input buffer\n", c);
   }
 }
 
@@ -164,10 +167,6 @@ u8 kbd_read_from_buffer() {
   }
 
 done_waiting:
-
-  for (;;)
-    kprintf("Got char %c from keyboard \n", uc);
-
   return uc;
 }
 
