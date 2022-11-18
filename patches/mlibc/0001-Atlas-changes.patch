@@ -1,13 +1,13 @@
-From ca0bcb4d0e2938778f2f20e77fc1c5e04a2c3a5b Mon Sep 17 00:00:00 2001
-From: Stoozy <stoozy@proton.me>
-Date: Wed, 10 Aug 2022 22:54:34 -0400
+From dba6661482e239e21726d73a9e02782fcec71c75 Mon Sep 17 00:00:00 2001
+From: stoozy <stoozy@proton.me>
+Date: Thu, 17 Nov 2022 23:46:23 -0500
 Subject: [PATCH] Atlas changes
 
 ---
  meson.build                                  |   7 +-
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 +
- sysdeps/atlas/generic/generic.cpp            | 794 +++++++++++++++++++
+ sysdeps/atlas/generic/generic.cpp            | 795 +++++++++++++++++++
  sysdeps/atlas/generic/thread.cpp             |  44 +
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/access.h      |   9 +
@@ -46,8 +46,8 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/wait.h        |  25 +
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
  sysdeps/atlas/include/vfs.h                  |  28 +
- sysdeps/atlas/meson.build                    |  58 ++
- 43 files changed, 2617 insertions(+), 1 deletion(-)
+ sysdeps/atlas/meson.build                    |  59 ++
+ 43 files changed, 2619 insertions(+), 1 deletion(-)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -171,10 +171,10 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..d26a4b75
+index 00000000..cc8245cf
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,794 @@
+@@ -0,0 +1,795 @@
 +#include <bits/ensure.h>
 +#include <dirent.h>
 +#include <errno.h> 
@@ -488,6 +488,7 @@ index 00000000..d26a4b75
 +int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags, struct stat *statbuf){
 +  mlibc::infoLogger() << "[mlibc] Calling sys_stat() STUB\n" << frg::endlog;
 +
++  return ENOSYS;
 +
 +  VfsNodeStat vns;
 +  switch(fsfdt){
@@ -2917,10 +2918,10 @@ index 00000000..ba870bff
 +
 diff --git a/sysdeps/atlas/meson.build b/sysdeps/atlas/meson.build
 new file mode 100644
-index 00000000..ec29b73b
+index 00000000..6f4531ea
 --- /dev/null
 +++ b/sysdeps/atlas/meson.build
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,59 @@
 +
 +rtdl_sources += files(
 +	'generic/generic.cpp'
@@ -2948,6 +2949,7 @@ index 00000000..ec29b73b
 +		'include/abi-bits/termios.h',
 +		'include/abi-bits/time.h',
 +		'include/abi-bits/blkcnt_t.h',
++		'include/abi-bits/clockid_t.h',
 +		'include/abi-bits/blksize_t.h',
 +		'include/abi-bits/dev_t.h',
 +		'include/abi-bits/gid_t.h',
@@ -2980,5 +2982,5 @@ index 00000000..ec29b73b
 +endif
 +
 -- 
-2.37.1
+2.34.1
 
