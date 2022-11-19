@@ -6,10 +6,13 @@ A hobby operating system for the x86\_64 arch aiming to use a hybrid kernel.
 
 ### Tools
 
-* A 64 bit C compiler such as gcc or clang.
+* gcc and friends (build-essential on ubuntu based distros)
 * qemu
 * xorriso
 * git
+* xbstrap
+* meson
+
 
 ### Installing
 
@@ -17,8 +20,11 @@ To run this OS:
 
 * make sure you have the tools listed above
 * Clone the repo
-* run `make`
-* Then, either do `make run` or run qemu yourself with your own flags.
+* make a `build` dir and cd `build`
+* run `xbstrap install bash` (this will also install all prerequisite packages)
+* inside project rootdir, run `yes | cp -r build/system-root/* sysroot/`
+* then run `mkdir sysroot/lib && cp -r sysroot/usr/lib/* sysroot/lib/`
+* `make run` will start up the os in qemu
 
 ## Current functionality
 
