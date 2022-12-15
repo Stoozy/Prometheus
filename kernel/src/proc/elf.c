@@ -128,6 +128,10 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
 ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
                                         char *envp[]) {
   File *elf_file = vfs_open(path, 0);
+  if(!elf_file){
+      kprintf("[ELF] Coudln't find %s in any mounted filesystem\n", path);
+      for(;;);
+  }
 
   u8 *elf_data = kmalloc(elf_file->size);
   int br = vfs_read(elf_file, elf_data, elf_file->size);
@@ -232,7 +236,9 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   proc->fd_table[2] = vfs_open("/dev/tty0", O_WRONLY);
 
   proc->mmap_base = MMAP_BASE;
-  proc->pid = 200;
+
+  extern uint64_t pid_counter;
+  proc->pid = pid_counter++;
   proc->next = 0;
 
   kprintf("fd 0 is at %x\n", proc->fd_table[0]);

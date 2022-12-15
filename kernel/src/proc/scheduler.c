@@ -15,15 +15,17 @@ extern ProcessQueue ready_queue;
 extern ProcessQueue wait_queue;
 extern ProcessControlBlock *running;
 
+
+
 static ProcessControlBlock *get_next() {
-  extern void dump_queue(ProcessQueue *);
+  extern void dump_pqueue(ProcessQueue *);
   if (running->state == WAITING) {
     ProcessControlBlock *next =
         running->next == NULL ? ready_queue.first : running->next;
 
     kprintf("Removing %x from ready queue\n", running);
     pqueue_remove(&ready_queue, running);
-    dump_queue(&ready_queue);
+    dump_pqueue(&ready_queue);
     return next;
   }
 
@@ -43,14 +45,15 @@ void schedule(Registers *regs) {
   running->state = RUNNING;
 
 #ifdef SCHEDULER_DEBUG
-  extern void dump_queue(ProcessQueue *);
+  extern void dump_pqueue(ProcessQueue *);
 
   kprintf("Ready Queue\n");
-  dump_queue(&ready_queue);
+  dump_pqueue(&ready_queue);
 
   kprintf("Switching to process at %x\n", running);
   kprintf("CR3 at  %x\n", running->cr3);
   kprintf("Trapframe at  %x\n", &running->trapframe);
+  dump_regs(&running->trapframe);
 #endif
 
   switch_to_process(&running->trapframe, (void *)running->cr3);

@@ -62,9 +62,11 @@ void sys_log_libc(const char *message) {
 }
 
 int sys_exit() {
-  kill_current_proc();
-  return 0;
+    extern void kill_cur_proc();
+    kill_cur_proc();
+    return 0;
 }
+
 
 int sys_open(const char *name, int flags, ...) {
 
@@ -221,8 +223,6 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
 
   return virt_base;
 
-  kprintf("Returning NULL");
-  return NULL;
 }
 
 off_t sys_seek(int fd, off_t offset, int whence) {
@@ -299,24 +299,25 @@ int sys_tcb_set(void *ptr) {
   return 0;
 }
 
-// for (;;) {
-//   kprintf("Called exec on %s\n", name);
-//   kprintf("ARGS:  \n");
-//   int n = 0;
-//   while (argv[n]) {
-//     kprintf("%s\n", argv[n]);
-//     n++;
-//   }
-//   kprintf("ENV:  \n");
-//   n = 0;
-//   while (env[n]) {
-//     kprintf("%s\n", env[n]);
-//     n++;
-//   }
-// }
-
 int sys_execve(char *name, char **argvp, char **envp) {
   extern ProcessControlBlock *running;
+    for (;;) {
+      kprintf("Called exec on %s\n", name);
+      kprintf("ARGS:  \n");
+      int n = 0;
+      while (argvp[n]) {
+        kprintf("%s\n", argvp[n]);
+        n++;
+      }
+      kprintf("ENV:  \n");
+      n = 0;
+      while (envp[n]) {
+        kprintf("%s\n", envp[n]);
+        n++;
+      }
+    }
+
+
 
   // free the entire vas
   VASRangeNode *vas = running->vas;
@@ -429,6 +430,7 @@ int sys_execve(char *name, char **argvp, char **envp) {
   running->cr3 = (void *)running->cr3 - PAGING_VIRTUAL_OFFSET;
   running->mmap_base = MMAP_BASE;
   ++running->pid;
+
 
   extern void switch_to_process(void *new_stack, PageTable *cr3);
   switch_to_process(&running->trapframe, running->cr3);
@@ -773,6 +775,20 @@ void syscall_dispatcher(Registers *regs) {
     regs->r15 =
         sys_execve((char *)regs->r8, (char **)regs->r9, (char **)regs->r10);
     break;
+  }
+  case SYS_WAIT: {
+        pid_t pid = (pid_t)regs->r8;
+        if(pid < -1){
+            kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
+        }else if (pid == -1){
+            kprintf("Waiting on any child process\n");
+        }else if (pid == 0){
+            kprintf("Waiting on any child process with gid equal to the calling proc ... \n");
+        }else if(pid > 0){
+            kprintf("Waiting for the child process with pid %d\n", pid);
+        }
+        for(;;);
+        break;
   }
 
   default: {

@@ -68,8 +68,13 @@ File *vfs_open(const char *path, int flags) {
       ;
   }
 
-  // pass mountpoint relative path
-  return mp->fs->open(path + strlen(mp->path), flags);
+  File * of = mp->fs->open(path + strlen(mp->path), flags);
+  if(of) {
+      return of;
+  }
+
+  kprintf("[VFS] Couldn't find %s in a filesystem\n", path);
+  return NULL;
 }
 
 void vfs_close(File *file) {
@@ -121,6 +126,7 @@ VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
   File *found_file =
       parent->file->fs->finddir(parent, name + strlen(parent->file->name));
 
+
   if (found_file) {
     kprintf("[VFS]  Found file %s in %s\n", name, parent->file->name);
     // update in-memory tree
@@ -144,6 +150,7 @@ VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
     return node;
   }
 
+  kprintf("Couldn't find file'");
   // not found
   return NULL;
 }

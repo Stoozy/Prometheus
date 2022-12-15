@@ -15,18 +15,21 @@ extern u64 g_ticks;
 extern void switch_to_process(void *new_stack, PageTable *cr3);
 extern void load_pagedir();
 
+
 ProcessQueue ready_queue = {0, NULL, NULL};
 ProcessQueue wait_queue = {0, NULL, NULL};
 ProcessControlBlock *running = NULL;
 
 PageTable *kernel_cr3 = NULL;
 
-void dump_queue(ProcessQueue *pqueue) {
+uint64_t pid_counter = 200;
+
+void dump_pqueue(ProcessQueue *pqueue) {
   ProcessControlBlock *cproc = pqueue->first;
   kprintf("There are %d processes in this queue\n", pqueue->count);
   kprintf("Head: %x; Tail: %x;\n", pqueue->first, pqueue->last);
   for (; cproc; cproc = cproc->next) {
-    kprintf("Process at %x; Next %x\n", cproc, cproc->next);
+    kprintf("Process  %d ; Next %x\n", cproc->pid, cproc->next);
   }
 }
 
@@ -109,10 +112,19 @@ int map_file_to_proc(ProcessControlBlock *proc, struct file *file) {
 }
 
 void kill_proc(ProcessControlBlock *proc) {
-  // TODO
+    // TODO
+    
+    kprintf("Before removing\n");
+    dump_pqueue(&ready_queue);
+    pqueue_remove(&ready_queue, proc);
+    kprintf("After removing\n");
+    dump_pqueue(&ready_queue);
+
+    __asm__("sti");
+    for(;;);
 }
 
-void kill_current_proc(void) { kill_proc(running); }
+void kill_cur_proc() { kill_proc(running); }
 
 void task_a() {
   extern uint8_t kbd_read_from_buffer();
@@ -178,8 +190,10 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void)) {
   pcb->trapframe.cs = 0x08;
   pcb->trapframe.rip = (uint64_t)entry;
 
+
   pcb->cr3 = vmm_get_current_cr3(); // kernel cr3
   pcb->state = READY;
+  pcb->pid = pid_counter++;
   pcb->next = NULL;
 
   return pcb;
@@ -202,7 +216,7 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
   clone->next = NULL;
 
   vmm_copy_vas(clone, proc);
-  clone->pid++;
+  clone->pid = pid_counter++;
   clone->trapframe = *regs;
   clone->mmap_base = proc->mmap_base;
 
@@ -265,7 +279,7 @@ void multitasking_init() {
 
   running = ready_queue.first;
   kprintf("Ready queue has %d procs\n", ready_queue.count);
-  dump_queue(&ready_queue);
+  dump_pqueue(&ready_queue);
 
   dump_regs(&ready_queue.first->trapframe);
   kprintf("switching to process pid:%d\n", running->pid);
