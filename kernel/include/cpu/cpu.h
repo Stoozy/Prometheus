@@ -31,6 +31,12 @@ typedef struct {
 } __attribute__((packed)) Registers;
 
 typedef struct {
+    Registers regs;
+    int ec;
+} __attribute__((packed)) Trapframe;
+
+
+typedef struct {
   u64 *syscall_kernel_stack; // 0x0
   u64 *syscall_user_stack;   // 0x8
   PageTable *kcr3;           // 0x10

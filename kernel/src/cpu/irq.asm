@@ -2,6 +2,22 @@
 
 global load_idt
 
+global err0 
+global err1 
+global err2 
+global err3 
+global err4
+global err5
+global err6
+global err7
+global err8
+global err9
+global err10
+global err11
+global err12
+global err13
+global err14
+
 
 global irq0
 global irq1
@@ -19,7 +35,23 @@ global irq12
 global irq13
 global irq14
 global irq15
-global dummy_irq 
+
+extern err0_handler
+extern err1_handler
+extern err2_handler
+extern err3_handler
+extern err4_handler
+extern err5_handler
+extern err6_handler
+extern err7_handler
+extern err8_handler
+extern err9_handler
+extern err10_handler
+extern err11_handler
+extern err12_handler
+extern err13_handler
+extern err14_handler
+
 
 extern irq0_handler
 extern irq1_handler
@@ -43,14 +75,87 @@ extern tick
 
 section .text
 
-hang:
-    hlt
-    call hang
 
-dummy_irq:
-    push rax
-    call dummy_handler 
-    call hang
+err0:
+    pushaq
+    call err0_handler
+    popaq
+ 
+err1:
+    pushaq
+    call err1_handler
+    popaq
+ 
+err2:
+    pushaq
+    call err2_handler
+    popaq
+ 
+ 
+err3:
+    pushaq
+    call err2_handler
+    popaq
+ 
+err4:
+    pushaq
+    call err4_handler
+    popaq
+
+err5:
+    pushaq
+    call err5_handler
+    popaq
+
+
+err6:
+    pushaq
+    call err6_handler
+    popaq
+
+err7:
+    pushaq
+    call err7_handler
+    popaq
+
+err8:
+    pushaq
+    call err8_handler
+    popaq
+
+err9:
+    pushaq
+    call err9_handler
+    popaq
+
+err10:
+    pushaq
+    call err10_handler
+    popaq
+
+err11:
+    pushaq
+    call err11_handler
+    popaq
+
+err12:
+    pushaq
+    call err12_handler
+    popaq
+
+
+err13:
+    pushaq
+    call err13_handler
+    popaq
+
+err14:
+    pushaq
+
+    mov rdi, rsp
+    call err14_handler
+    popaq
+
 
 
 irq0:
@@ -151,5 +256,6 @@ irq15:
     call irq15_handler
     popaq
     iretq
+
 
 

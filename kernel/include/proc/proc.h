@@ -14,6 +14,8 @@
 
 enum TaskState { READY, RUNNING, ZOMBIE, WAITING};
 
+struct pqueue;
+
 typedef struct vas_range_node VASRangeNode;
 typedef struct process_control_block {
   uint64_t pid;
@@ -30,7 +32,10 @@ typedef struct process_control_block {
   struct file * fd_table[MAX_PROC_FDS];
   int fd_length;
 
-  struct process_control_block *next;
+  bool changedState;
+
+  struct pqueue * children;
+  struct process_control_block * next;
 } ProcessControlBlock;
 
 

@@ -17,7 +17,7 @@ extern void load_pagedir();
 
 
 ProcessQueue ready_queue = {0, NULL, NULL};
-ProcessQueue wait_queue = {0, NULL, NULL};
+volatile ProcessQueue wait_queue = {0, NULL, NULL};
 ProcessControlBlock *running = NULL;
 
 PageTable *kernel_cr3 = NULL;
@@ -28,12 +28,13 @@ void dump_pqueue(ProcessQueue *pqueue) {
   ProcessControlBlock *cproc = pqueue->first;
   kprintf("There are %d processes in this queue\n", pqueue->count);
   kprintf("Head: %x; Tail: %x;\n", pqueue->first, pqueue->last);
-  for (; cproc; cproc = cproc->next) {
+  for (; cproc != NULL; cproc = cproc->next) {
     kprintf("Process  %d ; Next %x\n", cproc->pid, cproc->next);
   }
 }
 
 void pqueue_insert(ProcessQueue *queue, ProcessControlBlock *proc) {
+  proc->next = NULL;
 
   if (!proc)
     return;
@@ -120,6 +121,8 @@ void kill_proc(ProcessControlBlock *proc) {
     kprintf("After removing\n");
     dump_pqueue(&ready_queue);
 
+    proc->changedState = true;
+
     __asm__("sti");
     for(;;);
 }
@@ -205,15 +208,14 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
   memset(clone, 0, sizeof(ProcessControlBlock));
   memcpy(clone, proc, sizeof(ProcessControlBlock));
 
-  // for (int i = 0; i < proc->fd_length; i++) {
-  //   File *copy_file = kmalloc(sizeof(File));
-  //   *copy_file = *(proc->fd_table[i]);
-  //   clone->fd_table[i] = copy_file;
-  // }
+  for (int i = 0; i < proc->fd_length; i++) {
+    //clone->fd_table[i] = proc->fd_table[i];
+  }
 
   // reset vas so that proper phys addrs get put by vmm_copy_vas
   clone->vas = NULL;
   clone->next = NULL;
+
 
   vmm_copy_vas(clone, proc);
   clone->pid = pid_counter++;
@@ -223,10 +225,18 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
   kprintf("Registers are at stack %x\n", regs);
   kprintf("Fork'd process has cr3: %x\n", clone->cr3);
 
+  // in case that it's empty
+  if(proc->children == NULL){
+      proc->children = kmalloc(sizeof(ProcessControlBlock));
+  }
+
+  pqueue_insert(proc->children, clone);
+
   return clone;
 }
 
 void register_process(ProcessControlBlock *new_pcb) {
+  new_pcb->next = NULL;
   pqueue_insert(&ready_queue, new_pcb);
   return;
 }

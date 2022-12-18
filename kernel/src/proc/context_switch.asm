@@ -1,5 +1,5 @@
 ; C declaration
-; void switch_to_process(Registers * trapframe, void* cr3);
+; void switch_to_process(Registers * trapframe, PageTable* cr3);
 global switch_to_process
 
 %include "cpu/macros.mac"

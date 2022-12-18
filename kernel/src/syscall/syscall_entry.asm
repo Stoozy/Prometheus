@@ -31,15 +31,14 @@ enable_sce:
 ; ret   r15
 
 syscall_entry:
-    cli
     ;cld
 
+    cli
     swapgs
 
     mov [gs:0x8], rsp       ; save process stack
-
-
     mov rsp, [gs:0x0]       ; switch to syscall stack
+
 
     ; pushing registers struct
 
@@ -54,6 +53,7 @@ syscall_entry:
     mov rdi, rsp
     mov rbp, 0
     call syscall_dispatcher
+
 
     popaq
     mov rsp, [gs:0x8]       ; back to user stack

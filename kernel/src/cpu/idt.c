@@ -25,7 +25,97 @@ void idt_set_descriptor(u8 vector, u64 isr, u8 flags) {
   desc->rsv0 = 0;
 }
 
-void dump_stack(u64 *stack) {}
+
+void err0_handler(Registers * regs){
+    kprintf("EXCEPTION: Divide-by-zero Error #DE\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err1_handler(Registers * regs){
+    kprintf("EXCEPTION: Debug #DE\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err2_handler(Registers * regs){
+    kprintf("EXCEPTION: Debug #DE\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err3_handler(Registers * regs){
+    kprintf("EXCEPTION: Breakpoint #BP\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err4_handler(Registers * regs){
+    kprintf("EXCEPTION: Overflow #OF\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err5_handler(Registers * regs){
+    kprintf("EXCEPTION: Bound Range Exceeded #BR\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err6_handler(Registers * regs){
+    kprintf("EXCEPTION: Invalid Opcode #UD\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err7_handler(Registers * regs){
+    kprintf("EXCEPTION: Device not Available #NM\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err8_handler(Registers * regs){
+    kprintf("EXCEPTION: Double Fault  #DF\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err9_handler(Registers * regs){
+    kprintf("EXCEPTION: Coprocessor Segment overrun\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err10_handler(Registers * regs){
+    kprintf("EXCEPTION: Invalid TSS #TS\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err11_handler(Registers * regs){
+    kprintf("EXCEPTION: Segment not present #TS\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err12_handler(Registers * regs){
+    kprintf("EXCEPTION: Stack-Segment Fault #SS\n");
+    dump_regs(regs);
+    for(;;);
+}
+
+void err13_handler(Registers * regs){
+    dump_regs(regs);
+    kprintf("EXCEPTION: General Protection Fault #GP\n");
+    for(;;);
+}
+
+void err14_handler(Trapframe * tf){
+    dump_regs(&tf->regs);
+    kprintf("EXCEPTION: Page Fault #PF\n");
+    kprintf("Error code: %d\n", tf->ec);
+    for(;;);
+}
 
 void irq0_handler(Registers *regs) {
   tick();
@@ -121,14 +211,27 @@ void irq15_handler() {
   outb(0x20, 0x20); /* EOI */
 }
 
-void dummy_handler() {
-  __asm__ volatile("cli");
-  kprintf("Exception occured\n");
-  for (;;)
-    ;
-}
+
 
 void idt_init() {
+
+  extern void err0();
+  extern void err1();
+  extern void err2();
+  extern void err3();
+  extern void err4();
+  extern void err5();
+  extern void err6();
+  extern void err7();
+  extern void err8();
+  extern void err9();
+  extern void err10();
+  extern void err11();
+  extern void err12();
+  extern void err13();
+  extern void err14();
+  extern void err15();
+
 
   extern int irq0();
   extern int irq1();
@@ -146,7 +249,6 @@ void idt_init() {
   extern int irq13();
   extern int irq14();
   extern int irq15();
-  extern int dummy_irq();
 
   u64 irq0_addr;
   u64 irq1_addr;
@@ -180,26 +282,39 @@ void idt_init() {
   outb(0x21, 0x0);
   outb(0xA1, 0x0);
 
-  irq0_addr = (unsigned long)irq0;
-  irq1_addr = (unsigned long)irq1;
-  irq2_addr = (unsigned long)irq2;
-  irq3_addr = (unsigned long)irq3;
-  irq4_addr = (unsigned long)irq4;
-  irq5_addr = (unsigned long)irq5;
-  irq6_addr = (unsigned long)irq6;
-  irq7_addr = (unsigned long)irq7;
-  irq8_addr = (unsigned long)irq8;
-  irq9_addr = (unsigned long)irq9;
-  irq10_addr = (unsigned long)irq10;
-  irq11_addr = (unsigned long)irq11;
-  irq12_addr = (unsigned long)irq12;
-  irq13_addr = (unsigned long)irq13;
-  irq14_addr = (unsigned long)irq14;
-  irq15_addr = (unsigned long)irq15;
-  dummy_irq_addr = (unsigned long)dummy_irq;
+  irq0_addr = (uint64_t)irq0;
+  irq1_addr = (uint64_t)irq1;
+  irq2_addr = (uint64_t)irq2;
+  irq3_addr = (uint64_t)irq3;
+  irq4_addr = (uint64_t)irq4;
+  irq5_addr = (uint64_t)irq5;
+  irq6_addr = (uint64_t)irq6;
+  irq7_addr = (uint64_t)irq7;
+  irq8_addr = (uint64_t)irq8;
+  irq9_addr = (uint64_t)irq9;
+  irq10_addr = (uint64_t)irq10;
+  irq11_addr = (uint64_t)irq11;
+  irq12_addr = (uint64_t)irq12;
+  irq13_addr = (uint64_t)irq13;
+  irq14_addr = (uint64_t)irq14;
+  irq15_addr = (uint64_t)irq15;
 
-  for (int i = 0; i < 32; i++)
-    idt_set_descriptor(i, (uint64_t)dummy_irq_addr, 0x8e);
+  idt_set_descriptor(0, (uint64_t)err0, 0x8e);
+  idt_set_descriptor(1, (uint64_t)err1, 0x8e);
+  idt_set_descriptor(2, (uint64_t)err2, 0x8e);
+  idt_set_descriptor(3, (uint64_t)err3, 0x8e);
+  idt_set_descriptor(4, (uint64_t)err4, 0x8e);
+  idt_set_descriptor(5, (uint64_t)err5, 0x8e);
+  idt_set_descriptor(6, (uint64_t)err6, 0x8e);
+  idt_set_descriptor(7, (uint64_t)err7, 0x8e);
+  idt_set_descriptor(8, (uint64_t)err8, 0x8e);
+  idt_set_descriptor(9, (uint64_t)err9, 0x8e);
+  idt_set_descriptor(10, (uint64_t)err10, 0x8e);
+  idt_set_descriptor(11, (uint64_t)err11, 0x8e);
+  idt_set_descriptor(12, (uint64_t)err12, 0x8e);
+  idt_set_descriptor(13, (uint64_t)err13, 0x8e);
+  idt_set_descriptor(14, (uint64_t)err14, 0x8e);
+
 
   idt_set_descriptor(32, irq0_addr, 0x8e);
   idt_set_descriptor(33, irq1_addr, 0x8e);

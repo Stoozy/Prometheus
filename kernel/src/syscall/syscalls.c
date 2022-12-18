@@ -26,6 +26,9 @@ typedef long int off_t;
 
 extern PageTable *kernel_cr3;
 
+
+extern void switch_to_process(void *new_stack, PageTable *cr3);
+
 static inline uint64_t rdmsr(uint64_t msr) {
   uint32_t low, high;
   asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
@@ -64,9 +67,41 @@ void sys_log_libc(const char *message) {
 int sys_exit() {
     extern void kill_cur_proc();
     kill_cur_proc();
+
     return 0;
 }
 
+pid_t sys_waitpid(pid_t pid, int * status, int flags) {
+    if(pid < -1){
+        kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
+    }else if (pid == -1){
+        extern ProcessControlBlock * running;
+        ProcessControlBlock * children = running->children->first;
+        if(!children){
+            return -1;
+        }
+        kprintf("Waiting on any child process\n");
+
+        extern void dump_pqueue(ProcessQueue *pqueue);
+        dump_pqueue(running->children);
+        __asm__("sti"); // start scheduling again
+
+        while(true){
+            for(ProcessControlBlock * child = children; child != NULL; child = child->next){
+                if(child->changedState) {
+                    child->changedState = 0;
+                    return child->pid;
+                }
+            }
+        }
+    }else if (pid == 0){
+        kprintf("Waiting on any child process with gid equal to the calling proc ... \n");
+    }else if(pid > 0){
+        kprintf("Waiting for the child process with pid %d\n", pid);
+    }
+
+    return 0;
+}
 
 int sys_open(const char *name, int flags, ...) {
 
@@ -134,52 +169,54 @@ int sys_write(int fd, char *ptr, int len) {
 void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
                  int flags, int fd, off_t offset) {
 
+
   kprintf("[MMAP] Requesting %llu bytes\n", size);
   kprintf("[MMAP] Hint : 0x%llx\n", addr);
   kprintf("[MMAP] Size : 0x%llx\n", size);
   kprintf("Current process at 0x%x\n", proc);
 
-  if (valid_fd(fd)) {
-    File *file = proc->fd_table[fd];
-    int pages = (size / PAGE_SIZE);
+  //if (valid_fd(fd)) {
+  //  File *file = proc->fd_table[fd];
+  //  int pages = (size / PAGE_SIZE);
 
-    void *phys_base =
-        (void *)((file->inode & ~(0xfff)) - PAGING_VIRTUAL_OFFSET);
+  //  void *phys_base =
+  //      (void *)((file->inode & ~(0xfff)) - PAGING_VIRTUAL_OFFSET);
 
-    void *virt_base = NULL;
-    if (flags & MAP_FIXED && addr != NULL) {
-      virt_base = addr;
-    } else {
-      virt_base = (void *)proc->mmap_base;
-      proc->mmap_base += pages * PAGE_SIZE;
-    }
+  //  void *virt_base = NULL;
+  //  if (flags & MAP_FIXED && addr != NULL) {
+  //    virt_base = addr;
+  //  } else {
+  //    virt_base = (void *)proc->mmap_base;
+  //    proc->mmap_base += pages * PAGE_SIZE;
+  //  }
 
-    int page_flags = PAGE_USER | PAGE_PRESENT | PAGE_WRITE;
+  //  int page_flags = PAGE_USER | PAGE_PRESENT | PAGE_WRITE;
 
-    if (flags & PROT_WRITE)
-      page_flags |= PAGE_WRITE;
+  //  if (flags & PROT_WRITE)
+  //    page_flags |= PAGE_WRITE;
 
-    kprintf("Virt base is %x\n", virt_base);
+  //  kprintf("Virt base is %x\n", virt_base);
 
-    vmm_map_range((void *)((u64)proc->cr3 + PAGING_VIRTUAL_OFFSET), virt_base,
-                  phys_base, size, page_flags);
+  //  vmm_map_range((void *)((u64)proc->cr3 + PAGING_VIRTUAL_OFFSET), virt_base,
+  //                phys_base, size, page_flags);
 
-    VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
-    range->virt_start = virt_base;
-    range->phys_start = phys_base;
-    range->size = pages * PAGE_SIZE;
-    range->page_flags = page_flags;
+  //  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+  //  range->virt_start = virt_base;
+  //  range->phys_start = phys_base;
+  //  range->size = pages * PAGE_SIZE;
+  //  range->page_flags = page_flags;
 
-    proc_add_vas_range(proc, range);
+  //  proc_add_vas_range(proc, range);
 
-    return virt_base;
-  }
+  //  return virt_base;
+  //}
 
   // size isn't page aligned
   if (size % PAGE_SIZE != 0) {
     kprintf("[MMAP] Size wasn't page aligned");
     return NULL;
   }
+
   int pages = (size / PAGE_SIZE) + 1;
   void *phys_base = pmm_alloc_blocks(pages);
 
@@ -432,7 +469,6 @@ int sys_execve(char *name, char **argvp, char **envp) {
   ++running->pid;
 
 
-  extern void switch_to_process(void *new_stack, PageTable *cr3);
   switch_to_process(&running->trapframe, running->cr3);
 
   // should never reach
@@ -444,7 +480,11 @@ int sys_fork(Registers *regs) {
 
   dump_regs(&running->trapframe);
   ProcessControlBlock *child_proc = clone_process(running, regs);
+
+  pqueue_insert(running->children, child_proc);
   register_process(child_proc);
+
+  dump_regs(&child_proc->trapframe);
 
   return child_proc->pid;
 }
@@ -777,17 +817,7 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_WAIT: {
-        pid_t pid = (pid_t)regs->r8;
-        if(pid < -1){
-            kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
-        }else if (pid == -1){
-            kprintf("Waiting on any child process\n");
-        }else if (pid == 0){
-            kprintf("Waiting on any child process with gid equal to the calling proc ... \n");
-        }else if(pid > 0){
-            kprintf("Waiting for the child process with pid %d\n", pid);
-        }
-        for(;;);
+        sys_waitpid((pid_t)regs->r8, (int*)regs->r9, (int)regs->r10);
         break;
   }
 
