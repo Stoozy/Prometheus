@@ -26,6 +26,7 @@
 #define S_IRUSR 0400
 #define S_IWUSR 0200
 #define S_IXUSR 0100
+#define S_IEXEC S_IXUSR
 #define S_IRWXG 070
 #define S_IRGRP 040
 #define S_IWGRP 020
@@ -42,9 +43,8 @@
 extern "C" {
 #endif
 
-#if defined(__x86_64__) || defined(__aarch64__)
+#if defined(__x86_64__)
 
-// TODO: Is this correct for AArch64?
 struct stat {
 	dev_t st_dev;
 	ino_t st_ino;
@@ -63,7 +63,7 @@ struct stat {
 	long __unused[3];
 };
 
-#elif defined(__riscv) && __riscv_xlen == 64
+#elif (defined(__riscv) && __riscv_xlen == 64) || defined (__aarch64__)
 
 struct stat {
 	dev_t st_dev;
