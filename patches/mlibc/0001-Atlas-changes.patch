@@ -1,30 +1,34 @@
-From dba6661482e239e21726d73a9e02782fcec71c75 Mon Sep 17 00:00:00 2001
+From 8f29ef98fb6e079790d3f79e2b5d37d270451530 Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Thu, 17 Nov 2022 23:46:23 -0500
+Date: Wed, 4 Jan 2023 00:58:25 -0500
 Subject: [PATCH] Atlas changes
 
 ---
  meson.build                                  |   7 +-
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 +
- sysdeps/atlas/generic/generic.cpp            | 795 +++++++++++++++++++
- sysdeps/atlas/generic/thread.cpp             |  44 +
+ sysdeps/atlas/generic/generic.cpp            | 755 +++++++++++++++++++
+ sysdeps/atlas/generic/thread.cpp             |  44 ++
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/access.h      |   9 +
- sysdeps/atlas/include/abi-bits/auxv.h        |  27 +
- sysdeps/atlas/include/abi-bits/blkcnt_t.h    |   7 +
- sysdeps/atlas/include/abi-bits/blksize_t.h   |   9 +
+ sysdeps/atlas/include/abi-bits/auxv.h        |  13 +
+ sysdeps/atlas/include/abi-bits/blkcnt_t.h    |   8 +
+ sysdeps/atlas/include/abi-bits/blksize_t.h   |   8 +
  sysdeps/atlas/include/abi-bits/clockid_t.h   |   7 +
- sysdeps/atlas/include/abi-bits/dev_t.h       |   8 +
+ sysdeps/atlas/include/abi-bits/dev_t.h       |  10 +
  sysdeps/atlas/include/abi-bits/epoll.h       |   6 +
  sysdeps/atlas/include/abi-bits/errno.h       | 139 ++++
  sysdeps/atlas/include/abi-bits/fcntl.h       |  74 ++
+ sysdeps/atlas/include/abi-bits/fsblkcnt_t.h  |   8 +
+ sysdeps/atlas/include/abi-bits/fsfilcnt_t.h  |   8 +
  sysdeps/atlas/include/abi-bits/gid_t.h       |   8 +
- sysdeps/atlas/include/abi-bits/in.h          | 104 +++
- sysdeps/atlas/include/abi-bits/ino_t.h       |   9 +
+ sysdeps/atlas/include/abi-bits/in.h          | 162 ++++
+ sysdeps/atlas/include/abi-bits/ino_t.h       |  10 +
  sysdeps/atlas/include/abi-bits/inotify.h     |   9 +
+ sysdeps/atlas/include/abi-bits/ioctls.h      |  11 +
  sysdeps/atlas/include/abi-bits/limits.h      |   9 +
  sysdeps/atlas/include/abi-bits/mode_t.h      |   8 +
+ sysdeps/atlas/include/abi-bits/mqueue.h      |  21 +
  sysdeps/atlas/include/abi-bits/nlink_t.h     |   8 +
  sysdeps/atlas/include/abi-bits/packet.h      |   6 +
  sysdeps/atlas/include/abi-bits/pid_t.h       |   8 +
@@ -34,20 +38,28 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/resource.h    |  25 +
  sysdeps/atlas/include/abi-bits/seek-whence.h |   8 +
  sysdeps/atlas/include/abi-bits/shm.h         |  21 +
- sysdeps/atlas/include/abi-bits/signal.h      | 350 ++++++++
- sysdeps/atlas/include/abi-bits/socket.h      | 291 +++++++
+ sysdeps/atlas/include/abi-bits/signal.h      | 441 +++++++++++
+ sysdeps/atlas/include/abi-bits/socket.h      | 298 ++++++++
+ sysdeps/atlas/include/abi-bits/socklen_t.h   |   6 +
  sysdeps/atlas/include/abi-bits/stat.h        |  94 +++
+ sysdeps/atlas/include/abi-bits/statfs.h      |  28 +
+ sysdeps/atlas/include/abi-bits/statvfs.h     |  28 +
+ sysdeps/atlas/include/abi-bits/suseconds_t.h |   8 +
  sysdeps/atlas/include/abi-bits/termios.h     | 117 +++
  sysdeps/atlas/include/abi-bits/time.h        |  15 +
  sysdeps/atlas/include/abi-bits/uid_t.h       |   8 +
- sysdeps/atlas/include/abi-bits/utsname.h     |  12 +
- sysdeps/atlas/include/abi-bits/vm-flags.h    |  44 +
+ sysdeps/atlas/include/abi-bits/utsname.h     |  13 +
+ sysdeps/atlas/include/abi-bits/vm-flags.h    |  44 ++
  sysdeps/atlas/include/abi-bits/vt.h          |  76 ++
- sysdeps/atlas/include/abi-bits/wait.h        |  25 +
+ sysdeps/atlas/include/abi-bits/wait.h        |  28 +
+ sysdeps/atlas/include/abi-bits/xattr.h       |  21 +
+ sysdeps/atlas/include/header_list            |  43 ++
+ sysdeps/atlas/include/header_list2           |  30 +
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
+ sysdeps/atlas/include/syscall.h              | 110 +++
  sysdeps/atlas/include/vfs.h                  |  28 +
- sysdeps/atlas/meson.build                    |  59 ++
- 43 files changed, 2619 insertions(+), 1 deletion(-)
+ sysdeps/atlas/meson.build                    |  72 ++
+ 55 files changed, 3063 insertions(+), 1 deletion(-)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -62,12 +74,16 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/include/abi-bits/epoll.h
  create mode 100644 sysdeps/atlas/include/abi-bits/errno.h
  create mode 100644 sysdeps/atlas/include/abi-bits/fcntl.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/fsblkcnt_t.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/fsfilcnt_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/gid_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/in.h
  create mode 100644 sysdeps/atlas/include/abi-bits/ino_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/inotify.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/ioctls.h
  create mode 100644 sysdeps/atlas/include/abi-bits/limits.h
  create mode 100644 sysdeps/atlas/include/abi-bits/mode_t.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/mqueue.h
  create mode 100644 sysdeps/atlas/include/abi-bits/nlink_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/packet.h
  create mode 100644 sysdeps/atlas/include/abi-bits/pid_t.h
@@ -79,7 +95,11 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/include/abi-bits/shm.h
  create mode 100644 sysdeps/atlas/include/abi-bits/signal.h
  create mode 100644 sysdeps/atlas/include/abi-bits/socket.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/socklen_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/stat.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/statfs.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/statvfs.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/suseconds_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/termios.h
  create mode 100644 sysdeps/atlas/include/abi-bits/time.h
  create mode 100644 sysdeps/atlas/include/abi-bits/uid_t.h
@@ -87,15 +107,19 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/include/abi-bits/vm-flags.h
  create mode 100644 sysdeps/atlas/include/abi-bits/vt.h
  create mode 100644 sysdeps/atlas/include/abi-bits/wait.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/xattr.h
+ create mode 100644 sysdeps/atlas/include/header_list
+ create mode 100644 sysdeps/atlas/include/header_list2
  create mode 100644 sysdeps/atlas/include/mlibc/thread-entry.hpp
+ create mode 100644 sysdeps/atlas/include/syscall.h
  create mode 100644 sysdeps/atlas/include/vfs.h
  create mode 100644 sysdeps/atlas/meson.build
 
 diff --git a/meson.build b/meson.build
-index 4c4668f0..1092f623 100644
+index a8cd3fec..ac709084 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -135,6 +135,11 @@ elif host_machine.system() == 'dripos'
+@@ -144,6 +144,11 @@ elif host_machine.system() == 'dripos'
  	rtdl_include_dirs += include_directories('sysdeps/dripos/include')
  	libc_include_dirs += include_directories('sysdeps/dripos/include')
  	subdir('sysdeps/dripos')
@@ -107,7 +131,7 @@ index 4c4668f0..1092f623 100644
  else
  	error('No sysdeps defined for OS: ' + host_machine.system())
  endif
-@@ -306,7 +311,7 @@ if not headers_only
+@@ -316,7 +321,7 @@ if not headers_only
  
  	ld_cpp_args = [
  		'-fvisibility=hidden',
@@ -171,578 +195,499 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..cc8245cf
+index 00000000..0cd24b7f
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,795 @@
+@@ -0,0 +1,755 @@
++#include <abi-bits/vt.h>
 +#include <bits/ensure.h>
 +#include <dirent.h>
-+#include <errno.h> 
++#include <errno.h>
 +#include <limits.h>
++#include <linux/fb.h>
 +#include <mlibc/all-sysdeps.hpp>
 +#include <mlibc/debug.hpp>
 +#include <mlibc/thread-entry.hpp>
++#include <string.h>
 +#include <sys/types.h>
++#include <syscall.h>
 +#include <unistd.h>
 +#include <vfs.h>
-+#include <string.h>
-+#include <abi-bits/vt.h>
-+#include <linux/fb.h>
-+
-+
-+#define SYS_EXIT 0
-+#define SYS_OPEN 1
-+#define SYS_CLOSE 2
-+#define SYS_READ 3
-+#define SYS_WRITE 4
-+#define SYS_LOG_LIBC 5
-+#define SYS_VM_MAP 6
-+#define SYS_SEEK 7
-+#define SYS_TCB_SET 8
-+#define SYS_IOCTL 9
-+#define SYS_FORK 10
-+#define SYS_WAIT 11
-+#define SYS_STAT 12
-+#define SYS_FSTAT 13
-+#define SYS_GETPID 14
-+#define SYS_DUP 15
-+#define SYS_DUP2 16
-+#define SYS_READDIR 17
-+
-+#define SYSCALL_NA0(call)                                                      \
-+  ({                                                                           \
-+    register uint64_t syscall asm("rsi") = call;                               \
-+    asm volatile("syscall"                                                     \
-+                 : "=r"(ret)                                                   \
-+                 : "r"(syscall)                                                \
-+                 : "rcx", "r11", "memory");                                    \
-+  });
-+
-+#define SYSCALL_NA1(call, arg0)                                                \
-+  ({                                                                           \
-+    register uint64_t syscall asm("rsi") = call;                               \
-+    register auto r8 asm("r8") = (arg0);                                       \
-+    asm volatile("syscall"                                                     \
-+                 : "=r"(ret)                                                   \
-+                 : "r"(syscall), "r"(r8)                                       \
-+                 : "rcx", "r11", "memory");                                    \
-+  });
-+
-+#define SYSCALL_NA2(call, arg0, arg1)                                          \
-+  ({                                                                           \
-+    register uint64_t syscall asm("rsi") = call;                               \
-+    register auto r8 asm("r8") = (arg0);                                       \
-+    register auto r9 asm("r9") = (arg1);                                       \
-+    asm volatile("syscall"                                                     \
-+                 : "=r"(ret)                                                   \
-+                 : "r"(syscall), "r"(r8), "r"(r9)                              \
-+                 : "rcx", "r11", "memory");                                    \
-+  });
-+
-+#define SYSCALL_NA3(call, arg0, arg1, arg2)                                    \
-+  ({                                                                           \
-+    register uint64_t syscall asm("rsi") = call;                               \
-+    register auto r8 asm("r8") = (arg0);                                       \
-+    register auto r9 asm("r9") = (arg1);                                       \
-+    register auto r10 asm("r10") = (arg2);                                     \
-+    asm volatile("syscall"                                                     \
-+                 : "=r"(ret)                                                   \
-+                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10)                    \
-+                 : "rcx", "r11", "memory");                                    \
-+  });
-+
-+#define SYSCALL_NA4(call, arg0, arg1, arg2, arg3)                              \
-+  ({                                                                           \
-+    register uint64_t syscall asm("rsi") = call;                               \
-+    register auto r8 asm("r8") = (arg0);                                       \
-+    register auto r9 asm("r9") = (arg1);                                       \
-+    register auto r10 asm("r10") = (arg2);                                     \
-+    register auto r12 asm("r12") = (arg3);                                     \
-+    asm volatile("syscall"                                                     \
-+                 : "=r"(ret)                                                   \
-+                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10), "r"(r12)          \
-+                 : "rcx", "r11", "memory");                                    \
-+  });
-+
-+#define SYSCALL_NA5(call, arg0, arg1, arg2, arg3, arg4)                        \
-+  ({                                                                           \
-+    register uint64_t syscall asm("rsi") = call;                               \
-+    register auto r8 asm("r8") = (arg0);                                       \
-+    register auto r9 asm("r9") = (arg1);                                       \
-+    register auto r10 asm("r10") = (arg2);                                     \
-+    register auto r12 asm("r12") = (arg3);                                     \
-+    register auto r13 asm("r13") = (arg4);                                     \
-+    asm volatile("syscall"                                                     \
-+                 : "=r"(ret)                                                   \
-+                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10), "r"(r12),         \
-+                   "r"(r13),                                                   \
-+                 : "rcx", "r11", "memory");                                    \
-+  });
-+
-+#define SYSCALL_NA6(call, arg0, arg1, arg2, arg3, arg4, arg5)                  \
-+  ({                                                                           \
-+    register uint64_t syscall asm("rsi") = call;                               \
-+    register auto r8 asm("r8") = (arg0);                                       \
-+    register auto r9 asm("r9") = (arg1);                                       \
-+    register auto r10 asm("r10") = (arg2);                                     \
-+    register auto r12 asm("r12") = (arg3);                                     \
-+    register auto r13 asm("r13") = (arg4);                                     \
-+    register auto r14 asm("r14") = (arg5);                                     \
-+    asm volatile("syscall"                                                     \
-+                 : "=r"(ret)                                                   \
-+                 : "r"(syscall), "r"(r8), "r"(r9), "r"(r10), "r"(r12),         \
-+                   "r"(r13), "r"(r14)                                          \
-+                 : "rcx", "r11", "memory");                                    \
-+  });
 +
 +namespace mlibc {
 +
 +void sys_libc_log(const char *message) {
-+  register int ret asm("r15");
-+  SYSCALL_NA1(SYS_LOG_LIBC, message);
 +
-+  return;
++    sysc_ret ret;
++    SYSCALL_NA1(SYS_LOG_LIBC, message);
++
++    return;
 +}
 +
 +void sys_libc_panic() {
-+  mlibc::infoLogger() << "\e[31mmlibc: panic!" << frg::endlog;
-+  for (;;)
-+    ;
++    mlibc::infoLogger() << "\e[31mmlibc: panic!" << frg::endlog;
++    for (;;)
++        ;
 +}
 +
 +int sys_tcb_set(void *pointer) {
-+  register int ret asm("r15");
-+  SYSCALL_NA1(SYS_TCB_SET, pointer);
++    sysc_ret ret;
++    SYSCALL_NA1(SYS_TCB_SET, pointer);
 +
-+  int r = ret;
-+  mlibc::infoLogger() << "Got tcb_set return " << r << frg::endlog;
-+  return ret;
++    mlibc::infoLogger() << "Got tcb_set return " << ret.ret << frg::endlog;
++    return ret.ret;
 +}
 +
 +int sys_anon_allocate(size_t size, void **pointer) {
 +
-+  int errno = sys_vm_map(NULL, size, PROT_EXEC | PROT_READ | PROT_WRITE,
-+                         MAP_ANONYMOUS, -1, 0, pointer);
++    int errno = sys_vm_map(NULL, size, PROT_EXEC | PROT_READ | PROT_WRITE,
++                           MAP_ANONYMOUS, -1, 0, pointer);
 +
-+  return errno;
++    return errno;
 +}
 +
 +int sys_anon_free(void *pointer, size_t size) {
-+  // TODO
-+  return 0;
++    // TODO
++    return 0;
 +}
 +
 +#ifndef MLIBC_BUILDING_RTDL
 +void sys_exit(int status) {
-+  register int ret asm("r15");
-+  SYSCALL_NA1(SYS_EXIT, status);
++    sysc_ret ret;
++    SYSCALL_NA1(SYS_EXIT, status);
 +}
 +#endif
 +
 +#ifndef MLIBC_BUILDING_RTDL
-+int sys_clock_get(int clock, time_t *secs, long *nanos) { 
++int sys_clock_get(int clock, time_t *secs, long *nanos) {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_clock_get() STUB\n" << frg::endlog;
-+    return 0; 
++    mlibc::infoLogger() << "[mlibc] Calling sys_clock_get() STUB\n"
++                        << frg::endlog;
++    return 0;
 +}
 +#endif
 +
 +int sys_open(const char *path, int flags, unsigned int mode, int *fd) {
-+  mlibc::infoLogger() << "[mlibc] Called sys_open on " << path << frg::endlog;
-+  mlibc::infoLogger() << "[mlibc] path len is " << strlen(path) <<frg::endlog;
-+  //if(path[0] == '\0' ||  path == NULL || strlen(path) == 0 || strlen(path) == 1)
-+      //return EINVAL;
++    mlibc::infoLogger() << "[mlibc] Called sys_open on " << path << frg::endlog;
++    mlibc::infoLogger() << "[mlibc] path len is " << strlen(path)
++                        << frg::endlog;
++    // if(path[0] == '\0' ||  path == NULL || strlen(path) == 0 || strlen(path)
++    // == 1) return EINVAL;
 +
-+  register int ret asm("r15");
-+  SYSCALL_NA2(SYS_OPEN, path, flags);
++    sysc_ret ret;
++    SYSCALL_NA2(SYS_OPEN, path, flags);
 +
-+  if(ret != -1){
-+    *fd = ret;
-+    mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd  << "\n" << frg::endlog;
-+  }
-+  else
-+    return ENOENT; 
++    if (ret.ret == -1)
++        return ret.errno;
 +
-+  return 0;
++    *fd = ret.ret;
++
++    return 0;
 +}
 +
-+int sys_open_dir(const char *path, int *handle){
++int sys_open_dir(const char *path, int *handle) {
 +
-+  mlibc::infoLogger() << "[mlibc] sys_open_dir; path: " << path << "\n" << frg::endlog;
-+  return sys_open(path, O_DIRECTORY | O_RDONLY,  0, handle);
++    mlibc::infoLogger() << "[mlibc] sys_open_dir; path: " << path << "\n"
++                        << frg::endlog;
++    return sys_open(path, O_DIRECTORY | O_RDONLY, 0, handle);
 +}
 +
-+int sys_read_entries(int handle, void* buffer, size_t max_size, size_t* bytes_read)
-+{
++int sys_read_entries(int handle, void *buffer, size_t max_size,
++                     size_t *bytes_read) {
 +    __ensure(max_size >= sizeof(dirent));
 +
-+    mlibc::infoLogger() << "[mlibc] sys_read_entries STUB; handle: " << handle << "\n" << frg::endlog;
++    mlibc::infoLogger() << "[mlibc] sys_read_entries STUB; handle: " << handle
++                        << "\n"
++                        << frg::endlog;
 +
++    return ENOSYS;
 +
-+    *bytes_read = 0;
-+    return 0;
-+    register int ret asm ("r15");
++    sysc_ret ret;
 +    SYSCALL_NA3(SYS_READDIR, handle, buffer, max_size);
 +
 +    dirent ret_entry;
-+    DirectoryEntry  * entry  = (DirectoryEntry*)(buffer);
++    DirectoryEntry *entry = (DirectoryEntry *)(buffer);
 +
-+    if(ret == -1){
++    if (ret.ret == -1) {
 +        *bytes_read = 0;
 +        return 0;
 +    }
 +
-+    ret_entry.d_ino =  entry->ino;
++    ret_entry.d_ino = entry->ino;
 +    ret_entry.d_off = 0;
 +    ret_entry.d_reclen = sizeof(DirectoryEntry);
 +    memcpy(ret_entry.d_name, entry->name, 128);
 +
 +    mlibc::infoLogger() << "Got entry " << entry->name << "\n" << frg::endlog;
-+    switch(entry->type){
-+      case VFS_DIRECTORY:
++    switch (entry->type) {
++    case VFS_DIRECTORY:
 +        ret_entry.d_type = DT_DIR;
-+        mlibc::infoLogger() << "Type is DIR" << "\n" <<  frg::endlog;
++        mlibc::infoLogger() << "Type is DIR"
++                            << "\n"
++                            << frg::endlog;
 +        break;
-+      case VFS_FILE:
++    case VFS_FILE:
 +        ret_entry.d_type = DT_REG;
-+        mlibc::infoLogger() << "Type is FILE" << "\n" <<  frg::endlog;
++        mlibc::infoLogger() << "Type is FILE"
++                            << "\n"
++                            << frg::endlog;
 +        break;
-+      default:
++    default:
 +        ret_entry.d_type = DT_UNKNOWN;
-+        mlibc::infoLogger() << "Type is UNKNOWN" << "\n" <<  frg::endlog;
++        mlibc::infoLogger() << "Type is UNKNOWN"
++                            << "\n"
++                            << frg::endlog;
 +        break;
 +    }
 +
 +    memcpy(buffer, &ret_entry, sizeof(dirent));
-+    *bytes_read =  ret_entry.d_reclen;
-+    //for(;;);
++    *bytes_read = ret_entry.d_reclen;
++    // for(;;);
 +
 +    return 0;
 +}
 +
 +int sys_close(int fd) {
-+  mlibc::infoLogger() << "[mlibc] Close was called on " << fd << "\n" << frg::endlog;
++    mlibc::infoLogger() << "[mlibc] Close was called on " << fd << "\n"
++                        << frg::endlog;
 +
-+  return 0;
++    return 0;
 +}
 +
 +int sys_read(int fd, void *buf, size_t count, ssize_t *bytes_read) {
 +
-+  mlibc::infoLogger() << "[mlibc] SYS_READ read called" << fd << " bytes";
++    mlibc::infoLogger() << "[mlibc] SYS_READ read called" << fd << " bytes";
 +
-+  register size_t ret asm("r15");
-+  SYSCALL_NA3(SYS_READ, fd, buf, count);
++    sysc_ret ret;
++    SYSCALL_NA3(SYS_READ, fd, buf, count);
 +
-+  if (ret >= 0) {
-+    *bytes_read = ret;
-+  } else {
-+    return -1;
-+  }
++    if (ret.ret == -1)
++        return ret.errno;
 +
-+  mlibc::infoLogger() << "[mlibc] SYS_READ read " << *bytes_read << " bytes"
-+                      << frg::endlog;
++    *bytes_read = ret.ret;
++    mlibc::infoLogger() << "[mlibc] SYS_READ read " << *bytes_read << " bytes"
++                        << frg::endlog;
 +
-+  return 0;
++    return 0;
 +}
-+
 +
 +#ifndef MLIBC_BUILDING_RTDL
 +int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written) {
 +
-+  mlibc::infoLogger() << "[mlibc] Write was called on " << fd << "\n" << frg::endlog;
-+  register size_t ret asm("r15");
-+  SYSCALL_NA3(SYS_WRITE, fd, buf, count);
++    mlibc::infoLogger() << "[mlibc] Write was called on " << fd << "\n"
++                        << frg::endlog;
++    sysc_ret ret;
++    SYSCALL_NA3(SYS_WRITE, fd, buf, count);
 +
-+  if (ret >= 0)
-+    *bytes_written = ret;
-+  else
-+    return EBADF;
++    if (ret.ret == -1)
++        return ret.errno;
++    *bytes_written = ret.ret;
 +
-+  return 0;
++    return 0;
 +}
 +#endif
 +
-+
 +int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
-+  // TODO
++    // TODO
 +
-+    if(fd == 0 || fd == 1 || fd == 2)
++    if (fd == 0 || fd == 1 || fd == 2)
 +        return ESPIPE;
-+  register off_t ret asm("r15");
-+  SYSCALL_NA3(SYS_SEEK, fd, offset, whence);
 +
++    sysc_ret ret;
++    SYSCALL_NA3(SYS_SEEK, fd, offset, whence);
 +
-+  if(ret == -1)
-+    return EINVAL;
++    if (ret.ret == -1)
++        return ret.errno;
 +
-+  if(ret <0)
-+      return EOVERFLOW;
++    *new_offset = ret.ret;
 +
-+  *new_offset = ret;
++    mlibc::infoLogger() << "[mlibc] Sys seek got ret " << *new_offset << "\n"
++                        << frg::endlog;
 +
-+  mlibc::infoLogger() << "[mlibc] Sys seek got ret " << *new_offset << "\n" << frg::endlog;
-+
-+  return 0;
++    return 0;
 +}
 +
-+int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags, struct stat *statbuf){
-+  mlibc::infoLogger() << "[mlibc] Calling sys_stat() STUB\n" << frg::endlog;
++int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags,
++             struct stat *statbuf) {
++    mlibc::infoLogger() << "[mlibc] Calling sys_stat() STUB\n" << frg::endlog;
 +
-+  return ENOSYS;
++    VfsNodeStat vns;
++    switch (fsfdt) {
++    case fsfd_target::fd: {
++        mlibc::infoLogger() << "[mlibc] Calling fstat on " << fd << " fd\n"
++                            << frg::endlog;
 +
-+  VfsNodeStat vns;
-+  switch(fsfdt){
-+    case fsfd_target::fd:{
-+      mlibc::infoLogger() << "[mlibc] Calling fstat on " << fd << " fd\n" << frg::endlog;
++        sysc_ret ret;
++        SYSCALL_NA2(SYS_FSTAT, fd, &vns);
 +
-+      register int ret asm ("r15");
-+      SYSCALL_NA2(SYS_FSTAT, fd, &vns);
++        if (ret.ret == -1)
++            return ret.errno;
 +
-+      if(ret == -1)
-+
-+          return EBADF;
-+      break;
++        break;
 +    }
-+    case fsfd_target::path:{
-+      mlibc::infoLogger() << "[mlibc] Calling stat on " << path << "\n" << frg::endlog;
++    case fsfd_target::path: {
++        mlibc::infoLogger() << "[mlibc] Calling stat on " << path << "\n"
++                            << frg::endlog;
 +
-+      register int ret asm("r15");
-+      SYSCALL_NA2(SYS_STAT, path, &vns);
-+      if(ret == -1){
-+        mlibc::infoLogger() << "[mlibc] did not get statbuf for " <<path << "\n" << frg::endlog;
-+        return ENOENT;
-+      }
-+      break;
++        sysc_ret ret;
++        SYSCALL_NA2(SYS_STAT, path, &vns);
++        if (ret.ret == -1)
++            return ret.errno;
++
++        break;
 +    }
 +    default: {
-+      mlibc::infoLogger() << "Invalid fsfd_target \n" << frg::endlog;
++        mlibc::infoLogger() << "Invalid fsfd_target \n" << frg::endlog;
 +
-+      return EBADF; 
-+      break;
++        return EBADF;
++        break;
 +    }
-+  }
++    }
 +
-+  memset(statbuf, 0, sizeof(struct stat));
++    memset(statbuf, 0, sizeof(struct stat));
 +
-+  statbuf->st_ino = (vns.inode % 15);
-+  statbuf->st_size = vns.filesize;
-+  statbuf->st_dev = 0;
-+  statbuf->st_nlink = 1;
-+  statbuf->st_uid = 0;
-+  statbuf->st_gid = 0;
-+  statbuf->st_rdev = 0;
-+  statbuf->st_blksize = 0;
-+  statbuf->st_blocks = 0;
-+  statbuf->st_mode = 0;
++    statbuf->st_ino = (vns.inode % 15);
++    statbuf->st_size = vns.filesize;
++    statbuf->st_dev = 0;
++    statbuf->st_nlink = 1;
++    statbuf->st_uid = 0;
++    statbuf->st_gid = 0;
++    statbuf->st_rdev = 0;
++    statbuf->st_blksize = 0;
++    statbuf->st_blocks = 0;
++    statbuf->st_mode = 0;
 +
-+  switch (vns.type) {
-+      case VFS_FILE:
-+          mlibc::infoLogger() << "[mlibc] Regular file " << path << "\n" << frg::endlog;
-+          statbuf->st_mode |= S_IFREG;
-+          break;
-+      case VFS_DIRECTORY:
-+          mlibc::infoLogger() << "[mlibc] Regular directory " << path << "\n" << frg::endlog;
-+          statbuf->st_mode |= S_IFDIR;
-+          break;
-+      case VFS_CHARDEVICE:
++    switch (vns.type) {
++    case VFS_FILE:
++        mlibc::infoLogger() << "[mlibc] Regular file " << path << "\n"
++                            << frg::endlog;
++        statbuf->st_mode |= S_IFREG;
++        break;
 +
-+          mlibc::infoLogger() << "[mlibc] Chardevice " << path << "\n" << frg::endlog;
-+          statbuf->st_mode |= S_IFCHR;
-+          statbuf->st_rdev = 0;
-+          break;
-+      default: sys_libc_panic();
-+  }
++    case VFS_DIRECTORY | VFS_MOUNTPOINT:
++    case VFS_DIRECTORY:
++        mlibc::infoLogger() << "[mlibc] Regular directory " << path << "\n"
++                            << frg::endlog;
++        statbuf->st_mode |= S_IFDIR;
++        break;
++    case VFS_CHARDEVICE:
 +
-+  mlibc::infoLogger() << "[mlibc] size: " << statbuf->st_size << " inode: " << statbuf->st_ino << "\n" << frg::endlog;
++        mlibc::infoLogger() << "[mlibc] Chardevice " << path << "\n"
++                            << frg::endlog;
++        statbuf->st_mode |= S_IFCHR;
++        statbuf->st_rdev = 0;
++        break;
++    default:
++        sys_libc_panic();
++    }
 +
-+  return 0;
++    mlibc::infoLogger() << "[mlibc] size: " << statbuf->st_size
++                        << " inode: " << statbuf->st_ino << "\n"
++                        << frg::endlog;
++
++    return 0;
 +}
 +
-+
-+int sys_access(const char* filename, int mode){
++int sys_access(const char *filename, int mode) {
 +    mlibc::infoLogger() << "[mlibc] Calling sys_access() STUB\n" << frg::endlog;
-+    for(;;);
++    for (;;)
++        ;
 +    return ENOSYS;
 +}
 +
 +int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd,
 +               off_t offset, void **window) {
-+    if(flags & MAP_SHARED){
-+        mlibc::infoLogger() << "[mlibc] Trying to map shared size: " << size << " address: " << hint << " fd: " << fd << "\n" << frg::endlog;
++    if (flags & MAP_SHARED) {
++        mlibc::infoLogger() << "[mlibc] Trying to map shared size: " << size
++                            << " address: " << hint << " fd: " << fd << "\n"
++                            << frg::endlog;
 +
-+      register uint64_t ret asm("r15");
-+      SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
-+    
-+      mlibc::infoLogger() << "[mlibc] Derefing window at " << window << "\n" << frg::endlog;
-+      *window = (void*)ret;
-+      return 0;
++        sysc_ret ret;
++        SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
++
++        mlibc::infoLogger() << "[mlibc] Derefing window at " << window << "\n"
++                            << frg::endlog;
++
++        if (ret.ret == -1)
++            return ret.errno;
++
++        *window = (void *)ret.ret;
++        return 0;
 +    }
 +
-+  __ensure(flags & MAP_ANONYMOUS);
++    __ensure(flags & MAP_ANONYMOUS);
 +
-+  register uint64_t ret asm("r15");
-+  SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
++    sysc_ret ret;
++    SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
 +
-+  mlibc::infoLogger() << "[mlibc] Derefing window at " << window << "\n" << frg::endlog;
-+  *window = (void*)ret;
-+  //mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window << frg::endlog;
++    mlibc::infoLogger() << "[mlibc] Derefing window at " << window << "\n"
++                        << frg::endlog;
++    if (ret.ret == -1)
++        return ret.errno;
 +
-+  return 0;
++    *window = (void *)ret.ret;
++
++    return 0;
 +}
 +
 +int sys_vm_unmap(void *pointer, size_t size) {
-+  // TODO
++    // TODO
 +    return sys_anon_free(pointer, size);
 +}
 +
 +int sys_futex_wait(int *pointer, int expected, const struct timespec *time) {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wait() STUB\n" << frg::endlog;
++    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wait() STUB\n"
++                        << frg::endlog;
 +
-+  return 0;
++    return 0;
 +}
 +
-+int sys_isatty(int fd){
-+  mlibc::infoLogger() << "[mlibc] Called sys_isatty on fd " << fd << "\n" << frg::endlog;
-+  return 0;
++int sys_isatty(int fd) {
++    mlibc::infoLogger() << "[mlibc] Called sys_isatty on fd " << fd << "\n"
++                        << frg::endlog;
++    return 0;
 +}
 +
-+int sys_ioctl(int fd, unsigned long request, void *arg, int *result) { 
++int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 +
-+  mlibc::infoLogger() << "[mlibc] Called sys_ioctl() STUB; fd: " <<fd <<"\n" << frg::endlog;
-+  //return ENOSYS;
++    mlibc::infoLogger() << "[mlibc] Called sys_ioctl() STUB; fd: " << fd << "\n"
++                        << frg::endlog;
++    // return ENOSYS;
 +
-+  switch(request){
-+    case TIOCGWINSZ:{
++    switch (request) {
++    case TIOCGWINSZ: {
 +
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCGWINSZ\n" << frg::endlog;
-+      *result = 1920/8 * 1080/16;
-+      return 0;
-+      break;
++        mlibc::infoLogger() << "[mlibc] REQ: TIOCGWINSZ\n" << frg::endlog;
++        *result = 1920 / 8 * 1080 / 16;
++        return 0;
++        break;
 +    }
-+    case TIOCSWINSZ:{
++    case TIOCSWINSZ: {
 +
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSWINSZ\n" << frg::endlog;
-+      *result = 1920/8 * 1080/16;
-+      
-+      return 0;
-+      break;
-+    }
-+    case TIOCGPGRP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCGPGRP\n" << frg::endlog;
++        mlibc::infoLogger() << "[mlibc] REQ: TIOCSWINSZ\n" << frg::endlog;
++        *result = 1920 / 8 * 1080 / 16;
 +
-+      *result = 0;
-+      return 0;
-+      break;
++        return 0;
++        break;
 +    }
-+    case TIOCSPGRP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSPGRP\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case TIOCGPGRP: {
++        mlibc::infoLogger() << "[mlibc] REQ: TIOCGPGRP\n" << frg::endlog;
++
++        *result = 0;
++        return 0;
++        break;
 +    }
-+    case TIOCSPTLCK:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSPTLCK\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case TIOCSPGRP: {
++        mlibc::infoLogger() << "[mlibc] REQ: TIOCSPGRP\n" << frg::endlog;
++        *result = 0;
++        break;
 +    }
-+    case TIOCGPTN:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCGPTN\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case TIOCSPTLCK: {
++        mlibc::infoLogger() << "[mlibc] REQ: TIOCSPTLCK\n" << frg::endlog;
++        *result = 0;
++        break;
 +    }
-+    case TIOCSCTTY:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSCTTY\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case TIOCGPTN: {
++        mlibc::infoLogger() << "[mlibc] REQ: TIOCGPTN\n" << frg::endlog;
++        *result = 0;
++        break;
 +    }
-+    case VT_RELDISP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: VT_RELDISP\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case TIOCSCTTY: {
++        mlibc::infoLogger() << "[mlibc] REQ: TIOCSCTTY\n" << frg::endlog;
++        *result = 0;
++        break;
 +    }
-+    case VT_SETMODE:{
-+      mlibc::infoLogger() << "[mlibc] REQ: VT_SETMODE\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case VT_RELDISP: {
++        mlibc::infoLogger() << "[mlibc] REQ: VT_RELDISP\n" << frg::endlog;
++        *result = 0;
++        break;
 +    }
-+    case FBIOPUTCMAP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOPUTCMAP\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case VT_SETMODE: {
++        mlibc::infoLogger() << "[mlibc] REQ: VT_SETMODE\n" << frg::endlog;
++        *result = 0;
++        break;
++    }
++    case FBIOPUTCMAP: {
++        mlibc::infoLogger() << "[mlibc] REQ: FBIOPUTCMAP\n" << frg::endlog;
++        *result = 0;
++        break;
 +    }
 +
-+    case FBIOGETCMAP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOGETCMAP\n" << frg::endlog;
++    case FBIOGETCMAP: {
++        mlibc::infoLogger() << "[mlibc] REQ: FBIOGETCMAP\n" << frg::endlog;
 +
-+      fb_cmap cmap;
++        fb_cmap cmap;
 +
-+      fb_cmap* buffer = (fb_cmap*)arg;
-+      buffer->start = 0;
-+      buffer->len = 4;
-+      buffer->red[0] = (unsigned short)~(0x0);
-+      buffer->green[0] = (unsigned short)~(0x0);
-+      buffer->blue[0] = (unsigned short)~(0x0);
-+      buffer->transp[0] = (unsigned short)~(0x0);
-+        
-+      *buffer = cmap;
++        fb_cmap *buffer = (fb_cmap *)arg;
++        buffer->start = 0;
++        buffer->len = 4;
++        buffer->red[0] = (unsigned short)~(0x0);
++        buffer->green[0] = (unsigned short)~(0x0);
++        buffer->blue[0] = (unsigned short)~(0x0);
++        buffer->transp[0] = (unsigned short)~(0x0);
 +
-+      *result = 0;
-+      break;
++        *buffer = cmap;
++
++        *result = 0;
++        break;
 +    }
-+    case FBIOGET_FSCREENINFO:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOGET_FSCREENINFO\n" << frg::endlog;
++    case FBIOGET_FSCREENINFO: {
++        mlibc::infoLogger() << "[mlibc] REQ: FBIOGET_FSCREENINFO\n"
++                            << frg::endlog;
 +
-+      fb_fix_screeninfo  info;
++        fb_fix_screeninfo info;
 +
-+      info.visual = FB_VISUAL_TRUECOLOR;
-+      info.smem_len = 1280*800*4;
-+      info.smem_start = 0xFFFF8000FD000000;
++        info.visual = FB_VISUAL_TRUECOLOR;
++        info.smem_len = 1280 * 800 * 4;
++        info.smem_start = 0xFFFF8000FD000000;
 +
-+      fb_fix_screeninfo* buffer = (fb_fix_screeninfo*)arg;
-+      *buffer = info;
++        fb_fix_screeninfo *buffer = (fb_fix_screeninfo *)arg;
++        *buffer = info;
 +
-+      *result = 0;
-+      break;
++        *result = 0;
++        break;
 +    }
-+    case FBIOGET_VSCREENINFO:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOGET_VSCREENINFO\n" << frg::endlog;
-+      *result = 0;
-+      break;
++    case FBIOGET_VSCREENINFO: {
++        mlibc::infoLogger() << "[mlibc] REQ: FBIOGET_VSCREENINFO\n"
++                            << frg::endlog;
++        *result = 0;
++        break;
 +    }
 +    default: {
-+      for(;;)
-+        mlibc::infoLogger() <<"[mlibc] Unsupported ioctl request \n" << frg::endlog;
-+      *result = -1;
-+      return ENOSYS;
-+      break;
++        for (;;)
++            mlibc::infoLogger() << "[mlibc] Unsupported ioctl request \n"
++                                << frg::endlog;
++        *result = -1;
++        return ENOSYS;
++        break;
 +    }
-+  }
++    }
 +
-+  return 0;
++    return 0;
 +}
 +
 +int sys_futex_wake(int *pointer) {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wake() STUB\n" << frg::endlog;
-+
-+  return 0;
++    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wake() STUB\n"
++                        << frg::endlog;
++    return 0;
 +}
 +
 +// All remaining functions are disabled in ldso.
 +#ifndef MLIBC_BUILDING_RTDL
 +
 +int sys_clone(void *entry, void *user_arg, void *tcb, pid_t *tid_out) {
-+  //void *sp = prepare_stack(entry, user_arg, tcb);
-+  //int tid;
++    // void *sp = prepare_stack(entry, user_arg, tcb);
++    // int tid;
 +
-+  //asm volatile("syscall"
-+  //             : "=a"(tid)
-+  //             : "a"(67), "D"(__mlibc_start_thread), "S"(sp), "d"(tcb)
-+  //             : "rcx", "r11");
++    // asm volatile("syscall"
++    //              : "=a"(tid)
++    //              : "a"(67), "D"(__mlibc_start_thread), "S"(sp), "d"(tcb)
++    //              : "rcx", "r11");
 +
-+  //if (tid_out)
-+  //  *tid_out = tid;
-+
++    // if (tid_out)
++    //   *tid_out = tid;
 +
 +    mlibc::infoLogger() << "[mlibc] Calling sys_clone() STUB\n" << frg::endlog;
 +
@@ -751,220 +696,259 @@ index 00000000..cc8245cf
 +
 +void sys_thread_exit() {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_thread_exit() STUB\n" << frg::endlog;
++    mlibc::infoLogger() << "[mlibc] Calling sys_thread_exit() STUB\n"
++                        << frg::endlog;
 +
-+  //asm volatile("syscall" : : "a"(68) : "rcx", "r11");
-+  //__builtin_trap();
++    // asm volatile("syscall" : : "a"(68) : "rcx", "r11");
++    //__builtin_trap();
 +}
 +
 +int sys_sleep(time_t *secs, long *nanos) {
-+
 +    mlibc::infoLogger() << "[mlibc] Calling sys_sleep() STUB\n" << frg::endlog;
 +    return 0;
 +}
 +
-+int sys_fork(pid_t *child) { 
++int sys_fork(pid_t *child) {
 +    mlibc::infoLogger() << "[mlibc] Calling sys_fork() \n" << frg::endlog;
 +
-+    register int ret asm("r15");
++    sysc_ret ret;
 +    SYSCALL_NA0(SYS_FORK);
 +
-+    if(ret == -1)
-+        return ENOMEM;
++    if (ret.ret == -1)
++        return ret.errno;
 +
-+    *child = ret;
++    mlibc::infoLogger() << "[mlibc] sys_fork(): derefing " << child << "\n"
++                        << frg::endlog;
++    *child = ret.ret;
 +
-+    return 0; 
-+}
-+
-+
-+
-+int sys_execve(const char *path, char *const argv[], char *const envp[]) {
-+    mlibc::infoLogger() << "[mlibc] Calling sys_execve() STUB\n" << frg::endlog;
-+    for(;;);
 +    return 0;
 +}
 +
++int sys_execve(const char *path, char *const argv[], char *const envp[]) {
++    mlibc::infoLogger() << "[mlibc] Calling sys_execve() STUB\n" << frg::endlog;
++    for (;;)
++        ;
++    return 0;
++}
 +
-+uid_t sys_getuid(){
++uid_t sys_getuid() {
 +    mlibc::infoLogger() << "[mlibc] Calling sys_getuid() STUB\n" << frg::endlog;
 +    return 1000;
 +}
 +
-+gid_t sys_getgid(){
++gid_t sys_getgid() {
 +    mlibc::infoLogger() << "[mlibc] Calling sys_getgid() STUB\n" << frg::endlog;
 +    return 1000;
 +}
 +
-+uid_t sys_geteuid(){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_geteuid() STUB\n" << frg::endlog;
++uid_t sys_geteuid() {
++    mlibc::infoLogger() << "[mlibc] Calling sys_geteuid() STUB\n"
++                        << frg::endlog;
 +    return 1000;
 +}
 +
-+gid_t sys_getegid(){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getegid() STUB\n" << frg::endlog;
++gid_t sys_getegid() {
++    mlibc::infoLogger() << "[mlibc] Calling sys_getegid() STUB\n"
++                        << frg::endlog;
 +    return 1000;
 +}
-+
 +
 +pid_t sys_getpid() {
 +
 +    mlibc::infoLogger() << "[mlibc] Calling sys_getpid() \n" << frg::endlog;
 +
-+    register pid_t ret asm ("r15");
-+    SYSCALL_NA0(SYS_GETPID)
++    sysc_ret ret;
++    SYSCALL_NA0(SYS_GETPID);
 +
-+    pid_t res = ret;
-+    mlibc::infoLogger() << "[mlibc] Got pid: " << res << frg::endlog;
-+    return ret;
++    if (ret.ret == -1)
++        return ret.errno;
++
++    mlibc::infoLogger() << "[mlibc] Got pid: " << ret.ret << frg::endlog;
++
++    return ret.ret;
 +}
 +
-+int sys_getpgid(pid_t pid, pid_t *pgid){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getpgid() STUB\n" << frg::endlog;
++int sys_getpgid(pid_t pid, pid_t *pgid) {
++    mlibc::infoLogger() << "[mlibc] Calling sys_getpgid() STUB\n"
++                        << frg::endlog;
 +    *pgid = 0;
-+   return 0;
++    return 0;
 +}
 +
-+
-+int sys_setpgid(pid_t pid, pid_t pgid){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_setpgid() STUB\n" << frg::endlog;
-+    return ENOSYS; 
-+}
-+
-+pid_t sys_getppid() {
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getppid() STUB\n" << frg::endlog;
++int sys_setpgid(pid_t pid, pid_t pgid) {
++    mlibc::infoLogger() << "[mlibc] Calling sys_setpgid() STUB\n"
++                        << frg::endlog;
 +    return ENOSYS;
 +}
 +
-+int sys_dup(int fd, int flags, int * newfd){
-+  mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
-+
-+  register int ret asm("r15");
-+  SYSCALL_NA2(SYS_DUP, fd, flags);
-+
-+  if(ret)
-+    *newfd = ret;
-+
-+  mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
-+
-+  return 0;  
++pid_t sys_getppid() {
++    mlibc::infoLogger() << "[mlibc] Calling sys_getppid() STUB\n"
++                        << frg::endlog;
++    return ENOSYS;
 +}
 +
-+int sys_dup2(int fd, int flags, int  newfd){
++int sys_dup(int fd, int flags, int *newfd) {
++    mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
 +
-+  mlibc::infoLogger() << "[mlibc] Calling sys_dup2() \n" << frg::endlog;
-+  register int ret asm("r15");
-+  SYSCALL_NA3(SYS_DUP2, fd, flags, newfd);
-+  if(ret != newfd)
-+    return -1;
-+  mlibc::infoLogger() << "[mlibc] sys_dup2(): success \n" << frg::endlog;
++    sysc_ret ret;
++    SYSCALL_NA2(SYS_DUP, fd, flags);
 +
-+  return 0;
++    if (ret.ret == -1)
++        return ret.errno;
++
++    *newfd = ret.ret;
++
++    mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
++
++    return 0;
 +}
 +
++int sys_dup2(int fd, int flags, int newfd) {
 +
-+int sys_waitpid(pid_t pid, int *status, int flags, pid_t *ret_pid){
-+  mlibc::infoLogger() << "[mlibc] Calling sys_waitpid() STUB\n" << frg::endlog;
-+  for(;;);
-+  return 0;
++    mlibc::infoLogger() << "[mlibc] Calling sys_dup2() \n" << frg::endlog;
++    sysc_ret ret;
++    SYSCALL_NA3(SYS_DUP2, fd, flags, newfd);
++
++    if (ret.ret == -1)
++        return ret.errno;
++
++    mlibc::infoLogger() << "[mlibc] sys_dup2(): success \n" << frg::endlog;
++
++    return 0;
 +}
 +
++int sys_waitpid(pid_t pid, int *status, int flags, struct rusage *ru,
++                pid_t *ret_pid) {
++    mlibc::infoLogger() << "[mlibc] Calling sys_waitpid() STUB\n"
++                        << frg::endlog;
 +
-+int sys_getcwd(char* buffer, size_t size){
-+    if(size < 2)
++    sysc_ret ret;
++    SYSCALL_NA3(SYS_WAIT, pid, status, flags);
++
++    if (ret.ret == -1)
++        return ret.errno;
++
++    *ret_pid = ret.ret;
++
++    return 0;
++}
++
++int sys_getcwd(char *buffer, size_t size) {
++    if (size < 2)
 +        return EINVAL;
-+    mlibc::infoLogger() <<"[mlibc]  getcwd called buffer size"  <<  size << frg::endlog;
++    mlibc::infoLogger() << "[mlibc]  getcwd called buffer size" << size
++                        << frg::endlog;
 +    buffer[0] = '/';
 +    buffer[1] = '\0';
 +    return 0;
 +}
 +
-+int sys_sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
-+  mlibc::infoLogger() << "[mlibc] Calling sys_sigaction() STUB; Signal:" << signum << " \n" << frg::endlog;
++int sys_sigaction(int signum, const struct sigaction *act,
++                  struct sigaction *oldact) {
++    mlibc::infoLogger() << "[mlibc] Calling sys_sigaction() STUB; Signal:"
++                        << signum << " \n"
++                        << frg::endlog;
 +
++    return ENOSYS;
 +
-+
-+  switch(signum){
-+    case SIGCHLD:{
-+        mlibc::infoLogger() << "[mlibc] SIGCHLD"  << " \n" << frg::endlog;
++    switch (signum) {
++    case SIGCHLD: {
++        mlibc::infoLogger() << "[mlibc] SIGCHLD"
++                            << " \n"
++                            << frg::endlog;
 +        *oldact = *act;
 +        break;
 +    }
-+    case SIGUSR1:{
-+        mlibc::infoLogger() << "[mlibc] SIGUSR1"  << " \n" << frg::endlog;
++    case SIGUSR1: {
++        mlibc::infoLogger() << "[mlibc] SIGUSR1"
++                            << " \n"
++                            << frg::endlog;
 +        *oldact = *act;
 +        break;
 +    }
-+    case SIGUSR2:{
-+        mlibc::infoLogger() << "[mlibc] SIGUSR2"  << " \n" << frg::endlog;
++    case SIGUSR2: {
++        mlibc::infoLogger() << "[mlibc] SIGUSR2"
++                            << " \n"
++                            << frg::endlog;
 +        *oldact = *act;
 +        break;
 +    }
 +    default:
 +        break;
-+  }
++    }
 +
-+
-+  return 0;
++    return 0;
 +}
 +
-+int sys_pipe(int *fds, int flags){
++int sys_pipe(int *fds, int flags) {
 +    mlibc::infoLogger() << "[mlibc] Calling sys_pipe() STUB\n" << frg::endlog;
 +    return 0;
 +}
 +
-+int sys_fcntl(int fd, int request, va_list args, int* result_value){
-+  
-+  mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n" << frg::endlog;
-+  switch(request){
-+      case F_DUPFD:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD " << "\n" << frg::endlog;
-+          return sys_dup(fd, 0, result_value);
-+          break;
-+      case F_DUPFD_CLOEXEC:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD_CLOEXEC " << "\n" << frg::endlog;
-+          break;
-+      case F_SETFD:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_SETFD " << fd <<  "\n" << frg::endlog;
++int sys_fcntl(int fd, int request, va_list args, int *result_value) {
 +
++    mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n"
++                        << frg::endlog;
++    switch (request) {
++    case F_DUPFD:
++        mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD "
++                            << "\n"
++                            << frg::endlog;
++        return sys_dup(fd, 0, result_value);
++        break;
++    case F_DUPFD_CLOEXEC:
++        mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD_CLOEXEC "
++                            << "\n"
++                            << frg::endlog;
++        break;
++    case F_SETFD:
++        mlibc::infoLogger() << "[mlibc] REQ: F_SETFD " << fd << "\n"
++                            << frg::endlog;
 +
-+          if(fd<255){
-+              mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n" << frg::endlog;
-+              *result_value = 0;
-+              return fd;
-+          }else{
-+              mlibc::infoLogger() << "[mlibc] Returning EBADF" << "\n" << frg::endlog;
-+              return EBADF;
-+          }
-+          break;
-+      case F_GETFD:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_GETFD " << "\n" << frg::endlog;
-+          break;
++        if (fd < 255) {
++            mlibc::infoLogger()
++                << "[mlibc] Calling sys_fcntl() on " << fd << "\n"
++                << frg::endlog;
++            *result_value = 0;
++            return fd;
++        } else {
++            mlibc::infoLogger() << "[mlibc] Returning EBADF"
++                                << "\n"
++                                << frg::endlog;
++            return EBADF;
++        }
++        break;
++    case F_GETFD:
++        mlibc::infoLogger() << "[mlibc] REQ: F_GETFD "
++                            << "\n"
++                            << frg::endlog;
++        break;
 +
-+      case F_SETFL:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_SETFL " << "\n" << frg::endlog;
-+          break;
-+      case F_GETFL:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_GETFL " << "\n" << frg::endlog;
-+          break;
-+      default: sys_libc_panic();
-+  }
++    case F_SETFL:
++        mlibc::infoLogger() << "[mlibc] REQ: F_SETFL "
++                            << "\n"
++                            << frg::endlog;
++        break;
++    case F_GETFL:
++        mlibc::infoLogger() << "[mlibc] REQ: F_GETFL "
++                            << "\n"
++                            << frg::endlog;
++        break;
++    default:
++        sys_libc_panic();
++    }
 +
-+
-+
-+  return ENOSYS;
-+
++    return ENOSYS;
 +}
 +
++int sys_gethostname(char *buffer, size_t bufsize) {
++    if (bufsize < 0)
++        return EINVAL;
 +
-+int sys_gethostname(char *buffer, size_t bufsize){
-+  if(bufsize < 0)
-+    return EINVAL;
++    for (size_t i = 0; i < bufsize; i++)
++        buffer[i] = "root"[i];
 +
-+  for(size_t i=0; i<bufsize; i++)
-+    buffer[i] = "root"[i];
-+
-+  return 0;
++    return 0;
 +}
 +
 +#endif // MLIBC_BUILDING_RTDL
@@ -1052,27 +1036,13 @@ index 00000000..f76ca620
 +#endif // _ABIBITS_ACCESS_H
 diff --git a/sysdeps/atlas/include/abi-bits/auxv.h b/sysdeps/atlas/include/abi-bits/auxv.h
 new file mode 100644
-index 00000000..30764dcf
+index 00000000..8eb80491
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/auxv.h
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,13 @@
 +#ifndef _ABIBITS_AUXV_H
 +#define _ABIBITS_AUXV_H
 +
-+#define AT_NULL 0
-+#define AT_IGNORE 1
-+#define AT_PHDR 3
-+#define AT_PHENT 4
-+#define AT_PHNUM 5
-+#define AT_PAGESZ 6
-+#define AT_BASE 7
-+#define AT_FLAGS 8
-+#define AT_ENTRY 9
-+#define AT_NOTELF 10
-+#define AT_UID 11
-+#define AT_EUID 12
-+#define AT_GID 13
-+#define AT_EGID 14
 +#define AT_PLATFORM 15
 +#define AT_HWCAP 16
 +#define AT_CLKTCK 17
@@ -1085,28 +1055,28 @@ index 00000000..30764dcf
 +#endif // _ABIBITS_AUXV_H
 diff --git a/sysdeps/atlas/include/abi-bits/blkcnt_t.h b/sysdeps/atlas/include/abi-bits/blkcnt_t.h
 new file mode 100644
-index 00000000..51c15198
+index 00000000..c4b45051
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/blkcnt_t.h
-@@ -0,0 +1,7 @@
+@@ -0,0 +1,8 @@
 +#ifndef _ABIBITS_BLKCNT_T_H
 +#define _ABIBITS_BLKCNT_T_H
 +
-+// TODO: use int64_t?
-+typedef long blkcnt_t;
++#include <bits/types.h>
++
++typedef __mlibc_int64 blkcnt_t;
 +
 +#endif // _ABIBITS_BLKCNT_T_H
 diff --git a/sysdeps/atlas/include/abi-bits/blksize_t.h b/sysdeps/atlas/include/abi-bits/blksize_t.h
 new file mode 100644
-index 00000000..9363a500
+index 00000000..afabadb8
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/blksize_t.h
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,8 @@
 +
 +#ifndef _ABIBITS_BLKSIZE_T_H
 +#define _ABIBITS_BLKSIZE_T_H
 +
-+// TODO: use int64_t?
 +typedef long blksize_t;
 +
 +#endif // _ABIBITS_BLKSIZE_T_H
@@ -1126,15 +1096,17 @@ index 00000000..8d928268
 +
 diff --git a/sysdeps/atlas/include/abi-bits/dev_t.h b/sysdeps/atlas/include/abi-bits/dev_t.h
 new file mode 100644
-index 00000000..2481af34
+index 00000000..839a4457
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/dev_t.h
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,10 @@
 +
 +#ifndef _ABIBITS_DEV_T_H
 +#define _ABIBITS_DEV_T_H
 +
-+typedef unsigned long dev_t;
++#include <bits/types.h>
++
++typedef __mlibc_uint64 dev_t;
 +
 +#endif // _ABIBITS_DEV_T_H
 +
@@ -1375,6 +1347,34 @@ index 00000000..822790b4
 +#define AT_EMPTY_PATH 0x1000
 +
 +#endif // _ABIBITS_FCNTL_H
+diff --git a/sysdeps/atlas/include/abi-bits/fsblkcnt_t.h b/sysdeps/atlas/include/abi-bits/fsblkcnt_t.h
+new file mode 100644
+index 00000000..0d744561
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/fsblkcnt_t.h
+@@ -0,0 +1,8 @@
++#ifndef _ABIBITS_FSBLKCNT_T_H
++#define _ABIBITS_FSBLKCNT_T_H
++
++#include <bits/types.h>
++
++typedef __mlibc_uint64 fsblkcnt_t;
++
++#endif /* _ABIBITS_FSBLKCNT_T_H */
+diff --git a/sysdeps/atlas/include/abi-bits/fsfilcnt_t.h b/sysdeps/atlas/include/abi-bits/fsfilcnt_t.h
+new file mode 100644
+index 00000000..1abda9a9
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/fsfilcnt_t.h
+@@ -0,0 +1,8 @@
++#ifndef _ABIBITS_FSFILCNT_T_H
++#define _ABIBITS_FSFILCNT_T_H
++
++#include <bits/types.h>
++
++typedef __mlibc_uint64 fsfilcnt_t;
++
++#endif /* _ABIBITS_FSFILCNT_T_H */
 diff --git a/sysdeps/atlas/include/abi-bits/gid_t.h b/sysdeps/atlas/include/abi-bits/gid_t.h
 new file mode 100644
 index 00000000..62ac1930
@@ -1391,10 +1391,10 @@ index 00000000..62ac1930
 +
 diff --git a/sysdeps/atlas/include/abi-bits/in.h b/sysdeps/atlas/include/abi-bits/in.h
 new file mode 100644
-index 00000000..3618abf0
+index 00000000..bb5b6ef6
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/in.h
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,162 @@
 +#ifndef _ABIBITS_IN_H
 +#define _ABIBITS_IN_H
 +
@@ -1436,9 +1436,30 @@ index 00000000..3618abf0
 +	uint32_t        sin6_scope_id;
 +};
 +
++struct ip_mreq {
++	struct in_addr imr_multiaddr;
++	struct in_addr imr_interface;
++};
++
 +struct ipv6_mreq {
 +	struct in6_addr ipv6mr_multiaddr;
 +	unsigned        ipv6mr_interface;
++};
++
++struct in_pktinfo {
++	unsigned int ipi_ifindex;
++	struct in_addr ipi_spec_dst;
++	struct in_addr ipi_addr;
++};
++
++struct in6_pktinfo {
++	struct in6_addr ipi6_addr;
++	uint32_t ipi6_ifindex;
++};
++
++struct group_req {
++	uint32_t gr_interface;
++	struct sockaddr_storage gr_group;
 +};
 +
 +#ifdef __cplusplus
@@ -1498,19 +1519,57 @@ index 00000000..3618abf0
 +#define IPPROTO_RAW      255
 +#define IPPROTO_MAX      256
 +
++#define IP_TOS 1
++#define IP_TTL 2
++#define IP_PKTINFO 8
++#define IP_MULTICAST_IF 32
++#define IP_MULTICAST_TTL 33
++#define IP_MULTICAST_LOOP 34
++#define IP_ADD_MEMBERSHIP 35
++#define IP_DROP_MEMBERSHIP 36
++
++#define IPV6_UNICAST_HOPS 16
++#define IPV6_MULTICAST_IF 17
++#define IPV6_MULTICAST_HOPS 18
++#define IPV6_MULTICAST_LOOP 19
++#define IPV6_JOIN_GROUP 20
++#define IPV6_LEAVE_GROUP 21
++#define IPV6_V6ONLY 26
++#define IPV6_RECVPKTINFO 49
++#define IPV6_PKTINFO 50
++#define IPV6_RECVHOPLIMIT 51
++#define IPV6_HOPLIMIT 52
++
++/* These defines are needed for compatibility with Linux kernel headers. */
++#define __UAPI_DEF_IN_ADDR      0
++#define __UAPI_DEF_IN_IPPROTO   0
++#define __UAPI_DEF_IN_PKTINFO   0
++#define __UAPI_DEF_IP_MREQ      0
++#define __UAPI_DEF_SOCKADDR_IN  0
++#define __UAPI_DEF_IN_CLASS     0
++#define __UAPI_DEF_IN6_ADDR     0
++#define __UAPI_DEF_IN6_ADDR_ALT 0
++#define __UAPI_DEF_SOCKADDR_IN6 0
++#define __UAPI_DEF_IPV6_MREQ    0
++#define __UAPI_DEF_IPPROTO_V6   0
++#define __UAPI_DEF_IPV6_OPTIONS 0
++#define __UAPI_DEF_IN6_PKTINFO  0
++#define __UAPI_DEF_IP6_MTUINFO  0
++
 +#endif // _ABITBITS_IN_H
 diff --git a/sysdeps/atlas/include/abi-bits/ino_t.h b/sysdeps/atlas/include/abi-bits/ino_t.h
 new file mode 100644
-index 00000000..a80249f3
+index 00000000..ba076f40
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/ino_t.h
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,10 @@
 +
 +#ifndef _ABIBITS_INO_T_H
 +#define _ABIBITS_INO_T_H
 +
-+// TODO: use (u)int64_t?
-+typedef long ino_t;
++#include <bits/types.h>
++
++typedef __mlibc_uint64 ino_t;
 +
 +#endif // _ABIBITS_INO_T_H
 +
@@ -1529,6 +1588,23 @@ index 00000000..4a0bd4cb
 +#define IN_NONBLOCK O_NONBLOCK
 +
 +#endif // _ABIBITS_INOTIFY_H
+diff --git a/sysdeps/atlas/include/abi-bits/ioctls.h b/sysdeps/atlas/include/abi-bits/ioctls.h
+new file mode 100644
+index 00000000..e2961842
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/ioctls.h
+@@ -0,0 +1,11 @@
++#ifndef _ABIBITS_IOCTLS_H
++#define _ABIBITS_IOCTLS_H
++
++#define SIOCPROTOPRIVATE 0x89E0
++#define SIOCGIFNAME 0x8910
++#define SIOCGIFCONF 0x8912
++#define SIOCGIFFLAGS 0x8913
++#define SIOCSIFFLAGS 0x8914
++#define SIOCGIFINDEX 0x8933
++
++#endif /* _ABIBITS_IOCTLS_H */
 diff --git a/sysdeps/atlas/include/abi-bits/limits.h b/sysdeps/atlas/include/abi-bits/limits.h
 new file mode 100644
 index 00000000..091b14ba
@@ -1557,6 +1633,33 @@ index 00000000..8374c125
 +typedef unsigned int mode_t;
 +
 +#endif // _ABIBITS_MODE_T_H
++
+diff --git a/sysdeps/atlas/include/abi-bits/mqueue.h b/sysdeps/atlas/include/abi-bits/mqueue.h
+new file mode 100644
+index 00000000..1e2d3eb8
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/mqueue.h
+@@ -0,0 +1,21 @@
++#ifndef _ABIBITS_MQUEUE_H
++#define _ABIBITS_MQUEUE_H
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++struct mq_attr {
++	long mq_flags;
++	long mq_maxmsg;
++	long mq_msgsize;
++	long mq_curmsgs;
++	long __pad[4];
++};
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _ABIBITS_MQUEUE_H */
 +
 diff --git a/sysdeps/atlas/include/abi-bits/nlink_t.h b/sysdeps/atlas/include/abi-bits/nlink_t.h
 new file mode 100644
@@ -1776,10 +1879,10 @@ index 00000000..93fb01bb
 +#endif /* _ABIBITS_SHM_H */
 diff --git a/sysdeps/atlas/include/abi-bits/signal.h b/sysdeps/atlas/include/abi-bits/signal.h
 new file mode 100644
-index 00000000..4344dcf9
+index 00000000..ded12e7d
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/signal.h
-@@ -0,0 +1,350 @@
+@@ -0,0 +1,441 @@
 +#ifndef _ABIBITS_SIGNAL_H
 +#define _ABIBITS_SIGNAL_H
 +
@@ -1933,15 +2036,24 @@ index 00000000..4344dcf9
 +#define SS_DISABLE 2
 +
 +typedef struct __stack {
-+        void *ss_sp;
-+        int ss_flags;
-+        size_t ss_size;
++	void *ss_sp;
++	int ss_flags;
++	size_t ss_size;
 +} stack_t;
 +
 +// constants for sigev_notify of struct sigevent
 +#define SIGEV_SIGNAL 0
 +#define SIGEV_NONE 1
 +#define SIGEV_THREAD 2
++
++#define SEGV_MAPERR 1
++#define SEGV_ACCERR 2
++
++#define BUS_ADRALN 1
++
++#define ILL_ILLOPC 1
++#define ILL_ILLTRP 4
++#define ILL_PRVOPC 5
 +
 +#define NSIG 65
 +
@@ -2035,7 +2147,7 @@ index 00000000..4344dcf9
 +
 +typedef struct {
 +	unsigned long gregs[NGREG];
-+	struct _fpstate *fpstate;
++	struct _fpstate *fpregs;
 +	unsigned long __reserved1[8];
 +} mcontext_t;
 +
@@ -2121,6 +2233,88 @@ index 00000000..4344dcf9
 +	mcontext_t uc_mcontext;
 +} ucontext_t;
 +
++#elif defined (__aarch64__)
++
++typedef struct sigcontext {
++	uint64_t fault_address;
++	uint64_t regs[31];
++	uint64_t sp;
++	uint64_t pc;
++	uint64_t pstate;
++	uint8_t __reserved[4096];
++} mcontext_t;
++
++#define FPSIMD_MAGIC 0x46508001
++#define ESR_MAGIC 0x45535201
++#define EXTRA_MAGIC 0x45585401
++#define SVE_MAGIC 0x53564501
++struct _aarch64_ctx {
++	uint32_t magic;
++	uint32_t size;
++};
++struct fpsimd_context {
++	struct _aarch64_ctx head;
++	uint32_t fpsr;
++	uint32_t fpcr;
++	__uint128_t vregs[32];
++};
++struct esr_context {
++	struct _aarch64_ctx head;
++	uint64_t esr;
++};
++struct extra_context {
++	struct _aarch64_ctx head;
++	uint64_t datap;
++	uint32_t size;
++	uint32_t __reserved[3];
++};
++struct sve_context {
++	struct _aarch64_ctx head;
++	uint16_t vl;
++	uint16_t __reserved[3];
++};
++#define SVE_VQ_BYTES		16
++#define SVE_VQ_MIN		1
++#define SVE_VQ_MAX		512
++#define SVE_VL_MIN		(SVE_VQ_MIN * SVE_VQ_BYTES)
++#define SVE_VL_MAX		(SVE_VQ_MAX * SVE_VQ_BYTES)
++#define SVE_NUM_ZREGS		32
++#define SVE_NUM_PREGS		16
++#define sve_vl_valid(vl) \
++	((vl) % SVE_VQ_BYTES == 0 && (vl) >= SVE_VL_MIN && (vl) <= SVE_VL_MAX)
++#define sve_vq_from_vl(vl)	((vl) / SVE_VQ_BYTES)
++#define sve_vl_from_vq(vq)	((vq) * SVE_VQ_BYTES)
++#define SVE_SIG_ZREG_SIZE(vq)	((unsigned)(vq) * SVE_VQ_BYTES)
++#define SVE_SIG_PREG_SIZE(vq)	((unsigned)(vq) * (SVE_VQ_BYTES / 8))
++#define SVE_SIG_FFR_SIZE(vq)	SVE_SIG_PREG_SIZE(vq)
++#define SVE_SIG_REGS_OFFSET					\
++	((sizeof(struct sve_context) + (SVE_VQ_BYTES - 1))	\
++		/ SVE_VQ_BYTES * SVE_VQ_BYTES)
++#define SVE_SIG_ZREGS_OFFSET	SVE_SIG_REGS_OFFSET
++#define SVE_SIG_ZREG_OFFSET(vq, n) \
++	(SVE_SIG_ZREGS_OFFSET + SVE_SIG_ZREG_SIZE(vq) * (n))
++#define SVE_SIG_ZREGS_SIZE(vq) \
++	(SVE_SIG_ZREG_OFFSET(vq, SVE_NUM_ZREGS) - SVE_SIG_ZREGS_OFFSET)
++#define SVE_SIG_PREGS_OFFSET(vq) \
++	(SVE_SIG_ZREGS_OFFSET + SVE_SIG_ZREGS_SIZE(vq))
++#define SVE_SIG_PREG_OFFSET(vq, n) \
++	(SVE_SIG_PREGS_OFFSET(vq) + SVE_SIG_PREG_SIZE(vq) * (n))
++#define SVE_SIG_PREGS_SIZE(vq) \
++	(SVE_SIG_PREG_OFFSET(vq, SVE_NUM_PREGS) - SVE_SIG_PREGS_OFFSET(vq))
++#define SVE_SIG_FFR_OFFSET(vq) \
++	(SVE_SIG_PREGS_OFFSET(vq) + SVE_SIG_PREGS_SIZE(vq))
++#define SVE_SIG_REGS_SIZE(vq) \
++	(SVE_SIG_FFR_OFFSET(vq) + SVE_SIG_FFR_SIZE(vq) - SVE_SIG_REGS_OFFSET)
++#define SVE_SIG_CONTEXT_SIZE(vq) (SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
++
++typedef struct __ucontext {
++	unsigned long uc_flags;
++	struct __ucontext *uc_link;
++	stack_t uc_stack;
++	sigset_t uc_sigmask;
++	mcontext_t uc_mcontext;
++} ucontext_t;
++
 +#else
 +#error "Missing architecture specific code."
 +#endif
@@ -2132,14 +2326,15 @@ index 00000000..4344dcf9
 +#endif // _ABIBITS_SIGNAL_H
 diff --git a/sysdeps/atlas/include/abi-bits/socket.h b/sysdeps/atlas/include/abi-bits/socket.h
 new file mode 100644
-index 00000000..d2995411
+index 00000000..f3dc603f
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/socket.h
-@@ -0,0 +1,291 @@
+@@ -0,0 +1,298 @@
 +#ifndef _ABIBITS_SOCKET_H
 +#define _ABIBITS_SOCKET_H
 +
 +#include <stddef.h>
++#include <abi-bits/socklen_t.h>
 +#include <bits/posix/iovec.h>
 +
 +#ifdef __cplusplus
@@ -2150,12 +2345,12 @@ index 00000000..d2995411
 +
 +struct msghdr {
 +	void *msg_name;
-+	int msg_namelen;
++	socklen_t msg_namelen;
 +	struct iovec *msg_iov;
-+	size_t msg_iovlen;
++	size_t msg_iovlen; /* int in POSIX */
 +	void *msg_control;
-+	size_t msg_controllen;
-+	unsigned int msg_flags;
++	size_t msg_controllen; /* socklen_t in POSIX */
++	int msg_flags;
 +};
 +
 +struct sockaddr_storage {
@@ -2166,6 +2361,12 @@ index 00000000..d2995411
 +struct mmsghdr {
 +	struct msghdr msg_hdr;
 +	unsigned int  msg_len;
++};
++
++struct cmsghdr {
++	size_t cmsg_len; /* socklen_t in POSIX */
++	int cmsg_level;
++	int cmsg_type;
 +};
 +
 +#ifdef __cplusplus
@@ -2427,9 +2628,21 @@ index 00000000..d2995411
 +#define MSG_CMSG_CLOEXEC 0x40000000
 +
 +#endif
+diff --git a/sysdeps/atlas/include/abi-bits/socklen_t.h b/sysdeps/atlas/include/abi-bits/socklen_t.h
+new file mode 100644
+index 00000000..190e5f9f
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/socklen_t.h
+@@ -0,0 +1,6 @@
++#ifndef _ABIBITS_SOCKLEN_T_H
++#define _ABIBITS_SOCKLEN_T_H
++
++typedef unsigned socklen_t;
++
++#endif /* _ABIBITS_SOCKLEN_T_H */
 diff --git a/sysdeps/atlas/include/abi-bits/stat.h b/sysdeps/atlas/include/abi-bits/stat.h
 new file mode 100644
-index 00000000..ca4b5f7f
+index 00000000..3e9c9813
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/stat.h
 @@ -0,0 +1,94 @@
@@ -2461,6 +2674,7 @@ index 00000000..ca4b5f7f
 +#define S_IRUSR 0400
 +#define S_IWUSR 0200
 +#define S_IXUSR 0100
++#define S_IEXEC S_IXUSR
 +#define S_IRWXG 070
 +#define S_IRGRP 040
 +#define S_IWGRP 020
@@ -2477,9 +2691,8 @@ index 00000000..ca4b5f7f
 +extern "C" {
 +#endif
 +
-+#if defined(__x86_64__) || defined(__aarch64__)
++#if defined(__x86_64__)
 +
-+// TODO: Is this correct for AArch64?
 +struct stat {
 +	dev_t st_dev;
 +	ino_t st_ino;
@@ -2498,7 +2711,7 @@ index 00000000..ca4b5f7f
 +	long __unused[3];
 +};
 +
-+#elif defined(__riscv) && __riscv_xlen == 64
++#elif (defined(__riscv) && __riscv_xlen == 64) || defined (__aarch64__)
 +
 +struct stat {
 +	dev_t st_dev;
@@ -2527,16 +2740,98 @@ index 00000000..ca4b5f7f
 +#endif
 +
 +#endif // _ABIBITS_STAT_H
+diff --git a/sysdeps/atlas/include/abi-bits/statfs.h b/sysdeps/atlas/include/abi-bits/statfs.h
+new file mode 100644
+index 00000000..60c977f6
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/statfs.h
+@@ -0,0 +1,28 @@
++#ifndef _ABIBITS_STATFS_H
++#define _ABIBITS_STATFS_H
++
++#include <abi-bits/fsblkcnt_t.h>
++#include <abi-bits/fsfilcnt_t.h>
++
++typedef struct __mlibc_fsid {
++	int __val[2];
++} fsid_t;
++
++struct statfs {
++	unsigned long f_type;
++	unsigned long f_bsize;
++	fsblkcnt_t f_blocks;
++	fsblkcnt_t f_bfree;
++	fsblkcnt_t f_bavail;
++
++	fsfilcnt_t f_files;
++	fsfilcnt_t f_ffree;
++	fsid_t f_fsid;
++	unsigned long f_namelen;
++	unsigned long f_frsize;
++	unsigned long f_flags;
++	unsigned long __f_spare[4];
++};
++
++#endif /* _ABIBITS_STATFS_H */
++
+diff --git a/sysdeps/atlas/include/abi-bits/statvfs.h b/sysdeps/atlas/include/abi-bits/statvfs.h
+new file mode 100644
+index 00000000..7742bad8
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/statvfs.h
+@@ -0,0 +1,28 @@
++#ifndef _ABIBITS_STATVFS_H
++#define _ABIBITS_STATVFS_H
++
++#include <abi-bits/fsblkcnt_t.h>
++#include <abi-bits/fsfilcnt_t.h>
++
++#define ST_RDONLY 1
++#define ST_NOSUID 2
++
++// On Linux, this struct is not directly used by the kernel.
++struct statvfs {
++	unsigned long f_bsize;
++	unsigned long f_frsize;
++	fsblkcnt_t f_blocks;
++	fsblkcnt_t f_bfree;
++	fsblkcnt_t f_bavail;
++
++	fsfilcnt_t f_files;
++	fsfilcnt_t f_ffree;
++	fsfilcnt_t f_favail;
++
++	unsigned long f_fsid;
++	unsigned long f_flag;
++	unsigned long f_namemax;
++};
++
++#endif /* _ABIBITS_STATVFS_H */
++
+diff --git a/sysdeps/atlas/include/abi-bits/suseconds_t.h b/sysdeps/atlas/include/abi-bits/suseconds_t.h
+new file mode 100644
+index 00000000..723ddfae
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/suseconds_t.h
+@@ -0,0 +1,8 @@
++#ifndef _ABIBITS_SUSECONDS_T_H
++#define _ABIBITS_SUSECONDS_T_H
++
++#include <bits/types.h>
++
++typedef __mlibc_int64 suseconds_t;
++
++#endif /* _ABIBITS_SUSECONDS_T_H */
 diff --git a/sysdeps/atlas/include/abi-bits/termios.h b/sysdeps/atlas/include/abi-bits/termios.h
 new file mode 100644
-index 00000000..bb2ed9a0
+index 00000000..fc563021
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/termios.h
 @@ -0,0 +1,117 @@
 +#ifndef _ABIBITS_TERMIOS_H
 +#define _ABIBITS_TERMIOS_H
 +
-+typedef unsigned int cc_t;
++typedef unsigned char cc_t;
 +typedef unsigned int speed_t;
 +typedef unsigned int tcflag_t;
 +
@@ -2687,10 +2982,10 @@ index 00000000..aa184932
 +
 diff --git a/sysdeps/atlas/include/abi-bits/utsname.h b/sysdeps/atlas/include/abi-bits/utsname.h
 new file mode 100644
-index 00000000..2cd22265
+index 00000000..9875a46e
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/utsname.h
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,13 @@
 +#ifndef _ABIBITS_UTSNAME_T_H
 +#define _ABIBITS_UTSNAME_T_H
 +
@@ -2700,6 +2995,7 @@ index 00000000..2cd22265
 +	char release[65];
 +	char version[65];
 +	char machine[65];
++	char domainname[65];
 +};
 +
 +#endif // _ABIBITS_UTSNAME_T_H
@@ -2837,10 +3133,10 @@ index 00000000..811933b6
 +#endif // _ABIBITS_VT_H
 diff --git a/sysdeps/atlas/include/abi-bits/wait.h b/sysdeps/atlas/include/abi-bits/wait.h
 new file mode 100644
-index 00000000..9412e5e7
+index 00000000..58d14625
 --- /dev/null
 +++ b/sysdeps/atlas/include/abi-bits/wait.h
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,28 @@
 +#ifndef _ABIBITS_WAIT_H
 +#define _ABIBITS_WAIT_H
 +
@@ -2865,7 +3161,122 @@ index 00000000..9412e5e7
 +#define WIFCONTINUED(x) ((x) == 0xffff)
 +#define WCOREDUMP(x) ((x) & WCOREFLAG)
 +
++/* glibc extension, but also useful for kernels */
++#define W_EXITCODE(ret, sig) (((ret) << 8) | (sig))
++
 +#endif //_ABIBITS_WAIT_H
+diff --git a/sysdeps/atlas/include/abi-bits/xattr.h b/sysdeps/atlas/include/abi-bits/xattr.h
+new file mode 100644
+index 00000000..c0e7fbeb
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/xattr.h
+@@ -0,0 +1,21 @@
++#ifndef MLIBC_ABIS_LINUX_XATTR_H
++#define MLIBC_ABIS_LINUX_XATTR_H
++
++/* __USE_KERNEL_XATTR_DEFS is exported when XATTR_* are emitted, and
++ * __UAPI_DEF_XATTR is used to determine the behaviour of the
++ * <linux/xattr.h> header (through <linux/libc-compat.h>), if it's set
++ * to 1, the header exports xattr defines and __USE_KERNEL_XATTR_DEFS.
++ * This applies for pretty much all other defines in libc-compat.h
++ * AFAICT.
++ */
++#ifndef __USE_KERNEL_XATTR_DEFS
++enum {
++	XATTR_CREATE = 1,
++#define XATTR_CREATE XATTR_CREATE
++	XATTR_REPLACE = 2,
++#define XATTR_REPLACE XATTR_REPLACE
++};
++#	define __UAPI_DEF_XATTR 0
++#endif
++
++#endif /* MLIBC_ABIS_LINUX_XATTR_H */
+diff --git a/sysdeps/atlas/include/header_list b/sysdeps/atlas/include/header_list
+new file mode 100644
+index 00000000..09ebc2a7
+--- /dev/null
++++ b/sysdeps/atlas/include/header_list
+@@ -0,0 +1,43 @@
++'include/abi-bits/access.h',
++'include/abi-bits/auxv.h',
++'include/abi-bits/blkcnt_t.h',
++'include/abi-bits/blksize_t.h',
++'include/abi-bits/clockid_t.h',
++'include/abi-bits/dev_t.h',
++'include/abi-bits/epoll.h',
++'include/abi-bits/errno.h',
++'include/abi-bits/fcntl.h',
++'include/abi-bits/fsblkcnt_t.h',
++'include/abi-bits/fsfilcnt_t.h',
++'include/abi-bits/gid_t.h',
++'include/abi-bits/in.h',
++'include/abi-bits/ino_t.h',
++'include/abi-bits/inotify.h',
++'include/abi-bits/ioctls.h',
++'include/abi-bits/limits.h',
++'include/abi-bits/mode_t.h',
++'include/abi-bits/mqueue.h',
++'include/abi-bits/nlink_t.h',
++'include/abi-bits/packet.h',
++'include/abi-bits/pid_t.h',
++'include/abi-bits/poll.h',
++'include/abi-bits/ptrace.h',
++'include/abi-bits/reboot.h',
++'include/abi-bits/resource.h',
++'include/abi-bits/seek-whence.h',
++'include/abi-bits/shm.h',
++'include/abi-bits/signal.h',
++'include/abi-bits/socket.h',
++'include/abi-bits/socklen_t.h',
++'include/abi-bits/stat.h',
++'include/abi-bits/statfs.h',
++'include/abi-bits/statvfs.h',
++'include/abi-bits/suseconds_t.h',
++'include/abi-bits/termios.h',
++'include/abi-bits/time.h',
++'include/abi-bits/uid_t.h',
++'include/abi-bits/utsname.h',
++'include/abi-bits/vm-flags.h',
++'include/abi-bits/vt.h',
++'include/abi-bits/wait.h',
++'include/abi-bits/xattr.h',
+diff --git a/sysdeps/atlas/include/header_list2 b/sysdeps/atlas/include/header_list2
+new file mode 100644
+index 00000000..0ec0556a
+--- /dev/null
++++ b/sysdeps/atlas/include/header_list2
+@@ -0,0 +1,30 @@
++auxv.h
++seek-whence.h
++vm-flags.h
++errno.h
++fcntl.h
++in.h
++resource.h
++signal.h
++stat.h
++socket.h
++termios.h
++time.h
++blkcnt_t.h
++clockid_t.h
++blksize_t.h
++dev_t.h
++gid_t.h
++ino_t.h
++mode_t.h
++nlink_t.h
++pid_t.h
++uid_t.h
++access.h
++wait.h
++limits.h
++utsname.h
++ptrace.h
++poll.h
++epoll.h
++packet.h
 diff --git a/sysdeps/atlas/include/mlibc/thread-entry.hpp b/sysdeps/atlas/include/mlibc/thread-entry.hpp
 new file mode 100644
 index 00000000..2dd88a64
@@ -2882,6 +3293,122 @@ index 00000000..2dd88a64
 +namespace mlibc {
 +	void *prepare_stack(void *entry, void *user_arg, void *tcb);
 +}
+diff --git a/sysdeps/atlas/include/syscall.h b/sysdeps/atlas/include/syscall.h
+new file mode 100644
+index 00000000..711acfb9
+--- /dev/null
++++ b/sysdeps/atlas/include/syscall.h
+@@ -0,0 +1,110 @@
++#define SYS_EXIT 0
++#define SYS_OPEN 1
++#define SYS_CLOSE 2
++#define SYS_READ 3
++#define SYS_WRITE 4
++#define SYS_LOG_LIBC 5
++#define SYS_VM_MAP 6
++#define SYS_SEEK 7
++#define SYS_TCB_SET 8
++#define SYS_IOCTL 9
++#define SYS_FORK 10
++#define SYS_WAIT 11
++#define SYS_STAT 12
++#define SYS_FSTAT 13
++#define SYS_GETPID 14
++#define SYS_DUP 15
++#define SYS_DUP2 16
++#define SYS_READDIR 17
++#define SYS_FCNTL 18
++#define SYS_POLL 19
++#define SYS_EXEC 20
++
++// ABI:
++// (output) ret -> rax, errno -> rbx
++// (input) arguments -> r8 - 15 (excluding r11)
++// call number -> rsi
++
++typedef struct {
++    int64_t ret;
++    uint64_t errno;
++} sysc_ret;
++
++#define SYSCALL_NA0(call)                                                      \
++    ({                                                                         \
++        asm volatile("syscall"                                                 \
++                     : "=a"(ret.ret), "=b"(ret.errno)                          \
++                     : "S"(call)                                               \
++                     : "rcx", "r11", "memory");                                \
++    });
++
++#define SYSCALL_NA1(call, arg0)                                                \
++    ({                                                                         \
++        register auto r8 asm("r8") = (arg0);                                   \
++        asm volatile("syscall"                                                 \
++                     : "=a"(ret.ret), "=b"(ret.errno)                          \
++                     : "S"(call), "r"(r8)                                      \
++                     : "rcx", "r11", "memory");                                \
++    });
++
++#define SYSCALL_NA2(call, arg0, arg1)                                          \
++    ({                                                                         \
++        register auto r8 asm("r8") = (arg0);                                   \
++        register auto r9 asm("r9") = (arg1);                                   \
++        asm volatile("syscall"                                                 \
++                     : "=a"(ret.ret), "=b"(ret.errno)                          \
++                     : "S"(call), "r"(r8), "r"(r9)                             \
++                     : "rcx", "r11", "memory");                                \
++    });
++
++#define SYSCALL_NA3(call, arg0, arg1, arg2)                                    \
++    ({                                                                         \
++        register auto r8 asm("r8") = (arg0);                                   \
++        register auto r9 asm("r9") = (arg1);                                   \
++        register auto r10 asm("r10") = (arg2);                                 \
++        asm volatile("syscall"                                                 \
++                     : "=a"(ret.ret), "=b"(ret.errno)                          \
++                     : "S"(call), "r"(r8), "r"(r9), "r"(r10)                   \
++                     : "rcx", "r11", "memory");                                \
++    });
++
++#define SYSCALL_NA4(call, arg0, arg1, arg2, arg3)                              \
++    ({                                                                         \
++        register auto r8 asm("r8") = (arg0);                                   \
++        register auto r9 asm("r9") = (arg1);                                   \
++        register auto r10 asm("r10") = (arg2);                                 \
++        register auto r12 asm("r12") = (arg3);                                 \
++        asm volatile("syscall"                                                 \
++                     : "=a"(ret.ret), "=b"(ret.errno)                          \
++                     : "S"(call), "r"(r8), "r"(r9), "r"(r10), "r"(r12)         \
++                     : "rcx", "r11", "memory");                                \
++    });
++
++#define SYSCALL_NA5(call, arg0, arg1, arg2, arg3, arg4)                        \
++    ({                                                                         \
++        register auto r8 asm("r8") = (arg0);                                   \
++        register auto r9 asm("r9") = (arg1);                                   \
++        register auto r10 asm("r10") = (arg2);                                 \
++        register auto r12 asm("r12") = (arg3);                                 \
++        register auto r13 asm("r13") = (arg4);                                 \
++        asm volatile("syscall"                                                 \
++                     : "=a"(ret.ret), "=b"(ret.errno)                          \
++                     : "S"(call), "r"(r8), "r"(r9), "r"(r10), "r"(r12),        \
++                       "r"(r13),                                               \
++                     : "rcx", "r11", "memory");                                \
++    });
++
++#define SYSCALL_NA6(call, arg0, arg1, arg2, arg3, arg4, arg5)                  \
++    ({                                                                         \
++        register auto r8 asm("r8") = (arg0);                                   \
++        register auto r9 asm("r9") = (arg1);                                   \
++        register auto r10 asm("r10") = (arg2);                                 \
++        register auto r12 asm("r12") = (arg3);                                 \
++        register auto r13 asm("r13") = (arg4);                                 \
++        register auto r14 asm("r14") = (arg5);                                 \
++        asm volatile("syscall"                                                 \
++                     : "=a"(ret.ret), "=b"(ret.errno)                          \
++                     : "S"(call), "r"(r8), "r"(r9), "r"(r10), "r"(r12),        \
++                       "r"(r13), "r"(r14)                                      \
++                     : "rcx", "r11", "memory");                                \
++    });
 diff --git a/sysdeps/atlas/include/vfs.h b/sysdeps/atlas/include/vfs.h
 new file mode 100644
 index 00000000..ba870bff
@@ -2918,10 +3445,10 @@ index 00000000..ba870bff
 +
 diff --git a/sysdeps/atlas/meson.build b/sysdeps/atlas/meson.build
 new file mode 100644
-index 00000000..6f4531ea
+index 00000000..61621087
 --- /dev/null
 +++ b/sysdeps/atlas/meson.build
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,72 @@
 +
 +rtdl_sources += files(
 +	'generic/generic.cpp'
@@ -2936,36 +3463,49 @@ index 00000000..6f4531ea
 +
 +if not no_headers
 +	install_headers(
-+		'include/abi-bits/auxv.h',
-+		'include/abi-bits/seek-whence.h',
-+		'include/abi-bits/vm-flags.h',
-+		'include/abi-bits/errno.h',
-+		'include/abi-bits/fcntl.h',
-+		'include/abi-bits/in.h',
-+		'include/abi-bits/resource.h',
-+		'include/abi-bits/signal.h',
-+		'include/abi-bits/stat.h',
-+		'include/abi-bits/socket.h',
-+		'include/abi-bits/termios.h',
-+		'include/abi-bits/time.h',
-+		'include/abi-bits/blkcnt_t.h',
-+		'include/abi-bits/clockid_t.h',
-+		'include/abi-bits/blksize_t.h',
-+		'include/abi-bits/dev_t.h',
-+		'include/abi-bits/gid_t.h',
-+		'include/abi-bits/ino_t.h',
-+		'include/abi-bits/mode_t.h',
-+		'include/abi-bits/nlink_t.h',
-+		'include/abi-bits/pid_t.h',
-+		'include/abi-bits/uid_t.h',
-+		'include/abi-bits/access.h',
-+		'include/abi-bits/wait.h',
-+		'include/abi-bits/limits.h',
-+		'include/abi-bits/utsname.h',
-+		'include/abi-bits/ptrace.h',
-+		'include/abi-bits/poll.h',
-+		'include/abi-bits/epoll.h',
-+		'include/abi-bits/packet.h',
++        'include/abi-bits/access.h',
++        'include/abi-bits/auxv.h',
++        'include/abi-bits/blkcnt_t.h',
++        'include/abi-bits/blksize_t.h',
++        'include/abi-bits/clockid_t.h',
++        'include/abi-bits/dev_t.h',
++        'include/abi-bits/epoll.h',
++        'include/abi-bits/errno.h',
++        'include/abi-bits/fcntl.h',
++        'include/abi-bits/fsblkcnt_t.h',
++        'include/abi-bits/fsfilcnt_t.h',
++        'include/abi-bits/gid_t.h',
++        'include/abi-bits/in.h',
++        'include/abi-bits/ino_t.h',
++        'include/abi-bits/inotify.h',
++        'include/abi-bits/ioctls.h',
++        'include/abi-bits/limits.h',
++        'include/abi-bits/mode_t.h',
++        'include/abi-bits/mqueue.h',
++        'include/abi-bits/nlink_t.h',
++        'include/abi-bits/packet.h',
++        'include/abi-bits/pid_t.h',
++        'include/abi-bits/poll.h',
++        'include/abi-bits/ptrace.h',
++        'include/abi-bits/reboot.h',
++        'include/abi-bits/resource.h',
++        'include/abi-bits/seek-whence.h',
++        'include/abi-bits/shm.h',
++        'include/abi-bits/signal.h',
++        'include/abi-bits/socket.h',
++        'include/abi-bits/socklen_t.h',
++        'include/abi-bits/stat.h',
++        'include/abi-bits/statfs.h',
++        'include/abi-bits/statvfs.h',
++        'include/abi-bits/suseconds_t.h',
++        'include/abi-bits/termios.h',
++        'include/abi-bits/time.h',
++        'include/abi-bits/uid_t.h',
++        'include/abi-bits/utsname.h',
++        'include/abi-bits/vm-flags.h',
++        'include/abi-bits/vt.h',
++        'include/abi-bits/wait.h',
++        'include/abi-bits/xattr.h',
 +		subdir: 'abi-bits'
 +	)
 +endif
