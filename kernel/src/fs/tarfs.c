@@ -133,7 +133,7 @@ struct file *ustar_open(const char *filename, int flags) {
     File *file = kmalloc(sizeof(File));
     file->size = ustar_decode_filesize(tar_file);
     kprintf("File size is %lld bytes\n", file->size);
-    file->name = (char *)filename;
+    file->name =  tar_file->name; //(char *)filename;
     file->inode = (u64)((void *)tar_file);
     file->fs = &g_tarfs;
     return file;

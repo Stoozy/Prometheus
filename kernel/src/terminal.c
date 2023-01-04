@@ -76,7 +76,6 @@ void terminal_main() {
   extern struct tty *gp_active_tty;
   int cx = 0, cy = 0;
   for (;;) {
-    kprintf("Running terminal ... \n");
     if (!gp_active_tty)
       continue;
 
@@ -88,7 +87,6 @@ void terminal_main() {
     // for (int i = 0; i < br; i++) {
     // kprintf(" %c ", g_term_buffer[i]);
     //}
-    kprintf("\n");
 
     size_t len = 0;
     while (len < TERM_BUFSIZE) {

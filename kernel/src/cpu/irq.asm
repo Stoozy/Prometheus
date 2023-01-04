@@ -78,90 +78,106 @@ section .text
 
 err0:
     pushaq
+    mov rdi, rsp
     call err0_handler
     popaq
  
 err1:
     pushaq
+    mov rdi, rsp
     call err1_handler
     popaq
  
 err2:
     pushaq
+    mov rdi, rsp
     call err2_handler
     popaq
  
  
 err3:
     pushaq
+    mov rdi, rsp
     call err2_handler
     popaq
  
 err4:
     pushaq
+    mov rdi, rsp
     call err4_handler
     popaq
 
 err5:
     pushaq
+    mov rdi, rsp
     call err5_handler
     popaq
 
 
 err6:
     pushaq
+    mov rdi, rsp
     call err6_handler
     popaq
 
 err7:
     pushaq
+    mov rdi, rsp
     call err7_handler
     popaq
 
 err8:
     pushaq
+    mov rdi, rsp
     call err8_handler
     popaq
 
 err9:
     pushaq
+    mov rdi, rsp
     call err9_handler
     popaq
 
 err10:
     pushaq
+    mov rdi, rsp
     call err10_handler
     popaq
 
 err11:
     pushaq
+    mov rdi, rsp
     call err11_handler
     popaq
 
 err12:
     pushaq
+    mov rdi, rsp
     call err12_handler
     popaq
 
 
 err13:
+    mov dword rsi, [rsp]
+    add rsp, 8
     pushaq
+    mov rdi, rsp
     call err13_handler
     popaq
 
 err14:
+    mov dword rsi, [rsp]
+    add rsp, 8
     pushaq
-
     mov rdi, rsp
     call err14_handler
     popaq
 
 
-
 irq0:
+
     pushaq
     mov rdi, rsp
-
     call irq0_handler
 
     popaq

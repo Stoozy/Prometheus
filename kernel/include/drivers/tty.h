@@ -1,9 +1,9 @@
 #pragma once
-#include "libc/abi-bits/termios.h"
+#include "abi-bits/termios.h"
 #include "libk/ringbuffer.h"
 #include <fs/vfs.h>
 #include <proc/proc.h>
-#include <libc/termios.h>
+#include <abi-bits/termios.h>
 
 #define TTY_BUFSIZE 0x1000
 #define TTY_MAJOR       5

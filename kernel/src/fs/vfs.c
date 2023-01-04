@@ -1,9 +1,12 @@
+#include "abi-bits/fcntl.h"
+#include "cpu/cpu.h"
 #include <fcntl.h>
 #include <fs/vfs.h>
 #include <libk/kmalloc.h>
 #include <libk/kprintf.h>
 #include <libk/util.h>
 #include <string/string.h>
+#include <abi-bits/errno.h>
 
 FileSystem *gp_filesystems = NULL;
 VfsNode *gp_root;
@@ -40,6 +43,8 @@ static Mountpoint *mp_from_path(const char *path) {
 
   return matching_mp;
 }
+
+
 static void vfs_fs_dump(void) {
   kprintf("\n\nVFS FILESYSTEMS\n");
   FileSystem *fs = gp_filesystems;
@@ -49,6 +54,8 @@ static void vfs_fs_dump(void) {
 
   kprintf("\n");
 }
+
+
 static void vfs_mounts_dump(void) {
   kprintf("\n\nVFS MOUNTPOINTS\n\n");
   Mountpoint *mp = gp_mp_list;
@@ -60,21 +67,20 @@ static void vfs_mounts_dump(void) {
 File *vfs_open(const char *path, int flags) {
   kprintf("[VFS]  Called open on %s\n", path);
 
+  if(flags & O_CREAT){
+    kprintf("Creating files not supported just yet\n");
+    for(;;);
+  }
+
   Mountpoint *mp = mp_from_path(path);
   if (!mp) {
     kprintf("The file doesn't belong to any mounted filesystem\n");
     vfs_mounts_dump();
-    for (;;)
-      ;
+    for (;;);
   }
 
-  File * of = mp->fs->open(path + strlen(mp->path), flags);
-  if(of) {
-      return of;
-  }
-
-  kprintf("[VFS] Couldn't find %s in a filesystem\n", path);
-  return NULL;
+  // path relative to mountpath, e.g /dev/fb0 becomes fb0
+  return mp->fs->open(path + strlen(mp->path), flags);
 }
 
 void vfs_close(File *file) {
@@ -97,7 +103,7 @@ void vfs_close(File *file) {
 }
 
 ssize_t vfs_read(File *file, u8 *buffer, size_t size) {
-  kprintf("[VFS]  Called read on %s for %llu bytes\n", file->name, size);
+  //kprintf("[VFS]  Called read on %s for %llu bytes\n", file->name, size);
 
   if (file) {
     size_t bytes = file->fs->read(file, size, buffer);
@@ -112,8 +118,18 @@ VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
   if (!parent)
     return NULL;
 
-  if (strcmp(parent->file->name, name) == 0)
+  if(strcmp(name, ".")  == 0){
+      return parent;
+  }
+
+  if(strcmp(name, "..") == 0){
+      return parent->parent;
+  }
+
+  if (strcmp(parent->file->name, name) == 0){
+    kprintf("Parent matches. Name: %s\n", name);
     return parent;
+  }
 
   VfsNode *node = parent->children;
 
@@ -151,7 +167,6 @@ VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
   }
 
   kprintf("Couldn't find file'");
-  // not found
   return NULL;
 }
 
@@ -165,7 +180,7 @@ DirectoryEntry *vfs_readdir(File *file) {
 }
 
 ssize_t vfs_write(File *file, u8 *buffer, size_t size) {
-  kprintf("[VFS]    Called write on %s\n", file->name);
+  //kprintf("[VFS]    Called write on %s\n", file->name);
   if (file) {
     size_t bytes = file->fs->write(file, size, buffer);
     return bytes;
@@ -288,26 +303,30 @@ static void _vfs_rec_dump(VfsNode *node) {
 
 void vfs_dump() { _vfs_rec_dump(gp_root); }
 
-void vfs_get_stat(const char *path, VfsNodeStat *res) {
+int vfs_stat(const char *path, VfsNodeStat *res) {
+
   VfsNode *node = vfs_node_from_path(gp_root, path);
 
+
   if (node) {
+    kprintf("node is at %x\n", node);
+    kprintf("Inode : %d; Filesize: %d; Type: %d\n", node->file->inode, node->file->size, node->file->type);
+
+
     res->filesize = node->file->size;
     res->inode = node->file->inode;
     res->type = node->file->type;
-  } else {
-    kprintf("Path doesn't exist: %s\n", path);
-    res->filesize = 0;
-    res->inode = 0;
-    res->type = 0;
-  }
+    return 0;
+  } 
 
-  return;
+  // error
+  return -1;
 }
 
 void vfs_init() {
   gp_root = kmalloc(sizeof(VfsNode));
 
+  gp_root->parent = gp_root; 
   gp_root->children = NULL;
 
   gp_root->file = kmalloc(sizeof(File));
@@ -316,6 +335,7 @@ void vfs_init() {
   gp_root->file->name[1] = '\0';
   gp_root->file->type = VFS_DIRECTORY;
   gp_root->file->fs = NULL;
+  gp_root->file->size = 4096;
 
   return;
 }

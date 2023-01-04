@@ -116,9 +116,7 @@ void refresh_screen_proc() {
   for (;;) {
     // seek
     fb_file->position = 0;
-    kprintf("Refreshing screen\n");
     vfs_read(fb_file, (void *)backbuffer, fb_fsi.mmio_len);
     memcpy((u8 *)fb_fsi.mmio_start, (void *)backbuffer, fb_fsi.mmio_len);
-    kprintf("Refreshed screen\n");
   }
 }

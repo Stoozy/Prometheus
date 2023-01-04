@@ -13,7 +13,7 @@ void rb_init(RingBuffer *rb, size_t cap, size_t tsize) {
 }
 
 void rb_destroy(RingBuffer *rb) {
-  // TODO: a proper kernel allocator
+  // TODO: needs a proper kernel allocator
 }
 
 int rb_push(RingBuffer *rb, void *item) {

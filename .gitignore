@@ -16,5 +16,7 @@ initrd.tar
 3rdparty/
 build/
 sysroot/
-mlibc/
+mlibc/*
+mlibc
 TODO
+.clang-format

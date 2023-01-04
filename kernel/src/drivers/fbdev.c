@@ -1,4 +1,4 @@
-#include "libc/abi-bits/fcntl.h"
+#include "abi-bits/fcntl.h"
 #include "libk/kmalloc.h"
 #include "libk/kprintf.h"
 #include "memory/pmm.h"

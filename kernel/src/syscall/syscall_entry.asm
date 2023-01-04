@@ -31,7 +31,6 @@ enable_sce:
 ; ret   r15
 
 syscall_entry:
-    ;cld
 
     cli
     swapgs
@@ -41,9 +40,11 @@ syscall_entry:
 
 
     ; pushing registers struct
-
     push qword 0x23         ; user ss
     push qword [gs:0x8]     ; saved rsp
+
+    swapgs
+
     push qword r11          ; rflags
     push qword 0x2b         ; user cs
     push qword rcx          ; rip
@@ -52,13 +53,18 @@ syscall_entry:
 
     mov rdi, rsp
     mov rbp, 0
-    call syscall_dispatcher
 
+    sti
+    call syscall_dispatcher
+    cli
 
     popaq
-    mov rsp, [gs:0x8]       ; back to user stack
 
-    swapgs
+    iretq
+    ;pop qword rcx           ; user rip
+    ;add rsp, 8              
+    ;pop qword r11           ; user rflags
 
-    o64 sysret
+    ;pop qword rsp           ; user rsp
+    ;o64 sysret
 

@@ -120,7 +120,7 @@ void vfs_close(File * file);
 ssize_t vfs_read(File * file, uint8_t * buffer, size_t size);
 ssize_t vfs_write(File * file,  uint8_t * buffer, size_t size);
 
-void vfs_get_stat(const char * path, VfsNodeStat * res);
+int vfs_stat(const char * path, VfsNodeStat * res);
 
 void vfs_register_fs(FileSystem *, uint64_t device_id);
 void vfs_unregister_fs(FileSystem * fs);
