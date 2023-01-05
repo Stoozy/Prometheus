@@ -68,9 +68,9 @@ void sys_log_libc(const char *message) {
     extern void turn_color_off();
 
     turn_color_on();
-    kprintf(message);
+    kprintf("%s", message);
     turn_color_off();
-    enable_irq();
+    // enable_irq();
 }
 
 void sys_exit(int status) {
@@ -79,7 +79,7 @@ void sys_exit(int status) {
             running->pid);
     extern void kill_cur_proc(int ec);
     kill_cur_proc(status);
-    enable_irq();
+    // enable_irq();
 
     // ProcessControlBlock * next_proc = get_next_ready_process();
     // next_proc->state = RUNNING;
@@ -94,20 +94,19 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
     kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
             flags, running->name, running->pid);
 
-    enable_irq();
     for (;;)
         ;
     extern void dump_pqueue(ProcessQueue * pqueue);
-    extern struct pqueue ready_queue;
+    extern volatile ProcessQueue ready_queue;
     kprintf("Before removing\n");
     dump_pqueue(&ready_queue);
 
-    pqueue_remove(&ready_queue, running);
+    pqueue_remove(&ready_queue, running->pid);
 
     kprintf("After removing\n");
     dump_pqueue(&ready_queue);
 
-    enable_irq();
+    // enable_irq();
     for (;;)
         ;
 
@@ -218,12 +217,14 @@ int sys_write(int fd, char *ptr, int len) {
     kprintf("sys_write(): %s; Buffer addr: 0x%x Length: %d\n", file->name, ptr,
             len);
 #endif
+
     return len;
 }
 
 void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
                  int flags, int fd, off_t offset) {
 
+    disable_irq();
     kprintf("[MMAP] Requesting %llu bytes\n", size);
     kprintf("[MMAP] Hint : 0x%llx\n", addr);
     kprintf("[MMAP] Size : 0x%llx\n", size);
@@ -404,11 +405,11 @@ void sys_execve(char *name, char **argvp, char **envp) {
     disable_irq();
     kprintf("sys_exec: %s\n", name);
 
-    extern ProcessQueue ready_queue;
+    extern volatile ProcessQueue ready_queue;
     extern void dump_pqueue(ProcessQueue *);
     kprintf("Before removing\n");
     dump_pqueue(&ready_queue);
-    pqueue_remove(&ready_queue, running);
+    pqueue_remove(&ready_queue, running->pid);
 
     char *name_cp = kmalloc(strlen(name) + 1);
     strcpy(name_cp, name);
@@ -451,8 +452,14 @@ void sys_execve(char *name, char **argvp, char **envp) {
     ProcessControlBlock *new = create_elf_process(name_cp, args_cp, env_cp);
     new->next = NULL;
 
-    pqueue_insert(&ready_queue, new);
-    // register_process(new);
+    kprintf("Before registering %s:\n", new->name);
+    dump_pqueue(&ready_queue);
+
+    pqueue_push(&ready_queue, new);
+
+    kprintf("After registering %s: \n", new->name);
+    dump_pqueue(&ready_queue);
+
     for (int i = 0; i < MAX_PROC_FDS; i++)
         new->fd_table[i] = running->fd_table[i];
 
@@ -461,130 +468,7 @@ void sys_execve(char *name, char **argvp, char **envp) {
     kprintf("process (%s pid: %d) cr3 at %x\n", running->name, running->pid,
             running->cr3);
     kprintf("Entrypoint 0x%x\n", running->trapframe.rip);
-    for (;;)
-        ;
     switch_to_process(&running->trapframe, running->cr3);
-
-    // free the entire vas
-    // VASRangeNode *vas = running->vas;
-    // while (vas->next) {
-    //   size_t blocks = vas->size / PAGE_SIZE;
-    //   kprintf("Freeing virt: %x; phys %x; blocks: %d\n", vas->virt_start,
-    //           vas->phys_start, blocks);
-    //   pmm_free_blocks((uintptr_t)vas->phys_start, blocks);
-
-    //  VASRangeNode *tmp = vas;
-    //  vas = vas->next;
-    //  kfree(tmp);
-    // }
-
-    // File *elf_file = vfs_open(name, O_RDONLY);
-    // u8 *elf_data = kmalloc(elf_file->size);
-    // vfs_read(elf_file, elf_data, elf_file->size);
-
-    // running->cr3 = pmm_alloc_block() + PAGING_VIRTUAL_OFFSET;
-    ////(void *)running->cr3 + PAGING_VIRTUAL_OFFSET;
-
-    // extern void load_pagedir(PageTable *);
-    // PageTable *tmp = vmm_get_current_cr3();
-    // load_pagedir(kernel_cr3);
-    // Auxval aux = load_elf_segments(running, elf_data);
-
-    // for (int i = 256; i < 512; i++)
-    //   running->cr3->entries[i] = kernel_cr3->entries[i];
-
-    // load_pagedir(tmp);
-    // void *stack_ptr =
-    //     pmm_alloc_blocks(STACK_BLOCKS) + STACK_SIZE + PAGING_VIRTUAL_OFFSET;
-    // void *stack_base = stack_ptr - (STACK_SIZE);
-
-    // vmm_map_range(running->cr3, stack_base - PAGING_VIRTUAL_OFFSET,
-    //               stack_base - PAGING_VIRTUAL_OFFSET, STACK_SIZE,
-    //               PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
-
-    // VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
-
-    // range->virt_start = stack_base;
-    // range->phys_start = stack_base;
-    // range->size = STACK_SIZE;
-    // range->page_flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-    // range->next = NULL;
-
-    // proc_add_vas_range(running, range);
-
-    // uint64_t *stack = (uint64_t *)(stack_ptr);
-
-    // int envp_len;
-    // for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
-    //   size_t length = strlen(envp[envp_len]);
-    //   stack = (void *)stack - length - 1;
-    //   memcpy(stack, envp[envp_len], length);
-    // }
-
-    // int argv_len;
-    // for (argv_len = 0; argvp[argv_len] != NULL; argv_len++) {
-    //   size_t length = strlen(argvp[argv_len]);
-    //   stack = (void *)stack - length - 1;
-    //   memcpy(stack, argvp[argv_len], length);
-    // }
-
-    // stack = (uint64_t *)(((uintptr_t)stack / 16) * 16);
-
-    // if (((argv_len + envp_len + 1) & 1) != 0) {
-    //   stack--;
-    // }
-
-    //*--stack = 0;
-    //*--stack = 0;
-    //*--stack = aux.entry;
-    //*--stack = AT_ENTRY;
-    //*--stack = aux.phent;
-    //*--stack = AT_PHENT;
-    //*--stack = aux.phnum;
-    //*--stack = AT_PHNUM;
-    //*--stack = aux.phdr;
-    //*--stack = AT_PHDR;
-
-    // uintptr_t old_rsp = (uintptr_t)stack_ptr;
-
-    //*--stack = 0; // end envp
-    // stack -= envp_len;
-    // for (int i = 0; i < envp_len; i++) {
-    //  old_rsp -= strlen(envp[i]) + 1;
-    //  stack[i] = old_rsp - PAGING_VIRTUAL_OFFSET;
-    //}
-
-    //*--stack = 0; // end argvp
-    // stack -= argv_len;
-    // for (int i = 0; i < argv_len; i++) {
-    //  old_rsp -= strlen(argvp[i]) + 1;
-    //  stack[i] = old_rsp - PAGING_VIRTUAL_OFFSET;
-    //}
-
-    //*--stack = argv_len; // argc
-
-    // stack_ptr -= (stack_ptr - (void *)stack);
-
-    // memset(&running->trapframe, 0, sizeof(Registers));
-
-    // running->trapframe.ss = 0x23;
-    // running->trapframe.cs = 0x2b;
-    // running->trapframe.rsp = (uint64_t)stack_ptr - PAGING_VIRTUAL_OFFSET;
-    // running->trapframe.rflags = 0x202;
-    // running->trapframe.rip = aux.ld_entry;
-
-    // running->cr3 = (void *)running->cr3 - PAGING_VIRTUAL_OFFSET;
-
-    // running->mmap_base = MMAP_BASE;
-    //++running->pid;
-
-    // memcpy(running->name, name, 256);
-
-    // kprintf("Switching to %s\n", name);
-    // dump_regs(&running->trapframe);
-    // kprintf("Cr3 %x\n", running->cr3);
-
-    // switch_to_process(&running->trapframe, running->cr3);
 }
 
 void sys_fork(Registers *regs) {

@@ -129,87 +129,87 @@ unsigned char kbdse_alt[128] = {
 
 void kbd_write_to_buffer(uint8_t c) {
 
-  if (!gp_active_tty) {
+    if (!gp_active_tty) {
 
-    rb_push(kbd_rb, &c);
+        rb_push(kbd_rb, &c);
 
-    // data available, so wake up first waiting process
-    if (kbd_wait_queue.last) {
-      unblock_process(kbd_wait_queue.last);
-      pqueue_remove(&kbd_wait_queue, kbd_wait_queue.last);
+        // data available, so wake up first waiting process
+        if (kbd_wait_queue.last) {
+            unblock_process(kbd_wait_queue.last);
+            pqueue_remove(&kbd_wait_queue, kbd_wait_queue.last->pid);
+        }
+
+    } else {
+        rb_push(gp_active_tty->ibuf, &c);
+        kprintf("Wrote %c to tty input buffer\n", c);
     }
-
-  } else {
-    rb_push(gp_active_tty->ibuf, &c);
-    kprintf("Wrote %c to tty input buffer\n", c);
-  }
 }
 
 u8 kbd_read_from_buffer() {
-  u8 uc;
-  if (!rb_pop(kbd_rb, &uc)) {
+    u8 uc;
+    if (!rb_pop(kbd_rb, &uc)) {
 
-    // buffer is empty
-    // block the current running process
-    kprintf("No data available. Blocking current task\n");
-    extern ProcessControlBlock *running;
-    pqueue_insert(&kbd_wait_queue, running);
-    block_process(running, WAITING);
+        // buffer is empty
+        // block the current running process
+        kprintf("No data available. Blocking current task\n");
+        extern ProcessControlBlock *running;
+        pqueue_push(&kbd_wait_queue, running);
+        block_process(running, WAITING);
 
-    // note: this loop is done  a few times
-    // until it's time to switch tasks and once
-    // more after the process wakes up at which
-    // point the keyboard_buffer should be readable
-    for (;;)
-      if (rb_pop(kbd_rb, &uc)) {
-        goto done_waiting;
-      }
-  }
+        // note: this loop is done  a few times
+        // until it's time to switch tasks and once
+        // more after the process wakes up at which
+        // point the keyboard_buffer should be readable
+        for (;;)
+            if (rb_pop(kbd_rb, &uc)) {
+                goto done_waiting;
+            }
+    }
 
 done_waiting:
-  return uc;
+    return uc;
 }
 
 void handle_scan(u8 scan_code) {
-  // TODO check for key release, and then write to tty
+    // TODO check for key release, and then write to tty
 
-  switch (scan_code) {
-  case 0x2a: /* shift down */
-  case 0x36: /* right shift down */
-    shift_down = true;
-    break;
-  case 0xaa: /* shift up */
-  case 0xb6: /* right shift up */
-    shift_down = false;
-    break;
-  case 0x1d: /* ctrl down */
-    ctrl_down = true;
-    break;
-  case 0x9d: /* ctrl up */
-    ctrl_down = false;
-    break;
+    switch (scan_code) {
+    case 0x2a: /* shift down */
+    case 0x36: /* right shift down */
+        shift_down = true;
+        break;
+    case 0xaa: /* shift up */
+    case 0xb6: /* right shift up */
+        shift_down = false;
+        break;
+    case 0x1d: /* ctrl down */
+        ctrl_down = true;
+        break;
+    case 0x9d: /* ctrl up */
+        ctrl_down = false;
+        break;
 
-  case 0x38: /* alt down */
-    alt_down = true;
-    break;
-  case 0xb8: /* alt up */
-    alt_down = false;
-    break;
-  default:
-    if (scan_code & 0x80)
-      break;
-    if (shift_down)
-      kbd_write_to_buffer(kbdse_shift[scan_code]);
-    else if (alt_down)
-      kbd_write_to_buffer(kbdse_alt[scan_code]);
-    else
-      kbd_write_to_buffer(kbdmix[scan_code]);
+    case 0x38: /* alt down */
+        alt_down = true;
+        break;
+    case 0xb8: /* alt up */
+        alt_down = false;
+        break;
+    default:
+        if (scan_code & 0x80)
+            break;
+        if (shift_down)
+            kbd_write_to_buffer(kbdse_shift[scan_code]);
+        else if (alt_down)
+            kbd_write_to_buffer(kbdse_alt[scan_code]);
+        else
+            kbd_write_to_buffer(kbdmix[scan_code]);
 
-    break;
-  }
+        break;
+    }
 }
 
 void kbd_init() {
-  kbd_rb = kmalloc(sizeof(RingBuffer));
-  rb_init(kbd_rb, KBD_BUFSIZE, sizeof(u8));
+    kbd_rb = kmalloc(sizeof(RingBuffer));
+    rb_init(kbd_rb, KBD_BUFSIZE, sizeof(u8));
 }

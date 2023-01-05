@@ -158,15 +158,15 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
     proc->vas = NULL;
     proc->cr3 = vmm_create_user_proc_pml4(proc); // just maps kernel and returns
 
-    vmm_map_range(proc->cr3, stack_base, stack_base, STACK_SIZE,
-                  PAGE_USER | PAGE_WRITE | PAGE_PRESENT);
+    int pflags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
+    vmm_map_range(proc->cr3, stack_base, stack_base, STACK_SIZE, pflags);
 
     VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
 
     range->virt_start = stack_base;
     range->phys_start = stack_base;
     range->size = STACK_SIZE;
-    range->page_flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    range->page_flags = pflags;
     range->next = NULL;
 
     proc_add_vas_range(proc, range);

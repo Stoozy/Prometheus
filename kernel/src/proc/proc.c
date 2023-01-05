@@ -25,59 +25,46 @@ PageTable *kernel_cr3 = NULL;
 
 uint64_t pid_counter = 200;
 
-void dump_pqueue(ProcessQueue *pqueue) {
-    ProcessControlBlock *cproc = pqueue->first;
-    kprintf("There are %d processes in this queue\n", pqueue->count);
-    kprintf("Head: %x; Tail: %x;\n", pqueue->first, pqueue->last);
-    for (; cproc != NULL; cproc = cproc->next) {
-        kprintf("Process %s (%d) ; Next %x\n", &cproc->name, cproc->pid,
-                cproc->next);
+void dump_pqueue(ProcessQueue *q) {
+    ProcessControlBlock *cnode = q->first;
+    for (; cnode; cnode = cnode->next) {
+        kprintf("%s [%d] -> ", cnode->name, cnode->pid);
     }
-    kprintf("\n");
+    kprintf("NULL \n");
 }
 
-void pqueue_insert(ProcessQueue *queue, ProcessControlBlock *proc) {
-    if (!proc)
-        return;
-
-    if (queue->first == NULL) {
-        queue->first = queue->last = proc;
-        ++queue->count;
+void pqueue_push(ProcessQueue *queue, ProcessControlBlock *data) {
+    if (!queue->first) {
+        queue->count = 1;
+        queue->first = queue->last = data;
         return;
     }
 
-    // append to last
-    proc->next = NULL;
-    queue->last->next = proc;
+    queue->last->next = data;
     queue->last = queue->last->next;
-    ++queue->count;
+    queue->count++;
+    return;
 }
 
-void pqueue_remove(ProcessQueue *queue, ProcessControlBlock *proc) {
-    kprintf("Removing %s (%d)\n", proc->name, proc->pid);
+ProcessControlBlock *pqueue_pop(ProcessQueue *queue) {
+    if (!queue->first)
+        return NULL;
 
-    if (proc == queue->first) {
-        kprintf("%s (pid: %d) was first\n", queue->first->name,
-                queue->first->pid);
-        queue->first = queue->first->next;
-        --queue->count;
-        return;
+    ProcessControlBlock *tmp = queue->first;
+
+    queue->first = queue->first->next;
+    queue->count--;
+
+    return tmp;
+}
+
+void pqueue_remove(ProcessQueue *queue, int pid) {
+    ProcessControlBlock *v = pqueue_pop(queue);
+    while (v && v->pid != pid) {
+        v->next = NULL;
+        pqueue_push(queue, v);
+        v = pqueue_pop(queue);
     }
-
-    ProcessControlBlock *prev = queue->first;
-    ProcessControlBlock *cur = prev->next;
-
-    while (cur != proc) {
-        kprintf("Cur: %s (pid: %d); Prev : %s (pid: %d)\n", cur->name, cur->pid,
-                prev->name, prev->pid);
-        prev = prev->next;
-        cur = cur->next;
-    }
-
-    prev->next = cur->next;
-    cur->next = NULL;
-
-    return;
 }
 
 void unmap_fd_from_proc(ProcessControlBlock *proc, int fd) {
@@ -108,7 +95,7 @@ void kill_proc(ProcessControlBlock *proc, int exit_code) {
     kprintf("Before removing\n");
     dump_pqueue(&ready_queue);
 
-    pqueue_remove(&ready_queue, proc);
+    pqueue_remove(&ready_queue, proc->pid);
 
     proc->exit_code = exit_code;
     proc->state = ZOMBIE;
@@ -220,7 +207,7 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
     kprintf("Registers are at stack %x\n", regs);
     kprintf("Fork'd process has cr3: %x\n", clone->cr3);
 
-    pqueue_insert(&proc->children, clone);
+    pqueue_push(&proc->children, clone);
 
     clone->parent = proc;
 
@@ -229,7 +216,7 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
 
 void register_process(ProcessControlBlock *new_pcb) {
     new_pcb->next = NULL;
-    pqueue_insert(&ready_queue, new_pcb);
+    pqueue_push(&ready_queue, new_pcb);
     return;
 }
 
@@ -246,7 +233,7 @@ void block_process(ProcessControlBlock *proc, int reason) {
 void unblock_process(ProcessControlBlock *proc) {
     proc->state = READY;
     proc->next = NULL;
-    pqueue_insert(&ready_queue, proc);
+    pqueue_push(&ready_queue, proc);
     kprintf("\n unblocked %s (%d)\n\n", proc->name, proc->pid);
     return;
 }

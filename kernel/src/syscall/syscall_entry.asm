@@ -54,7 +54,7 @@ syscall_entry:
     mov rdi, rsp
     mov rbp, 0
 
-    sti
+    ;sti
     call syscall_dispatcher
     cli
 

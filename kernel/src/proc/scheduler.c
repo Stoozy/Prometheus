@@ -19,16 +19,6 @@ extern volatile ProcessControlBlock *running;
 
 ProcessControlBlock *get_next_ready_process() {
     extern void dump_pqueue(ProcessQueue *);
-    // if (running->state == WAITING) {
-    //   ProcessControlBlock *next =
-    //       running->next == NULL ? ready_queue.first : running->next;
-
-    //  kprintf("Removing %x from ready queue\n", running);
-    //  pqueue_remove(&ready_queue, running);
-    //  dump_pqueue(&ready_queue);
-    //  return next;
-    //}
-
     return running->next == NULL ? ready_queue.first : running->next;
 }
 
