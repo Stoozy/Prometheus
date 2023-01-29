@@ -94,21 +94,15 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
     kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
             flags, running->name, running->pid);
 
-    for (;;)
-        ;
-    extern void dump_pqueue(ProcessQueue * pqueue);
-    extern volatile ProcessQueue ready_queue;
-    kprintf("Before removing\n");
-    dump_pqueue(&ready_queue);
+    // extern volatile ProcessQueue ready_queue;
+    // kprintf("Before removing\n");
+    // dump_pqueue(&ready_queue);
 
-    pqueue_remove(&ready_queue, running->pid);
+    // pqueue_remove(&ready_queue, running->pid);
 
-    kprintf("After removing\n");
-    dump_pqueue(&ready_queue);
+    // kprintf("After removing\n");
+    // dump_pqueue(&ready_queue);
 
-    // enable_irq();
-    for (;;)
-        ;
 
     if (pid < -1) {
         kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
@@ -117,13 +111,17 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
         ProcessQueue *children = &running->children;
 
         if (children->count == 0) {
-            regs->rbx = ECHILD;
+            for(;;)
+                kprintf("NO children...\n ");
+            regs->rdx = ECHILD;
             regs->rax = -1;
             return;
         }
 
-        while (!running->childDied)
-            kprintf("Child hasn't died");
+        if (!running->childDied){
+            regs->rax = -1;
+            regs->rdx = EINTR; 
+        }
 
         for (ProcessControlBlock *proc = children->first; proc;
              proc = proc->next) {
@@ -136,7 +134,7 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
         }
 
         regs->rax = -1;
-        regs->rbx = ECHILD;
+        regs->rdx = EINTR;
         return;
 
     } else if (pid == 0) {
@@ -144,7 +142,7 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
                 "proc ... \n");
     } else if (pid > 0) {
         kprintf("Waiting for the child process with pid %d\n", pid);
-        regs->rbx = ECHILD;
+        regs->rdx = ECHILD;
         regs->rax = -1;
     }
 
@@ -155,7 +153,7 @@ void sys_open(const char *name, int flags, Registers *regs) {
     File *file = vfs_open(name, flags);
 
     if (!file) {
-        regs->rbx = ENOENT;
+        regs->rdx = ENOENT;
         regs->rax = -1;
         return;
     }
@@ -166,7 +164,7 @@ void sys_open(const char *name, int flags, Registers *regs) {
 
     // error on overflow
     if (fd > MAX_PROC_FDS) {
-        regs->rbx = ENOMEM;
+        regs->rdx = ENOMEM;
         regs->rax = -1;
         return;
     }
@@ -185,7 +183,7 @@ int sys_close(int fd) {
 void sys_read(int file, char *ptr, size_t len, Registers *regs) {
 
     if (file > MAX_PROC_FDS) {
-        regs->rbx = EBADF;
+        regs->rdx = EBADF;
         regs->rax = -1;
         return;
     }
@@ -224,7 +222,6 @@ int sys_write(int fd, char *ptr, int len) {
 void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
                  int flags, int fd, off_t offset) {
 
-    disable_irq();
     kprintf("[MMAP] Requesting %llu bytes\n", size);
     kprintf("[MMAP] Hint : 0x%llx\n", addr);
     kprintf("[MMAP] Size : 0x%llx\n", size);
@@ -360,7 +357,7 @@ void sys_fstat(int fd, VfsNodeStat *vns, Registers *regs) {
     File *file = running->fd_table[fd];
 
     if (!file) {
-        regs->rbx = EBADF;
+        regs->rdx = EBADF;
         regs->rax = -1;
         return;
     }
@@ -379,7 +376,7 @@ void sys_fstat(int fd, VfsNodeStat *vns, Registers *regs) {
 void sys_stat(const char *path, VfsNodeStat *statbuf, Registers *regs) {
     int ret = vfs_stat(path, statbuf);
     if (ret) {
-        regs->rbx = ENOENT;
+        regs->rdx = ENOENT;
         regs->rax = -1;
         return;
     }
@@ -647,47 +644,47 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
 
 void syscall_dispatcher(Registers *regs) {
 
-    u64 syscall = regs->rsi;
+    u64 syscall = regs->rax;
 
     switch (syscall) {
     case SYS_EXIT: {
-        sys_exit((int)regs->r8);
+        sys_exit((int)regs->rdi);
         break;
     }
     case SYS_OPEN: {
         kprintf("[SYS]  OPEN CALLED by %s (%d)\n", running->name, running->pid);
         dump_regs(regs);
 
-        sys_open((char *)regs->r8, (int)regs->r9, regs);
+        sys_open((char *)regs->rdi, (int)regs->rsi, regs);
         break;
     }
     case SYS_CLOSE: {
         kprintf("[SYS]  CLOSE CALLED\n");
-        regs->rax = sys_close(regs->r8);
+        regs->rax = sys_close(regs->rdi);
         break;
     }
     case SYS_READ: {
         kprintf("[SYS]  READ CALLED\n");
-        sys_read(regs->r8, (char *)regs->r9, regs->r10, regs);
+        sys_read(regs->rdi, (char *)regs->rsi, regs->rdx, regs);
         break;
     }
     case SYS_WRITE: {
         // kprintf("[SYS]  WRITE CALLED\n");
-        regs->rax = sys_write(regs->r8, (char *)regs->r9, regs->r10);
+        regs->rax = sys_write(regs->rdi, (char *)regs->rsi, regs->rdx);
         break;
     }
     case SYS_LOG_LIBC: {
-        sys_log_libc((const char *)regs->r8);
+        sys_log_libc((const char *)regs->rdi);
         break;
     }
     case SYS_VM_MAP: {
         kprintf("[SYS]  VM_MAP CALLED\n");
-        void *addr = (void *)regs->r8;
-        size_t size = regs->r9;
-        int prot = regs->r10;
-        int flags = regs->r12;
-        int fd = regs->r13;
-        off_t off = regs->r14;
+        void *addr = (void *)regs->rdi;
+        size_t size = regs->rsi;
+        int prot = regs->rdx;
+        int flags = regs->r10;
+        int fd = regs->r9;
+        off_t off = regs->r8;
 
         void *ret = sys_vm_map(running, addr, size, prot, flags, fd, off);
         regs->rax = (u64)ret;
@@ -696,9 +693,9 @@ void syscall_dispatcher(Registers *regs) {
     }
     case SYS_SEEK: {
         kprintf("[SYS]  SEEK CALLED\n");
-        int fd = regs->r8;
-        off_t off = regs->r9;
-        int whence = regs->r10;
+        int fd = regs->rdi;
+        off_t off = regs->rsi;
+        int whence = regs->rdx;
         regs->rax = sys_seek(fd, off, whence);
         kprintf("Returning offset %d\n", regs->rax);
 
@@ -706,26 +703,26 @@ void syscall_dispatcher(Registers *regs) {
     }
     case SYS_TCB_SET: {
         kprintf("[SYS]  TCB_SET CALLED\n");
-        regs->rax = sys_tcb_set((void *)regs->r8);
+        regs->rax = sys_tcb_set((void *)regs->rdi);
         break;
     }
     case SYS_IOCTL: {
         kprintf("[SYS]  IOCTL CALLED\n");
-        int fd = regs->r8;
-        unsigned long req = regs->r9;
-        void *arg = (void *)regs->r10;
+        int fd = regs->rdi;
+        unsigned long req = regs->rsi;
+        void *arg = (void *)regs->rdx;
 
         regs->rax = sys_ioctl(fd, req, arg);
         break;
     }
     case SYS_STAT: {
         kprintf("[SYS]  STAT CALLED\n");
-        sys_stat((const char *)regs->r8, (VfsNodeStat *)regs->r9, regs);
+        sys_stat((const char *)regs->rdi, (VfsNodeStat *)regs->rsi, regs);
         break;
     }
     case SYS_FSTAT: {
         kprintf("[SYS]  FSTAT CALLED\n");
-        sys_fstat(regs->r8, (VfsNodeStat *)regs->r9, regs);
+        sys_fstat(regs->rdi, (VfsNodeStat *)regs->rsi, regs);
         break;
     }
     case SYS_GETPID: {
@@ -735,25 +732,25 @@ void syscall_dispatcher(Registers *regs) {
 
     case SYS_FCNTL: {
         kprintf("[SYS]  FCNTL CALLED\n");
-        regs->rax = sys_fcntl(regs->r8, regs->r9, (void *)regs->r10);
+        regs->rax = sys_fcntl(regs->rdi, regs->rsi, (void *)regs->rdx);
         break;
     }
     case SYS_POLL: {
         kprintf("[SYS]  POLL CALLED\n");
-        regs->rax = sys_poll((struct pollfd *)regs->r8, regs->r9, regs->r10);
+        regs->rax = sys_poll((struct pollfd *)regs->rdi, regs->rsi, regs->rdx);
         break;
     }
     case SYS_DUP: {
-        regs->rax = sys_dup(regs->r8, regs->r9);
+        regs->rax = sys_dup(regs->rdi, regs->rsi);
         break;
     }
     case SYS_DUP2: {
-        regs->rax = sys_dup2(regs->r8, regs->r9, regs->r10);
+        regs->rax = sys_dup2(regs->rdi, regs->rsi, regs->rdx);
         break;
     }
     case SYS_READDIR: {
         regs->rax =
-            sys_readdir(regs->r8, (DirectoryEntry *)regs->r9, regs->r10);
+            sys_readdir(regs->rdi, (DirectoryEntry *)regs->rsi, regs->rdx);
         break;
     }
     case SYS_FORK: {
@@ -761,11 +758,12 @@ void syscall_dispatcher(Registers *regs) {
         break;
     }
     case SYS_EXEC: {
-        sys_execve((char *)regs->r8, (char **)regs->r9, (char **)regs->r10);
+        sys_execve((char *)regs->rdi, (char **)regs->rsi, (char **)regs->rdx);
         break;
     }
     case SYS_WAIT: {
-        sys_waitpid((pid_t)regs->r8, (int *)regs->r9, (int)regs->r10, regs);
+        sys_waitpid((pid_t)regs->rdi, (int *)regs->rsi, (int)regs->rdx, regs);
+
         break;
     }
 

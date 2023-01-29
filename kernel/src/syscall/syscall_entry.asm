@@ -21,15 +21,6 @@ enable_sce:
     wrmsr                   ; write back new STAR
     ret                     ; return back to C
 
-; call number in rdi
-; arg1  r8
-; arg2  r9
-; arg3  r10
-; arg4  r12
-; arg5  r13
-; arg6  r14
-; ret   r15
-
 syscall_entry:
 
     cli
@@ -54,17 +45,15 @@ syscall_entry:
     mov rdi, rsp
     mov rbp, 0
 
-    ;sti
     call syscall_dispatcher
     cli
 
     popaq
 
-    iretq
-    ;pop qword rcx           ; user rip
-    ;add rsp, 8              
-    ;pop qword r11           ; user rflags
+    pop qword rcx           ; user rip
+    add rsp, 8              
+    pop qword r11           ; user rflags
 
-    ;pop qword rsp           ; user rsp
-    ;o64 sysret
+    pop qword rsp           ; user rsp
+    o64 sysret
 

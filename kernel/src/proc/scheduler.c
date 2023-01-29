@@ -43,7 +43,8 @@ void schedule(Registers *regs) {
     kprintf("Switching to %s (%d); cr3 0x%x\n", running->name, running->pid,
             running->cr3);
     // kprintf("Trapframe at  %x\n", &running->trapframe);
-    dump_regs(&running->trapframe);
+    // dump_regs(&running->trapframe);
+
 #endif
 
     switch_to_process(&running->trapframe, (void *)running->cr3);

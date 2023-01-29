@@ -100,18 +100,16 @@ void kill_proc(ProcessControlBlock *proc, int exit_code) {
     proc->exit_code = exit_code;
     proc->state = ZOMBIE;
 
-    if (proc->parent)
+    if (proc->parent){
         proc->parent->childDied = true;
+        proc->exit_code = exit_code;
+    }
 
     kprintf("After removing\n");
     dump_pqueue(&ready_queue);
 
-    // if (proc->parent)
-    //     pqueue_remove(&wait_queue, proc->parent);
-
     enable_irq();
-    for (;;)
-        ;
+    for(;;);
 }
 
 void kill_cur_proc(int exit_code) { kill_proc(running, exit_code); }
@@ -208,7 +206,6 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
     kprintf("Fork'd process has cr3: %x\n", clone->cr3);
 
     pqueue_push(&proc->children, clone);
-
     clone->parent = proc;
 
     return clone;
