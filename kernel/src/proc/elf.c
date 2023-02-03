@@ -248,9 +248,10 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
     proc->cr3 = (void *)proc->cr3 - PAGING_VIRTUAL_OFFSET;
 
+    proc->kstack = pmm_alloc_blocks(STACK_BLOCKS) + STACK_SIZE;
+
     extern uint64_t pid_counter;
     proc->pid = pid_counter++;
-    proc->next = 0;
 
     kprintf("fd 0 is at %x\n", proc->fd_table[0]);
     kprintf("fd 1 is at %x\n", proc->fd_table[1]);

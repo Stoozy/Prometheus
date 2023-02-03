@@ -230,13 +230,16 @@ irq8:
     call irq8_handler
     popaq
     iretq
- 
+
+extern schedule
 irq9:
     pushaq
-    call irq9_handler
+    mov rdi, rsp
+    call schedule
+
     popaq
     iretq
- 
+
 irq10:
     pushaq
     call irq10_handler

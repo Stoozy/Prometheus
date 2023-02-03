@@ -3,6 +3,16 @@
 #include <libk/typedefs.h>
 #include <memory/vmm.h>
 
+#define EFER 0xC0000080
+
+#define STAR 0xC0000081
+#define LSTAR 0xC0000082
+#define CSTAR 0xC0000083
+#define SFMASK 0xC0000084
+
+#define FSBASE 0xC0000100
+#define GSBASE 0xC0000101
+#define KGSBASE 0xC0000102
 
 typedef struct {
   u64 rdi;
@@ -42,3 +52,16 @@ typedef struct {
 void cpu_init(u8);
 LocalCpuData *get_cpu_struct(u8);
 void dump_regs(Registers *);
+
+
+static inline uint64_t rdmsr(uint64_t msr) {
+  uint32_t low, high;
+  asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
+  return ((uint64_t)high << 32) | low;
+}
+
+static inline void wrmsr(uint64_t msr, uint64_t value) {
+  uint32_t low = value & 0xFFFFFFFF;
+  uint32_t high = value >> 32;
+  asm volatile("wrmsr" : : "c"(msr), "a"(low), "d"(high));
+}

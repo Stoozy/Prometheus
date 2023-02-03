@@ -134,14 +134,16 @@ void kbd_write_to_buffer(uint8_t c) {
         rb_push(kbd_rb, &c);
 
         // data available, so wake up first waiting process
-        if (kbd_wait_queue.last) {
-            unblock_process(kbd_wait_queue.last);
-            pqueue_remove(&kbd_wait_queue, kbd_wait_queue.last->pid);
-        }
+
 
     } else {
         rb_push(gp_active_tty->ibuf, &c);
         kprintf("Wrote %c to tty input buffer\n", c);
+    }
+
+    if (kbd_wait_queue.last) {
+        unblock_process(kbd_wait_queue.last->pcb);
+        pqueue_remove(&kbd_wait_queue, kbd_wait_queue.last->pcb->pid);
     }
 }
 

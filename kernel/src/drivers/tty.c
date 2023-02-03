@@ -146,11 +146,18 @@ read:
 
     for (; s < size; s++)
         if (!rb_pop(tty->ibuf, &buffer[s]))
+            break;
+        else
             echo(tty, buffer[s]);
     enable_irq();
+    /* extern ProcessControlBlock * running; */
+    if(s == 0){
+        /* extern ProcessQueue kbd_wait_queue; */
+        /* pqueue_push(&kbd_wait_queue, running); */
+        /* block_process(running, WAITING); */
 
-    if(s == 0)
         goto read;
+    }
 
     // should be in line disc
 
@@ -161,7 +168,6 @@ size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer) {
     kprintf("[TTY]  Default write called\n");
     kprintf("Data: ");
 
-    disable_irq();
     // TODO: find a better way
     gp_active_tty = tty;
 
@@ -172,7 +178,6 @@ size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer) {
 
         kprintf("%c", ((char *)tty->obuf->buffer)[i]);
     }
-    enable_irq();
     kprintf("\n");
     kprintf("[TTY] New length is %d\n", tty->obuf->len);
 

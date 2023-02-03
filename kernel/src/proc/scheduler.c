@@ -19,7 +19,13 @@ extern volatile ProcessControlBlock *running;
 
 ProcessControlBlock *get_next_ready_process() {
     extern void dump_pqueue(ProcessQueue *);
-    return running->next == NULL ? ready_queue.first : running->next;
+    for(PQNode * cnode = ready_queue.first; cnode; cnode = cnode->next){
+        if(cnode->pcb->pid == running->pid){
+            return cnode->next == NULL ? ready_queue.first->pcb : cnode->next->pcb;
+        }
+    }
+
+    return ready_queue.first->pcb;
 }
 
 void schedule(Registers *regs) {
@@ -30,6 +36,7 @@ void schedule(Registers *regs) {
 
     // save registers
     running->trapframe = *regs;
+    running->fs_base = rdmsr(FSBASE);
 
     running = get_next_ready_process();
     running->state = RUNNING;
@@ -47,5 +54,9 @@ void schedule(Registers *regs) {
 
 #endif
 
+
+
+    wrmsr(FSBASE, running->fs_base);
+    get_cpu_struct(0)->syscall_kernel_stack = running->kstack + PAGING_VIRTUAL_OFFSET;
     switch_to_process(&running->trapframe, (void *)running->cr3);
 }

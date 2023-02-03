@@ -18,7 +18,6 @@ run-int: $(ISO_IMAGE)
 	qemu-system-x86_64 $(QEMU_RUN_INT_FRAME_FLAGS) -cdrom $(ISO_IMAGE)
 
 debug: $(ISO_IMAGE)
-	#gdb -x "qemu-system-x86_64 -S -gdb stdio  -no-reboot -d int -m 8G -cdrom $(ISO_IMAGE)"
 	gdb -x script.gdb
 
 limine:

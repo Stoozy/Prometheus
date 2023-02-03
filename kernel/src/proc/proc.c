@@ -14,7 +14,7 @@
 #include <string/string.h>
 
 extern u64 g_ticks;
-extern void switch_to_process(void *new_stack, PageTable *cr3);
+extern void switch_to_process(Registers *new_stack, PageTable *cr3);
 extern void load_pagedir();
 
 volatile ProcessQueue ready_queue = {0, NULL, NULL};
@@ -26,31 +26,36 @@ PageTable *kernel_cr3 = NULL;
 uint64_t pid_counter = 200;
 
 void dump_pqueue(ProcessQueue *q) {
-    ProcessControlBlock *cnode = q->first;
+    PQNode *cnode = q->first;
     for (; cnode; cnode = cnode->next) {
-        kprintf("%s [%d] -> ", cnode->name, cnode->pid);
+        kprintf("%s [%d] -> ", cnode->pcb->name, cnode->pcb->pid);
     }
     kprintf("NULL \n");
 }
 
-void pqueue_push(ProcessQueue *queue, ProcessControlBlock *data) {
+void pqueue_push(ProcessQueue *queue, ProcessControlBlock *proc) {
+    PQNode * new_node = kmalloc(sizeof(PQNode));
+    new_node->pcb = proc;
+    new_node->next = NULL;
+
     if (!queue->first) {
         queue->count = 1;
-        queue->first = queue->last = data;
+        queue->first = queue->last = new_node;
         return;
     }
 
-    queue->last->next = data;
+    queue->last->next = new_node;
     queue->last = queue->last->next;
     queue->count++;
     return;
 }
 
-ProcessControlBlock *pqueue_pop(ProcessQueue *queue) {
+PQNode *pqueue_pop(ProcessQueue *queue) {
     if (!queue->first)
         return NULL;
 
-    ProcessControlBlock *tmp = queue->first;
+    // clean this up
+    PQNode *tmp = queue->first;
 
     queue->first = queue->first->next;
     queue->count--;
@@ -59,10 +64,9 @@ ProcessControlBlock *pqueue_pop(ProcessQueue *queue) {
 }
 
 void pqueue_remove(ProcessQueue *queue, int pid) {
-    ProcessControlBlock *v = pqueue_pop(queue);
-    while (v && v->pid != pid) {
-        v->next = NULL;
-        pqueue_push(queue, v);
+    PQNode *v = pqueue_pop(queue);
+    while (v && v->pcb->pid != pid) {
+        pqueue_push(queue, v->pcb);
         v = pqueue_pop(queue);
     }
 }
@@ -94,19 +98,20 @@ void kill_proc(ProcessControlBlock *proc, int exit_code) {
     disable_irq();
     kprintf("Before removing\n");
     dump_pqueue(&ready_queue);
-
     pqueue_remove(&ready_queue, proc->pid);
 
     proc->exit_code = exit_code;
     proc->state = ZOMBIE;
 
+    proc->exit_code = exit_code;
+
     if (proc->parent){
         proc->parent->childDied = true;
-        proc->exit_code = exit_code;
     }
 
     kprintf("After removing\n");
     dump_pqueue(&ready_queue);
+
 
     enable_irq();
     for(;;);
@@ -170,7 +175,8 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void), char *name) {
 
     memcpy(&pcb->name, name, 256);
 
-    void *stack_ptr = (void *)pmm_alloc_blocks(8) + 8 * PAGE_SIZE;
+    void *stack_ptr = pmm_alloc_blocks(STACK_BLOCKS) + STACK_SIZE;
+    pcb->kstack = stack_ptr; 
     memset(&pcb->trapframe, 0, sizeof(Registers));
 
     pcb->trapframe.ss = 0x10;
@@ -182,7 +188,7 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void), char *name) {
     pcb->cr3 = vmm_get_current_cr3(); // kernel cr3
     pcb->state = READY;
     pcb->pid = pid_counter++;
-    pcb->next = NULL;
+
 
     return pcb;
 }
@@ -206,13 +212,13 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
     kprintf("Fork'd process has cr3: %x\n", clone->cr3);
 
     pqueue_push(&proc->children, clone);
+
     clone->parent = proc;
 
     return clone;
 }
 
 void register_process(ProcessControlBlock *new_pcb) {
-    new_pcb->next = NULL;
     pqueue_push(&ready_queue, new_pcb);
     return;
 }
@@ -224,12 +230,14 @@ void block_process(ProcessControlBlock *proc, int reason) {
     // be saved once the interrupt fires
     proc->state = reason;
     kprintf("Blocking process at %x\n", proc);
-    return;
+
+    pqueue_remove(&ready_queue, proc->pid);
+
+    asm ("sti; int $41; cli");
 }
 
 void unblock_process(ProcessControlBlock *proc) {
     proc->state = READY;
-    proc->next = NULL;
     pqueue_push(&ready_queue, proc);
     kprintf("\n unblocked %s (%d)\n\n", proc->name, proc->pid);
     return;
@@ -242,9 +250,6 @@ void multitasking_init() {
     memset(&ready_queue, 0, sizeof(ProcessQueue));
     memset(&wait_queue, 0, sizeof(ProcessQueue));
 
-    char *envp[5] = {"SHELL=/usr/bin/bash", "PATH=/usr/bin", "HOME=/",
-                     "TERM=vt100", NULL};
-    char *argvp[2] = {"/usr/bin/bash", NULL};
 
     // ProcessControlBlock *nomterm =
     //     create_elf_process("/usr/bin/nomterm", argvp, envp);
@@ -258,17 +263,19 @@ void multitasking_init() {
     // register_process(create_kernel_process(idle_task));
     // register_process(create_kernel_process(task_b));
 
+    char * argv[2] = {"/usr/bin/bash", NULL};
+    char * envp[2] = {"PATH=/usr/bin", NULL};
     ProcessControlBlock *bash =
-        create_elf_process("/usr/bin/init", argvp, envp);
+        create_elf_process("/usr/bin/bash", argv, envp);
     register_process(create_kernel_process(terminal_main, "Terminal"));
     register_process(bash);
     register_process(create_kernel_process(refresh_screen_proc, "Screen"));
 
-    running = ready_queue.first;
+    running = ready_queue.first->pcb;
     kprintf("Ready queue has %d procs\n", ready_queue.count);
     dump_pqueue(&ready_queue);
 
-    dump_regs(&ready_queue.first->trapframe);
+    dump_regs(&ready_queue.first->pcb->trapframe);
     kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
     kprintf("Cr3 is %x\n", running->cr3);
     switch_to_process(&running->trapframe, (void *)running->cr3);

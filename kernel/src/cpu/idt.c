@@ -129,8 +129,8 @@ void err14_handler(Registers *regs, int error_code) {
 
     kprintf("\nEXCEPTION: Page Fault #PF\n");
     extern ProcessControlBlock *running;
-    kprintf("Currently running process: %s (pid %d)\n", running->name,
-            running->pid);
+    kprintf("Currently running process: %s (pid %d) kstack at 0x%x\n", running->name,
+            running->pid, running->kstack);
 
     kprintf("Error code: %d\n", error_code);
 

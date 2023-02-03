@@ -6,17 +6,6 @@
 
 typedef unsigned long long caddr_t;
 
-#define EFER 0xC0000080
-
-#define STAR 0xC0000081
-#define LSTAR 0xC0000082
-#define CSTAR 0xC0000083
-#define SFMASK 0xC0000084
-
-#define FSBASE 0xC0000100
-#define GSBASE 0xC0000101
-#define KGSBASE 0xC0000102
-
 /* syscalls */
 #define SYS_EXIT 0
 #define SYS_OPEN 1
@@ -39,6 +28,11 @@ typedef unsigned long long caddr_t;
 #define SYS_FCNTL	18
 #define SYS_POLL	19
 #define SYS_EXEC    20
+
+// GDB stubs
+#define SYS_DBG_PUTC    30
+#define SYS_DBG_GETC    31
+#define SYS_DBG_EXCH    32
 
 
 void sys_init();
