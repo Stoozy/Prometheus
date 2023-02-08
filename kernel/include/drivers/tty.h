@@ -4,10 +4,13 @@
 #include <fs/vfs.h>
 #include <proc/proc.h>
 #include <abi-bits/termios.h>
+#include <fs/devfs.h>
+#include <posix/termios.h>
 
 #define TTY_BUFSIZE 0x1000
 #define TTY_MAJOR       5
 #define MAX_TTYS        8
+
 
 struct tty;
 
@@ -71,15 +74,18 @@ struct file_node {
 typedef struct file_node file_list_t;
 
 struct tty {
+
     struct tty_driver driver; 
     void * driver_data;
-    
+
+    void * private_data;
 
     RingBuffer * ibuf;
     RingBuffer * obuf;
 
     struct tty_ldisc ldisc;
     struct termios tios;
+    struct winsize wsize;
 
     file_list_t tty_files;
 
@@ -89,4 +95,8 @@ struct tty {
 void tty_register_driver(struct tty_driver driver);
 void tty_default_put_char(struct tty  *, char c);
 
-void tty_init();
+int tty_register(dev_t dev, struct tty *tty, char*);
+
+int tty_init();
+
+int pty_init();
