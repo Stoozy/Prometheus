@@ -200,8 +200,11 @@ void _start(struct stivale2_struct *boot_info) {
 
   kbd_init();
   fb_init(framebuffer_tag);
-
   tty_init();
+  pty_init();
+  extern int input_init();
+  input_init();
+
   sys_init();
   multitasking_init();
 }

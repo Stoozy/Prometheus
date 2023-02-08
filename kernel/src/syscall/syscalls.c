@@ -27,6 +27,8 @@
 #include <abi-bits/errno.h>
 #include <cpu/idt.h>
 
+#include <drivers/fb.h>
+
 typedef long int off_t;
 
 extern volatile ProcessControlBlock *running;
@@ -78,7 +80,7 @@ void sys_exit(int status) {
 
 void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
   kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
-         flags, running->name, running->pid);
+          flags, running->name, running->pid);
 
   if (pid < -1) {
     kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
@@ -96,7 +98,8 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
     if (!running->childDied) {
       regs->rax = -1;
       regs->rdx = EINTR;
-      return;;
+      return;
+      ;
     }
 
     for (PQNode *pnode = running->children.first; pnode; pnode = pnode->next) {
@@ -106,7 +109,7 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
         *status = proc->exit_code;
         regs->rax = proc->pid;
         kprintf("Got dead child %s (pid: %d; status %d)\n", proc->name,
-            proc->pid, *status);
+                proc->pid, *status);
         pqueue_remove(&running->children, proc->pid);
         /* for(;;); */
         return;
@@ -179,6 +182,7 @@ void sys_read(int file, char *ptr, size_t len, Registers *regs) {
 }
 
 int sys_write(int fd, char *ptr, int len) {
+  kprintf("sys_write(): FD is %d\n", fd);
 
   if (!valid_fd(fd))
     return -1;
@@ -188,8 +192,7 @@ int sys_write(int fd, char *ptr, int len) {
     vfs_write(file, (uint8_t *)ptr, len);
   } else {
     kprintf("File not open!\n");
-    for (;;)
-      ;
+    return -1;
   }
 
 #ifdef SYSCALL_DEBUG
@@ -207,43 +210,6 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   kprintf("[MMAP] Hint : 0x%llx\n", addr);
   kprintf("[MMAP] Size : 0x%llx\n", size);
   kprintf("Current process at 0x%x\n", proc);
-
-  // if (valid_fd(fd)) {
-  //   File *file = proc->fd_table[fd];
-  //   int pages = (size / PAGE_SIZE);
-
-  //  void *phys_base =
-  //      (void *)((file->inode & ~(0xfff)) - PAGING_VIRTUAL_OFFSET);
-
-  //  void *virt_base = NULL;
-  //  if (flags & MAP_FIXED && addr != NULL) {
-  //    virt_base = addr;
-  //  } else {
-  //    virt_base = (void *)proc->mmap_base;
-  //    proc->mmap_base += pages * PAGE_SIZE;
-  //  }
-
-  //  int page_flags = PAGE_USER | PAGE_PRESENT | PAGE_WRITE;
-
-  //  if (flags & PROT_WRITE)
-  //    page_flags |= PAGE_WRITE;
-
-  //  kprintf("Virt base is %x\n", virt_base);
-
-  //  vmm_map_range((void *)((u64)proc->cr3 + PAGING_VIRTUAL_OFFSET),
-  //  virt_base,
-  //                phys_base, size, page_flags);
-
-  //  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
-  //  range->virt_start = virt_base;
-  //  range->phys_start = phys_base;
-  //  range->size = pages * PAGE_SIZE;
-  //  range->page_flags = page_flags;
-
-  //  proc_add_vas_range(proc, range);
-
-  //  return virt_base;
-  //}
 
   // size isn't page aligned
   if (size % PAGE_SIZE != 0) {
@@ -291,6 +257,18 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   proc_add_vas_range(proc, range);
 
   kprintf("[MMAP] Returning 0x%x\n", virt_base);
+
+  if (flags & MAP_SHARED) {
+    if (!proc->fd_table[fd]) {
+      for (;;)
+        kprintf("Called mmap on invalid fd...");
+    }
+
+    if (strcmp(proc->fd_table[fd]->name, "/dev/fb0") == 0) {
+      extern struct fb_file g_framebuffer;
+      g_framebuffer.data = phys_base;
+    }
+  }
 
   return virt_base;
 }
@@ -431,17 +409,21 @@ void sys_execve(char *name, char **argvp, char **envp) {
     new->parent = running->parent;
     // pqueue_remove(&running->parent->children, running->pid);
     pqueue_push(&running->parent->children, new);
-    kprintf("After pushing\n");
     dump_pqueue(&running->parent->children);
   }
 
   pqueue_push(&ready_queue, new);
 
-  for (int i = 0; i < MAX_PROC_FDS; i++)
-    new->fd_table[i] = running->fd_table[i];
+  for (int i = 0; i < MAX_PROC_FDS; i++) {
+    if (running->fd_table[i]->mode & FD_CLOEXEC)
+      continue;
 
-  asm volatile( "sti; int $41; cli");
-  // schedule(&running->trapframe);
+    new->fd_table[i] = running->fd_table[i];
+  }
+
+  kprintf("[exec] scheduling \n");
+  // asm volatile("sti; int $41; cli");
+  schedule(&running->trapframe);
 
   // running = new;
 
@@ -470,7 +452,7 @@ void sys_fork(Registers *regs) {
   return;
 }
 
-int sys_ioctl(int fd, unsigned long req, void *arg) {
+int sys_ioctl(int fd, uint32_t req, void *arg) {
   kprintf("Request is %x\n", req);
   kprintf("FD is %d\n", fd);
   if (!(valid_fd(fd))) {
@@ -478,7 +460,7 @@ int sys_ioctl(int fd, unsigned long req, void *arg) {
   }
 
   File *file = running->fd_table[fd];
-  kprintf("File is at %x\n", file);
+  kprintf("File is at %x name: %s\n", file, file->name);
 
   if (file->fs->ioctl)
     return file->fs->ioctl(file, req, arg);
@@ -515,8 +497,6 @@ int sys_dup2(int fd, int flags, int new_fd) {
     kprintf("[DUP2] File doesn't exist\n");
     return -1;
   }
-
-  kprintf("Copying fd %d; name: %s\n", fd, file->name);
 
   // FIXME: call underlying fs close
   running->fd_table[new_fd] = NULL;
@@ -633,7 +613,6 @@ void syscall_dispatcher(Registers *regs) {
 
   u64 syscall = regs->rax;
 
-
   running->trapframe = *regs;
 
   switch (syscall) {
@@ -643,8 +622,6 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_OPEN: {
     kprintf("[SYS]  OPEN CALLED by %s (%d)\n", running->name, running->pid);
-    dump_regs(regs);
-
     sys_open((char *)regs->rdi, (int)regs->rsi, regs);
     break;
   }
@@ -669,14 +646,8 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_VM_MAP: {
     kprintf("[SYS]  VM_MAP CALLED\n");
-    void *addr = (void *)regs->rdi;
-    size_t size = regs->rsi;
-    int prot = regs->rdx;
-    int flags = regs->r10;
-    int fd = regs->r9;
-    off_t off = regs->r8;
-
-    void *ret = sys_vm_map(running, addr, size, prot, flags, fd, off);
+    void *ret = sys_vm_map(running, (void *)regs->rdi, regs->rsi, regs->rdx,
+                           regs->r10, regs->r9, regs->r8);
     regs->rax = (u64)ret;
 
     break;

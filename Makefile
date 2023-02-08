@@ -28,10 +28,11 @@ kernel/kernel.elf:
 	$(MAKE) -C kernel
 
 libc:
-	cd mlibc && mkdir build && meson . build --cross-file ../cross_file.txt && ninja -C build && yes | cp build/*.so $(SYSROOT)/usr/lib/ && yes | cp build/sysdeps/atlas/crt0.o $(SYSROOT)/usr/lib
+	cd mlibc && mkdir build && meson . build --cross-file ../cross_file.txt && ninja -C build
+	yes | cp mlibc/build/*.so $(SYSROOT)/usr/lib/ && yes | cp mlibc/build/sysdeps/atlas/crt0.o $(SYSROOT)/usr/lib
 
 initrd: 
-	tar -C $(SYSROOT) -cvf initrd.tar etc usr fonts dev
+	tar -C $(SYSROOT) -cvf initrd.tar etc usr fonts dev 
 	
 
 
