@@ -1,12 +1,12 @@
 #include "abi-bits/fcntl.h"
 #include "cpu/cpu.h"
+#include <abi-bits/errno.h>
 #include <fcntl.h>
 #include <fs/vfs.h>
 #include <libk/kmalloc.h>
 #include <libk/kprintf.h>
 #include <libk/util.h>
 #include <string/string.h>
-#include <abi-bits/errno.h>
 
 FileSystem *gp_filesystems = NULL;
 VfsNode *gp_root;
@@ -44,6 +44,27 @@ static Mountpoint *mp_from_path(const char *path) {
   return matching_mp;
 }
 
+VfsNode *vfs_mknod(File *file) {
+  VfsNode *ret = kmalloc(sizeof(VfsNode));
+  ret->file = file;
+  return ret;
+}
+
+void vfs_add_to_open_list(VfsNode *new) {
+  if (!gp_open_list) {
+    gp_open_list = kmalloc(sizeof(VfsOpenListNode));
+    gp_open_list->vfs_node = new;
+    return;
+  }
+
+  VfsOpenListNode *cur = gp_open_list;
+  while (cur->next) {
+    cur = cur->next;
+  }
+
+  cur->vfs_node = new;
+  cur->next = NULL;
+}
 
 static void vfs_fs_dump(void) {
   kprintf("\n\nVFS FILESYSTEMS\n");
@@ -54,7 +75,6 @@ static void vfs_fs_dump(void) {
 
   kprintf("\n");
 }
-
 
 static void vfs_mounts_dump(void) {
   kprintf("\n\nVFS MOUNTPOINTS\n\n");
@@ -67,16 +87,28 @@ static void vfs_mounts_dump(void) {
 File *vfs_open(const char *path, int flags) {
   kprintf("[VFS]  Called open on %s\n", path);
 
-  if(flags & O_CREAT){
+  if (flags & O_CREAT) {
     kprintf("Creating files not supported just yet\n");
-    for(;;);
+    for (;;)
+      ;
+  }
+
+  kprintf("Consulting open list ...\n");
+  for (VfsOpenListNode *voln = gp_open_list; voln; voln = voln->next) {
+    if (strcmp(path, voln->vfs_node->file->name) == 0) {
+      File *new = kmalloc(sizeof(File));
+      *new = *voln->vfs_node->file;
+      new->position = 0;
+      return new;
+    }
   }
 
   Mountpoint *mp = mp_from_path(path);
   if (!mp) {
     kprintf("The file doesn't belong to any mounted filesystem\n");
     vfs_mounts_dump();
-    for (;;);
+    for (;;)
+      ;
   }
 
   // path relative to mountpath, e.g /dev/fb0 becomes fb0
@@ -103,7 +135,7 @@ void vfs_close(File *file) {
 }
 
 ssize_t vfs_read(File *file, u8 *buffer, size_t size) {
-  //kprintf("[VFS]  Called read on %s for %llu bytes\n", file->name, size);
+  // kprintf("[VFS]  Called read on %s for %llu bytes\n", file->name, size);
 
   if (file) {
     size_t bytes = file->fs->read(file, size, buffer);
@@ -118,15 +150,15 @@ VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
   if (!parent)
     return NULL;
 
-  if(strcmp(name, ".")  == 0){
-      return parent;
+  if (strcmp(name, ".") == 0) {
+    return parent;
   }
 
-  if(strcmp(name, "..") == 0){
-      return parent->parent;
+  if (strcmp(name, "..") == 0) {
+    return parent->parent;
   }
 
-  if (strcmp(parent->file->name, name) == 0){
+  if (strcmp(parent->file->name, name) == 0) {
     kprintf("Parent matches. Name: %s\n", name);
     return parent;
   }
@@ -141,7 +173,6 @@ VfsNode *vfs_node_from_path(VfsNode *parent, const char *name) {
   // check underlying filesystem
   File *found_file =
       parent->file->fs->finddir(parent, name + strlen(parent->file->name));
-
 
   if (found_file) {
     kprintf("[VFS]  Found file %s in %s\n", name, parent->file->name);
@@ -180,7 +211,7 @@ DirectoryEntry *vfs_readdir(File *file) {
 }
 
 ssize_t vfs_write(File *file, u8 *buffer, size_t size) {
-  //kprintf("[VFS]    Called write on %s\n", file->name);
+  // kprintf("[VFS]    Called write on %s\n", file->name);
   if (file) {
     size_t bytes = file->fs->write(file, size, buffer);
     return bytes;
@@ -307,17 +338,16 @@ int vfs_stat(const char *path, VfsNodeStat *res) {
 
   VfsNode *node = vfs_node_from_path(gp_root, path);
 
-
   if (node) {
     kprintf("node is at %x\n", node);
-    kprintf("Inode : %d; Filesize: %d; Type: %d\n", node->file->inode, node->file->size, node->file->type);
-
+    kprintf("Inode : %d; Filesize: %d; Type: %d\n", node->file->inode,
+            node->file->size, node->file->type);
 
     res->filesize = node->file->size;
     res->inode = node->file->inode;
     res->type = node->file->type;
     return 0;
-  } 
+  }
 
   // error
   return -1;
@@ -326,7 +356,7 @@ int vfs_stat(const char *path, VfsNodeStat *res) {
 void vfs_init() {
   gp_root = kmalloc(sizeof(VfsNode));
 
-  gp_root->parent = gp_root; 
+  gp_root->parent = gp_root;
   gp_root->children = NULL;
 
   gp_root->file = kmalloc(sizeof(File));

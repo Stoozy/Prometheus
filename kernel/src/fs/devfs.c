@@ -1,3 +1,4 @@
+#include "fs/devfs.h"
 #include <abi-bits/fcntl.h>
 #include <drivers/fb.h>
 #include <fs/vfs.h>
@@ -7,8 +8,11 @@
 #include <linux/fb.h>
 #include <string/string.h>
 
-#define TTY_MAJOR 5
-#define VIDEO_MAJOR 29
+#define MAX_DEVICES 256
+
+/* table of device drivers */
+static CharacterDevice *devices[MAX_DEVICES];
+static int g_device_counter = 0;
 
 struct file *devfs_finddir(VfsNode *dir, const char *name);
 DirectoryEntry *devfs_readdir(VfsNode *dir, u32 index);
@@ -25,17 +29,13 @@ FileSystem g_devfs = {.name = "devfs",
                       .readdir = devfs_readdir,
                       .finddir = devfs_finddir};
 
-#define MAX_DEVICES 256
+int devfs_register_chardev(CharacterDevice *chardev) {
+  if (g_device_counter > MAX_DEVICES)
+    return -1;
 
-/* table of device drivers */
-volatile struct fs *drivers[MAX_DEVICES];
-
-void devfs_register_chrdev(uint64_t dev_major, uint32_t count, const char *name,
-                           struct fs *fops) {
-  (void)name;
-  drivers[dev_major] = fops;
-  // kprintf("[DEVFS]  Registered %s device driver\n", name);
-  return;
+  devices[g_device_counter++] = chardev;
+  kprintf("[DEVFS] Registered %s at %d\n", chardev->name, g_device_counter - 1);
+  return 0;
 }
 
 /*
@@ -66,20 +66,22 @@ DirectoryEntry *devfs_readdir(VfsNode *dir, u32 index) {
 /* path is relative to `/dev` */
 struct file *devfs_open(const char *path, int flags) {
   kprintf("[DEVFS] Opening %s\n", path);
-  if (starts_with(path, "tty"))
-    return drivers[TTY_MAJOR]->open(path, flags);
-  else if (starts_with(path, "fb")) {
-    kprintf("Fb open at %x\n", drivers[VIDEO_MAJOR]->open);
-    return drivers[VIDEO_MAJOR]->open(path, flags);
+
+  for (int i = 0; i < g_device_counter; i++) {
+    if (devices[i]) {
+      kprintf("Checking against %s\n", devices[i]->name);
+      if (strcmp(path, devices[i]->name) == 0)
+        return devices[i]->fs->open(path, flags);
+    }
   }
 
-  kprintf("Couldn't find driver for  %s\n", path);
-
+  for (;;)
+    ;
   return NULL;
 }
 
 void devfs_init() {
-  memset(drivers, 0, MAX_DEVICES * sizeof(uintptr_t));
+  memset(devices, 0, MAX_DEVICES * sizeof(uintptr_t));
   vfs_register_fs(&g_devfs, 0);
   vfs_mount(NULL, "/dev/", "devfs", 0, NULL);
 }

@@ -4,6 +4,7 @@
 #include <libk/kprintf.h>
 #include <linux/fb.h>
 #include <string/string.h>
+
 struct fb_var_screeninfo fb0_vsi;
 struct fb_fix_screeninfo fb0_fsi;
 
@@ -54,20 +55,20 @@ void fb_init(struct stivale2_struct_tag_framebuffer *fb_info) {
   extern void fbdev_init();
   fbdev_init();
 
-  File *fb_dev = vfs_open("/dev/fb0", 0);
+  /* File *fb_dev = vfs_open("/dev/fb0", 0); */
 
   // discards small buffer created by devfs and assigns a new one
   // that is of the proper size
-  void *file_buf = kmalloc(fb0_fsi.mmio_len);
-  memset(file_buf, 0, fb0_fsi.mmio_len);
-  fb_dev->device = (uintptr_t)file_buf;
-  fb_dev->size = fb0_fsi.mmio_len;
-  fb_dev->position = 0;
+  /* void *file_buf = kmalloc(fb0_fsi.mmio_len); */
+  /* memset(file_buf, 0, fb0_fsi.mmio_len); */
+  /* fb_dev->device = (uintptr_t)file_buf; */
+  /* fb_dev->size = fb0_fsi.mmio_len; */
+  /* fb_dev->position = 0; */
 
   // test write to fb file
-  uint8_t *test_buf = kmalloc(fb0_fsi.mmio_len);
-  memset(test_buf, 0x28, fb0_fsi.mmio_len);
-  vfs_write(fb_dev, test_buf, fb0_fsi.mmio_len);
+  /* uint8_t *test_buf = kmalloc(fb0_fsi.mmio_len); */
+  /* memset(test_buf, 0x28, fb0_fsi.mmio_len); */
+  /* vfs_write(fb_dev, test_buf, fb0_fsi.mmio_len); */
 
   return;
 }

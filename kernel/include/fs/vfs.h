@@ -3,9 +3,9 @@
 #include <asm-generic/poll.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <stdbool.h>
 
+#define ssize_t int64_t;
 
 #define VFS_FILE            0x01
 #define VFS_DIRECTORY       0x02
@@ -92,6 +92,7 @@ typedef struct vfs_node {
     struct vfs_node * children;     /* points to the head of children */
 
     struct vfs_node * next;         /* next node in current directory */
+
 }   VfsNode;
 
 
@@ -110,9 +111,13 @@ typedef struct open_list_node {
 } VfsOpenListNode;
 
 
+
 void vfs_dump();
 
 DirectoryEntry * vfs_readdir(File * file);
+
+VfsNode * vfs_mknod(File*);
+void vfs_add_to_open_list(VfsNode *);
 
 File * vfs_open(const char * filename , int flags);
 void vfs_close(File * file);
