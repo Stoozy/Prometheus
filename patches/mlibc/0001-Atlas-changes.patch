@@ -1,13 +1,16 @@
-From 5bae6ab3b6a4142260f6f7548faf4b3ddb4f091f Mon Sep 17 00:00:00 2001
+From 49407cf61662629258b0779d2f44ea2d6c6c8377 Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Sat, 28 Jan 2023 21:39:50 -0500
+Date: Wed, 8 Feb 2023 13:27:16 -0500
 Subject: [PATCH] Atlas changes
 
 ---
- meson.build                                  |   7 +-
+ meson.build                                  |   8 +-
+ options/internal/gcc/stack_protector.cpp     |   4 +-
+ options/posix/generic/sys-wait-stubs.cpp     |   3 +-
+ options/rtdl/generic/main.cpp                |   2 +
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 +
- sysdeps/atlas/generic/generic.cpp            | 706 +++++++++++++++++++
+ sysdeps/atlas/generic/generic.cpp            | 675 +++++++++++++++++++
  sysdeps/atlas/generic/thread.cpp             |  44 ++
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/access.h      |   9 +
@@ -34,21 +37,21 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/resource.h    |  25 +
  sysdeps/atlas/include/abi-bits/seek-whence.h |   8 +
  sysdeps/atlas/include/abi-bits/shm.h         |  21 +
- sysdeps/atlas/include/abi-bits/signal.h      | 350 +++++++++
+ sysdeps/atlas/include/abi-bits/signal.h      | 350 ++++++++++
  sysdeps/atlas/include/abi-bits/socket.h      | 291 ++++++++
  sysdeps/atlas/include/abi-bits/stat.h        |  94 +++
- sysdeps/atlas/include/abi-bits/termios.h     | 117 +++
+ sysdeps/atlas/include/abi-bits/termios.h     | 117 ++++
  sysdeps/atlas/include/abi-bits/time.h        |  15 +
  sysdeps/atlas/include/abi-bits/uid_t.h       |   8 +
  sysdeps/atlas/include/abi-bits/utsname.h     |  12 +
  sysdeps/atlas/include/abi-bits/vm-flags.h    |  44 ++
- sysdeps/atlas/include/abi-bits/vt.h          |  76 ++
+ sysdeps/atlas/include/abi-bits/vt.h          |  76 +++
  sysdeps/atlas/include/abi-bits/wait.h        |  25 +
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
  sysdeps/atlas/include/syscall.h              | 101 +++
  sysdeps/atlas/include/vfs.h                  |  28 +
  sysdeps/atlas/meson.build                    |  59 ++
- 44 files changed, 2631 insertions(+), 1 deletion(-)
+ 47 files changed, 2608 insertions(+), 3 deletions(-)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -94,7 +97,7 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/meson.build
 
 diff --git a/meson.build b/meson.build
-index 4c4668f0..1092f623 100644
+index 4c4668f0..78b6d090 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -135,6 +135,11 @@ elif host_machine.system() == 'dripos'
@@ -109,14 +112,56 @@ index 4c4668f0..1092f623 100644
  else
  	error('No sysdeps defined for OS: ' + host_machine.system())
  endif
-@@ -306,7 +311,7 @@ if not headers_only
+@@ -305,8 +310,9 @@ if not headers_only
+ 	endif
  
  	ld_cpp_args = [
++        '-g',
  		'-fvisibility=hidden',
 -		'-fno-stack-protector',
 +        '-fno-stack-protector',
  		'-DMLIBC_BUILDING_RTDL'
  	]
+ 
+diff --git a/options/internal/gcc/stack_protector.cpp b/options/internal/gcc/stack_protector.cpp
+index e6e7c5f4..a1d28e5c 100644
+--- a/options/internal/gcc/stack_protector.cpp
++++ b/options/internal/gcc/stack_protector.cpp
+@@ -21,5 +21,7 @@ void initStackGuard(void *entropy) {
+ } // namespace mlibc
+ 
+ extern "C" void __stack_chk_fail() {
+-	mlibc::panicLogger() << "Stack smashing detected!" << frg::endlog;
++    void *addr = __builtin_extract_return_addr (__builtin_return_address (0));
++    mlibc::panicLogger() << "Stack smashing detected " << frg::endlog;
+ }
++
+diff --git a/options/posix/generic/sys-wait-stubs.cpp b/options/posix/generic/sys-wait-stubs.cpp
+index 0095c7b9..4114b6db 100644
+--- a/options/posix/generic/sys-wait-stubs.cpp
++++ b/options/posix/generic/sys-wait-stubs.cpp
+@@ -15,7 +15,8 @@ int waitid(idtype_t, id_t, siginfo_t *, int) {
+ pid_t waitpid(pid_t pid, int *status, int flags) {
+ 	pid_t ret;
+ 	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_waitpid, -1);
+-	if(int e = mlibc::sys_waitpid(pid, status, flags, NULL, &ret); e) {
++    int e = mlibc::sys_waitpid(pid, status, flags, NULL, &ret);
++	if(e) {
+ 		errno = e;
+ 		return -1;
+ 	}
+diff --git a/options/rtdl/generic/main.cpp b/options/rtdl/generic/main.cpp
+index eb7c176a..b4f7a3e6 100644
+--- a/options/rtdl/generic/main.cpp
++++ b/options/rtdl/generic/main.cpp
+@@ -152,6 +152,8 @@ extern "C" [[gnu::alias("dl_debug_state"), gnu::visibility("default")]] void _dl
+ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
+ 	if(logEntryExit)
+ 		mlibc::infoLogger() << "Entering ld.so" << frg::endlog;
++
++
+ 	entryStack = entry_stack;
+ 	runtimeTlsMap.initialize();
  
 diff --git a/sysdeps/atlas/crt-x86_64/crt0.S b/sysdeps/atlas/crt-x86_64/crt0.S
 new file mode 100644
@@ -173,31 +218,32 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..9d1a191b
+index 00000000..29b8d2b6
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,706 @@
+@@ -0,0 +1,675 @@
++#include <abi-bits/vt.h>
 +#include <bits/ensure.h>
 +#include <dirent.h>
-+#include <errno.h> 
++#include <errno.h>
 +#include <limits.h>
++#include <linux/fb.h>
 +#include <mlibc/all-sysdeps.hpp>
 +#include <mlibc/debug.hpp>
 +#include <mlibc/thread-entry.hpp>
++#include <string.h>
 +#include <sys/types.h>
++#include <syscall.h>
 +#include <unistd.h>
 +#include <vfs.h>
-+#include <string.h>
-+#include <abi-bits/vt.h>
-+#include <linux/fb.h>
-+#include <syscall.h>
 +
 +namespace mlibc {
 +
 +void sys_libc_log(const char *message) {
-+  
-+  int ret; int errno;
-+	SYSCALL_NA1(SYS_LOG_LIBC, message);
++
++  int ret;
++  int errno;
++  SYSCALL_NA1(SYS_LOG_LIBC, message);
 +
 +  return;
 +}
@@ -209,9 +255,10 @@ index 00000000..9d1a191b
 +}
 +
 +int sys_tcb_set(void *pointer) {
-+  
-+  int ret; int errno;
-+	SYSCALL_NA1(SYS_TCB_SET, pointer);
++
++  int ret;
++  int errno;
++  SYSCALL_NA1(SYS_TCB_SET, pointer);
 +
 +  mlibc::infoLogger() << "Got tcb_set return " << ret << frg::endlog;
 +  return ret;
@@ -232,97 +279,109 @@ index 00000000..9d1a191b
 +
 +#ifndef MLIBC_BUILDING_RTDL
 +void sys_exit(int status) {
-+  
-+    int ret; int errno;
-+	SYSCALL_NA1(SYS_EXIT, status);
++
++  int ret;
++  int errno;
++  SYSCALL_NA1(SYS_EXIT, status);
 +}
 +#endif
 +
 +#ifndef MLIBC_BUILDING_RTDL
-+int sys_clock_get(int clock, time_t *secs, long *nanos) { 
++int sys_clock_get(int clock, time_t *secs, long *nanos) {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_clock_get() STUB\n" << frg::endlog;
-+    return 0; 
++  mlibc::infoLogger() << "[mlibc] Calling sys_clock_get() STUB\n"
++                      << frg::endlog;
++  return ENOSYS;
 +}
 +#endif
 +
 +int sys_open(const char *path, int flags, unsigned int mode, int *fd) {
 +  mlibc::infoLogger() << "[mlibc] Called sys_open on " << path << frg::endlog;
-+  mlibc::infoLogger() << "[mlibc] path len is " << strlen(path) <<frg::endlog;
-+  //if(path[0] == '\0' ||  path == NULL || strlen(path) == 0 || strlen(path) == 1)
-+      //return EINVAL;
++  mlibc::infoLogger() << "[mlibc] path len is " << strlen(path) << frg::endlog;
++  // if(path[0] == '\0' ||  path == NULL || strlen(path) == 0 || strlen(path) ==
++  // 1) return EINVAL;
 +
-+  
-+  int ret; int errno;
-+	SYSCALL_NA2(SYS_OPEN, path, flags);
++  int ret;
++  int errno;
++  SYSCALL_NA2(SYS_OPEN, path, flags);
 +
-+  if(ret != -1){
++  if (ret != -1) {
 +    *fd = ret;
-+    mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd  << "\n" << frg::endlog;
-+  }
-+  else
-+    return ENOENT; 
++    mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd << "\n"
++                        << frg::endlog;
++  } else
++    return ENOENT;
 +
 +  return 0;
 +}
 +
-+int sys_open_dir(const char *path, int *handle){
++int sys_open_dir(const char *path, int *handle) {
 +
-+  mlibc::infoLogger() << "[mlibc] sys_open_dir; path: " << path << "\n" << frg::endlog;
-+  return sys_open(path, O_DIRECTORY | O_RDONLY,  0, handle);
++  mlibc::infoLogger() << "[mlibc] sys_open_dir; path: " << path << "\n"
++                      << frg::endlog;
++  return sys_open(path, O_DIRECTORY | O_RDONLY, 0, handle);
 +}
 +
-+int sys_read_entries(int handle, void* buffer, size_t max_size, size_t* bytes_read)
-+{
-+    __ensure(max_size >= sizeof(dirent));
++int sys_read_entries(int handle, void *buffer, size_t max_size,
++                     size_t *bytes_read) {
++  __ensure(max_size >= sizeof(dirent));
 +
-+    mlibc::infoLogger() << "[mlibc] sys_read_entries STUB; handle: " << handle << "\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] sys_read_entries STUB; handle: " << handle
++                      << "\n"
++                      << frg::endlog;
 +
++  *bytes_read = 0;
++  return 0;
 +
++  int ret;
++  int errno;
++  SYSCALL_NA3(SYS_READDIR, handle, buffer, max_size);
++
++  dirent ret_entry;
++  DirectoryEntry *entry = (DirectoryEntry *)(buffer);
++
++  if (ret == -1) {
 +    *bytes_read = 0;
 +    return 0;
++  }
 +
-+    int ret; int errno;
-+	SYSCALL_NA3(SYS_READDIR, handle, buffer, max_size);
++  ret_entry.d_ino = entry->ino;
++  ret_entry.d_off = 0;
++  ret_entry.d_reclen = sizeof(DirectoryEntry);
++  memcpy(ret_entry.d_name, entry->name, 128);
 +
-+    dirent ret_entry;
-+    DirectoryEntry  * entry  = (DirectoryEntry*)(buffer);
++  mlibc::infoLogger() << "Got entry " << entry->name << "\n" << frg::endlog;
++  switch (entry->type) {
++  case VFS_DIRECTORY:
++    ret_entry.d_type = DT_DIR;
++    mlibc::infoLogger() << "Type is DIR"
++                        << "\n"
++                        << frg::endlog;
++    break;
++  case VFS_FILE:
++    ret_entry.d_type = DT_REG;
++    mlibc::infoLogger() << "Type is FILE"
++                        << "\n"
++                        << frg::endlog;
++    break;
++  default:
++    ret_entry.d_type = DT_UNKNOWN;
++    mlibc::infoLogger() << "Type is UNKNOWN"
++                        << "\n"
++                        << frg::endlog;
++    break;
++  }
 +
-+    if(ret == -1){
-+        *bytes_read = 0;
-+        return 0;
-+    }
++  memcpy(buffer, &ret_entry, sizeof(dirent));
++  *bytes_read = ret_entry.d_reclen;
++  // for(;;);
 +
-+    ret_entry.d_ino =  entry->ino;
-+    ret_entry.d_off = 0;
-+    ret_entry.d_reclen = sizeof(DirectoryEntry);
-+    memcpy(ret_entry.d_name, entry->name, 128);
-+
-+    mlibc::infoLogger() << "Got entry " << entry->name << "\n" << frg::endlog;
-+    switch(entry->type){
-+      case VFS_DIRECTORY:
-+        ret_entry.d_type = DT_DIR;
-+        mlibc::infoLogger() << "Type is DIR" << "\n" <<  frg::endlog;
-+        break;
-+      case VFS_FILE:
-+        ret_entry.d_type = DT_REG;
-+        mlibc::infoLogger() << "Type is FILE" << "\n" <<  frg::endlog;
-+        break;
-+      default:
-+        ret_entry.d_type = DT_UNKNOWN;
-+        mlibc::infoLogger() << "Type is UNKNOWN" << "\n" <<  frg::endlog;
-+        break;
-+    }
-+
-+    memcpy(buffer, &ret_entry, sizeof(dirent));
-+    *bytes_read =  ret_entry.d_reclen;
-+    //for(;;);
-+
-+    return 0;
++  return 0;
 +}
 +
 +int sys_close(int fd) {
-+  mlibc::infoLogger() << "[mlibc] Close was called on " << fd << "\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Close was called on " << fd << "\n"
++                      << frg::endlog;
 +
 +  return 0;
 +}
@@ -331,13 +390,14 @@ index 00000000..9d1a191b
 +
 +  mlibc::infoLogger() << "[mlibc] SYS_READ read called" << fd << " bytes";
 +
-+  size_t ret; int errno;
++  ssize_t ret;
++  int errno;
++  SYSCALL_NA3(SYS_READ, fd, buf, count);
 +
-+	SYSCALL_NA3(SYS_READ, fd, buf, count);
++  if (ret == -1)
++    return errno;
 +
-+    if(ret == -1) return errno;
-+
-+    *bytes_read = ret;
++  *bytes_read = ret;
 +
 +  mlibc::infoLogger() << "[mlibc] SYS_READ read " << *bytes_read << " bytes"
 +                      << frg::endlog;
@@ -345,13 +405,14 @@ index 00000000..9d1a191b
 +  return 0;
 +}
 +
-+
 +#ifndef MLIBC_BUILDING_RTDL
 +int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_written) {
 +
-+  mlibc::infoLogger() << "[mlibc] Write was called on " << fd << "\n" << frg::endlog;
-+  size_t ret; int errno;
-+	SYSCALL_NA3(SYS_WRITE, fd, buf, count);
++  mlibc::infoLogger() << "[mlibc] Write was called on " << fd << "\n"
++                      << frg::endlog;
++  size_t ret;
++  int errno;
++  SYSCALL_NA3(SYS_WRITE, fd, buf, count);
 +
 +  if (ret >= 0)
 +    *bytes_written = ret;
@@ -362,62 +423,66 @@ index 00000000..9d1a191b
 +}
 +#endif
 +
-+
 +int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
 +  // TODO
 +
-+    if(fd == 0 || fd == 1 || fd == 2)
-+        return ESPIPE;
-+  int ret; int errno;
-+	SYSCALL_NA3(SYS_SEEK, fd, offset, whence);
++  if (fd == 0 || fd == 1 || fd == 2)
++    return ESPIPE;
++  int ret;
++  int errno;
++  SYSCALL_NA3(SYS_SEEK, fd, offset, whence);
 +
-+
-+  if(ret == -1)
++  if (ret == -1)
 +    return EINVAL;
 +
-+  if(ret <0)
-+      return EOVERFLOW;
++  if (ret < 0)
++    return EOVERFLOW;
 +
 +  *new_offset = ret;
 +
-+  mlibc::infoLogger() << "[mlibc] Sys seek got ret " << *new_offset << "\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Sys seek got ret " << *new_offset << "\n"
++                      << frg::endlog;
 +
 +  return 0;
 +}
 +
-+int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags, struct stat *statbuf){
++int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags,
++             struct stat *statbuf) {
 +  mlibc::infoLogger() << "[mlibc] Calling sys_stat() STUB\n" << frg::endlog;
 +
-+
 +  VfsNodeStat vns;
-+  switch(fsfdt){
-+    case fsfd_target::fd:{
-+      mlibc::infoLogger() << "[mlibc] Calling fstat on " << fd << " fd\n" << frg::endlog;
++  switch (fsfdt) {
++  case fsfd_target::fd: {
++    mlibc::infoLogger() << "[mlibc] Calling fstat on " << fd << " fd\n"
++                        << frg::endlog;
 +
-+      int ret; int errno;
-+	    SYSCALL_NA2(SYS_FSTAT, fd, &vns);
++    int ret;
++    int errno;
++    SYSCALL_NA2(SYS_FSTAT, fd, &vns);
 +
-+      if(ret == -1)
-+          return EBADF;
-+      break;
-+    }
-+    case fsfd_target::path:{
-+      mlibc::infoLogger() << "[mlibc] Calling stat on " << path << "\n" << frg::endlog;
++    if (ret == -1)
++      return EBADF;
++    break;
++  }
++  case fsfd_target::path: {
++    mlibc::infoLogger() << "[mlibc] Calling stat on " << path << "\n"
++                        << frg::endlog;
 +
-+      
-+      int ret; int errno;
-+	    SYSCALL_NA2(SYS_STAT, path, &vns);
-+      if(ret == -1){
-+        mlibc::infoLogger() << "[mlibc] did not get statbuf for " <<path << "\n" << frg::endlog;
-+        return ENOENT;
-+      }
-+      break;
++    int ret;
++    int errno;
++    SYSCALL_NA2(SYS_STAT, path, &vns);
++    if (ret == -1) {
++      mlibc::infoLogger() << "[mlibc] did not get statbuf for " << path << "\n"
++                          << frg::endlog;
++      return ENOENT;
 +    }
-+    default: {
-+      mlibc::infoLogger() << "Invalid fsfd_target \n" << frg::endlog;
-+      return EBADF; 
-+      break;
-+    }
++    break;
++  }
++  default: {
++    mlibc::infoLogger() << "Invalid fsfd_target \n" << frg::endlog;
++    return EBADF;
++    break;
++  }
 +  }
 +
 +  memset(statbuf, 0, sizeof(struct stat));
@@ -434,185 +499,97 @@ index 00000000..9d1a191b
 +  statbuf->st_mode = 0;
 +
 +  switch (vns.type) {
-+      case VFS_FILE:
-+          mlibc::infoLogger() << "[mlibc] Regular file " << path << "\n" << frg::endlog;
-+          statbuf->st_mode |= S_IFREG;
-+          break;
-+      case VFS_DIRECTORY | VFS_MOUNTPOINT:
-+      case VFS_DIRECTORY:
-+          mlibc::infoLogger() << "[mlibc] Regular directory " << path << "\n" << frg::endlog;
-+          statbuf->st_mode |= S_IFDIR;
-+          break;
-+      case VFS_CHARDEVICE:
-+
-+          mlibc::infoLogger() << "[mlibc] Chardevice " << path << "\n" << frg::endlog;
-+          statbuf->st_mode |= S_IFCHR;
-+          statbuf->st_rdev = 0;
-+          break;
-+
-+      default: sys_libc_panic();
++  case VFS_FILE:
++    mlibc::infoLogger() << "[mlibc] Regular file " << path << "\n"
++                        << frg::endlog;
++    statbuf->st_mode |= S_IFREG;
++    break;
++  case VFS_DIRECTORY | VFS_MOUNTPOINT:
++  case VFS_DIRECTORY:
++    mlibc::infoLogger() << "[mlibc] Regular directory " << path << "\n"
++                        << frg::endlog;
++    statbuf->st_mode |= S_IFDIR;
++    break;
++  case VFS_CHARDEVICE:
++    mlibc::infoLogger() << "[mlibc] Chardevice " << path << "\n" << frg::endlog;
++    statbuf->st_mode |= S_IFCHR;
++    statbuf->st_rdev = 0;
++    break;
++  default:
++    sys_libc_panic();
 +  }
 +
-+  mlibc::infoLogger() << "[mlibc] size: " << statbuf->st_size << " inode: " << statbuf->st_ino << "\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] size: " << statbuf->st_size
++                      << " inode: " << statbuf->st_ino << "\n"
++                      << frg::endlog;
 +
 +  return 0;
 +}
 +
-+
-+int sys_access(const char* filename, int mode){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_access() STUB\n" << frg::endlog;
-+    for(;;);
-+    return ENOSYS;
++int sys_access(const char *filename, int mode) {
++  mlibc::infoLogger() << "[mlibc] Calling sys_access() STUB\n" << frg::endlog;
++  for (;;)
++    ;
++  return ENOSYS;
 +}
 +
 +int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd,
 +               off_t offset, void **window) {
-+    __ensure(flags & MAP_ANONYMOUS);
 +
-+  void * ret; int errno;
-+	SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
++  // __ensure(flags & MAP_ANONYMOUS);
 +
-+  mlibc::infoLogger() << "[mlibc] Derefing window at " << window << "\n" << frg::endlog;
-+  *window = (void*)ret;
-+  //mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window << frg::endlog;
++  void *ret;
++  int errno;
++  SYSCALL_NA6(SYS_VM_MAP, hint, size, prot, flags, fd, offset);
++
++  mlibc::infoLogger() << "[mlibc] Derefing window at " << window << "\n"
++                      << frg::endlog;
++  *window = (void *)ret;
++  mlibc::infoLogger() << "[mlibc] Got vm_map return value " << *window
++                      << frg::endlog;
 +
 +  return 0;
 +}
 +
 +int sys_vm_unmap(void *pointer, size_t size) {
 +  // TODO
-+    return sys_anon_free(pointer, size);
++  return sys_anon_free(pointer, size);
 +}
 +
 +int sys_futex_wait(int *pointer, int expected, const struct timespec *time) {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wait() STUB\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Calling sys_futex_wait() STUB\n"
++                      << frg::endlog;
 +
 +  return 0;
 +}
 +
-+int sys_isatty(int fd){
-+  mlibc::infoLogger() << "[mlibc] Called sys_isatty on fd " << fd << "\n" << frg::endlog;
++int sys_isatty(int fd) {
++  mlibc::infoLogger() << "[mlibc] Called sys_isatty on fd " << fd << "\n"
++                      << frg::endlog;
 +  return 0;
 +}
 +
-+int sys_ioctl(int fd, unsigned long request, void *arg, int *result) { 
++int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 +
-+  mlibc::infoLogger() << "[mlibc] Called sys_ioctl() STUB; fd: " <<fd <<"\n" << frg::endlog;
-+  //return ENOSYS;
++  mlibc::infoLogger() << "[mlibc] Called sys_ioctl(); fd: " << fd << "\n"
++                      << frg::endlog;
 +
-+  switch(request){
-+    case TIOCGWINSZ:{
++  int ret;
++  int errno;
++  SYSCALL_NA3(SYS_IOCTL, fd, request, arg);
 +
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCGWINSZ\n" << frg::endlog;
-+      *result = 1920/8 * 1080/16;
-+      return 0;
-+      break;
-+    }
-+    case TIOCSWINSZ:{
++  if (ret == -1)
++    return errno;
 +
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSWINSZ\n" << frg::endlog;
-+      *result = 1920/8 * 1080/16;
-+      
-+      return 0;
-+      break;
-+    }
-+    case TIOCGPGRP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCGPGRP\n" << frg::endlog;
-+
-+      *result = 0;
-+      return 0;
-+      break;
-+    }
-+    case TIOCSPGRP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSPGRP\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+    case TIOCSPTLCK:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSPTLCK\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+    case TIOCGPTN:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCGPTN\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+    case TIOCSCTTY:{
-+      mlibc::infoLogger() << "[mlibc] REQ: TIOCSCTTY\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+    case VT_RELDISP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: VT_RELDISP\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+    case VT_SETMODE:{
-+      mlibc::infoLogger() << "[mlibc] REQ: VT_SETMODE\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+    case FBIOPUTCMAP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOPUTCMAP\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+
-+    case FBIOGETCMAP:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOGETCMAP\n" << frg::endlog;
-+
-+      fb_cmap cmap;
-+
-+      fb_cmap* buffer = (fb_cmap*)arg;
-+      buffer->start = 0;
-+      buffer->len = 4;
-+      buffer->red[0] = (unsigned short)~(0x0);
-+      buffer->green[0] = (unsigned short)~(0x0);
-+      buffer->blue[0] = (unsigned short)~(0x0);
-+      buffer->transp[0] = (unsigned short)~(0x0);
-+        
-+      *buffer = cmap;
-+
-+      *result = 0;
-+      break;
-+    }
-+    case FBIOGET_FSCREENINFO:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOGET_FSCREENINFO\n" << frg::endlog;
-+
-+      fb_fix_screeninfo  info;
-+
-+      info.visual = FB_VISUAL_TRUECOLOR;
-+      info.smem_len = 1280*800*4;
-+      info.smem_start = 0xFFFF8000FD000000;
-+
-+      fb_fix_screeninfo* buffer = (fb_fix_screeninfo*)arg;
-+      *buffer = info;
-+
-+      *result = 0;
-+      break;
-+    }
-+    case FBIOGET_VSCREENINFO:{
-+      mlibc::infoLogger() << "[mlibc] REQ: FBIOGET_VSCREENINFO\n" << frg::endlog;
-+      *result = 0;
-+      break;
-+    }
-+    default: {
-+      for(;;)
-+        mlibc::infoLogger() <<"[mlibc] Unsupported ioctl request \n" << frg::endlog;
-+      *result = -1;
-+      return ENOSYS;
-+      break;
-+    }
-+  }
-+
++  *result = ret;
 +  return 0;
 +}
 +
 +int sys_futex_wake(int *pointer) {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_futex_wake() STUB\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Calling sys_futex_wake() STUB\n"
++                      << frg::endlog;
 +
 +  return 0;
 +}
@@ -621,266 +598,303 @@ index 00000000..9d1a191b
 +#ifndef MLIBC_BUILDING_RTDL
 +
 +int sys_clone(void *entry, void *user_arg, void *tcb, pid_t *tid_out) {
-+  //void *sp = prepare_stack(entry, user_arg, tcb);
-+  //int tid;
++  mlibc::infoLogger() << "[mlibc] Calling sys_clone() STUB\n" << frg::endlog;
++  return 0;
++}
 +
-+  //asm volatile("syscall"
-+  //             : "=a"(tid)
-+  //             : "a"(67), "D"(__mlibc_start_thread), "S"(sp), "d"(tcb)
-+  //             : "rcx", "r11");
++int sys_tcgetattr(int fd, struct termios *attr) {
++  int res;
++  return sys_ioctl(fd, TCGETS, (void *)attr, &res);
++}
 +
-+  //if (tid_out)
-+  //  *tid_out = tid;
-+
-+
-+    mlibc::infoLogger() << "[mlibc] Calling sys_clone() STUB\n" << frg::endlog;
-+
-+    return 0;
++int sys_tcsetattr(int fd, int opts, const struct termios *attr) {
++  if (opts & TCSANOW) {
++    int res;
++    return sys_ioctl(fd, TCSETS, (void *)attr, &res);
++  }
++  return -1;
 +}
 +
 +void sys_thread_exit() {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_thread_exit() STUB\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Calling sys_thread_exit() STUB\n"
++                      << frg::endlog;
 +
-+  //asm volatile("syscall" : : "a"(68) : "rcx", "r11");
++  // asm volatile("syscall" : : "a"(68) : "rcx", "r11");
 +  //__builtin_trap();
 +}
 +
 +int sys_sleep(time_t *secs, long *nanos) {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_sleep() STUB\n" << frg::endlog;
-+    return 0;
++  mlibc::infoLogger() << "[mlibc] Calling sys_sleep() STUB\n" << frg::endlog;
++  return 0;
 +}
 +
-+int sys_fork(pid_t *child) { 
-+    mlibc::infoLogger() << "[mlibc] Calling sys_fork() \n" << frg::endlog;
++int sys_fork(pid_t *child) {
++  mlibc::infoLogger() << "[mlibc] Calling sys_fork() \n" << frg::endlog;
 +
-+    
-+    pid_t ret; int errno;
-+	SYSCALL_NA0(SYS_FORK);
++  pid_t ret;
++  int errno;
++  SYSCALL_NA0(SYS_FORK);
 +
-+    if(ret == -1)
-+        return ENOMEM;
++  if (ret == -1)
++    return ENOMEM;
 +
-+    *child = ret;
++  *child = ret;
 +
-+    return 0; 
++  return 0;
 +}
-+
-+
 +
 +int sys_execve(const char *path, char *const argv[], char *const envp[]) {
-+    mlibc::infoLogger() << "[mlibc] Calling sys_execve() STUB\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Calling sys_execve() STUB\n" << frg::endlog;
 +
-+    int ret; int errno;
-+    SYSCALL_NA3(SYS_EXEC, path, argv, envp);
-+    if(ret == -1)
-+        return errno;
++  int ret;
++  int errno;
++  SYSCALL_NA3(SYS_EXEC, path, argv, envp);
++  if (ret == -1)
++    return errno;
 +
-+    return 0;
++  return 0;
 +}
 +
-+
-+uid_t sys_getuid(){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getuid() STUB\n" << frg::endlog;
-+    return 1000;
++uid_t sys_getuid() {
++  mlibc::infoLogger() << "[mlibc] Calling sys_getuid() STUB\n" << frg::endlog;
++  return 1000;
 +}
 +
-+gid_t sys_getgid(){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getgid() STUB\n" << frg::endlog;
-+    return 1000;
++gid_t sys_getgid() {
++  mlibc::infoLogger() << "[mlibc] Calling sys_getgid() STUB\n" << frg::endlog;
++  return 1000;
 +}
 +
-+uid_t sys_geteuid(){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_geteuid() STUB\n" << frg::endlog;
-+    return 1000;
++uid_t sys_geteuid() {
++  mlibc::infoLogger() << "[mlibc] Calling sys_geteuid() STUB\n" << frg::endlog;
++  return 1000;
 +}
 +
-+gid_t sys_getegid(){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getegid() STUB\n" << frg::endlog;
-+    return 1000;
++gid_t sys_getegid() {
++  mlibc::infoLogger() << "[mlibc] Calling sys_getegid() STUB\n" << frg::endlog;
++  return 1000;
 +}
-+
 +
 +pid_t sys_getpid() {
 +
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getpid() \n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Calling sys_getpid() \n" << frg::endlog;
 +
-+    pid_t ret; int errno;
-+	SYSCALL_NA0(SYS_GETPID)
++  pid_t ret;
++  int errno;
++  SYSCALL_NA0(SYS_GETPID)
 +
-+    pid_t res = ret;
-+    mlibc::infoLogger() << "[mlibc] Got pid: " << res << frg::endlog;
-+    return ret;
++  pid_t res = ret;
++  mlibc::infoLogger() << "[mlibc] Got pid: " << res << frg::endlog;
++  return ret;
 +}
 +
-+int sys_getpgid(pid_t pid, pid_t *pgid){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getpgid() STUB\n" << frg::endlog;
-+    *pgid = 0;
-+   return 0;
++int sys_getpgid(pid_t pid, pid_t *pgid) {
++  mlibc::infoLogger() << "[mlibc] Calling sys_getpgid() STUB\n" << frg::endlog;
++  *pgid = 0;
++  return 0;
 +}
 +
-+
-+int sys_setpgid(pid_t pid, pid_t pgid){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_setpgid() STUB\n" << frg::endlog;
-+    return ENOSYS; 
++int sys_setpgid(pid_t pid, pid_t pgid) {
++  mlibc::infoLogger() << "[mlibc] Calling sys_setpgid() STUB\n" << frg::endlog;
++  return ENOSYS;
 +}
 +
 +pid_t sys_getppid() {
-+    mlibc::infoLogger() << "[mlibc] Calling sys_getppid() STUB\n" << frg::endlog;
-+    return ENOSYS;
++  mlibc::infoLogger() << "[mlibc] Calling sys_getppid() STUB\n" << frg::endlog;
++  return ENOSYS;
 +}
 +
-+int sys_dup(int fd, int flags, int * newfd){
++int sys_dup(int fd, int flags, int *newfd) {
 +  mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
 +
-+  
-+  int ret; int errno;
-+	SYSCALL_NA2(SYS_DUP, fd, flags);
++  int ret;
++  int errno;
++  SYSCALL_NA2(SYS_DUP, fd, flags);
 +
-+  if(ret)
++  if (ret)
 +    *newfd = ret;
 +
 +  mlibc::infoLogger() << "[mlibc] Calling sys_dup() \n" << frg::endlog;
 +
-+  return 0;  
++  return 0;
 +}
 +
-+int sys_dup2(int fd, int flags, int  newfd){
++int sys_dup2(int fd, int flags, int newfd) {
 +
 +  mlibc::infoLogger() << "[mlibc] Calling sys_dup2() \n" << frg::endlog;
-+  
-+  int ret; int errno;
-+	SYSCALL_NA3(SYS_DUP2, fd, flags, newfd);
-+  if(ret != newfd)
++
++  int ret;
++  int errno;
++  SYSCALL_NA3(SYS_DUP2, fd, flags, newfd);
++  if (ret != newfd)
 +    return -1;
 +  mlibc::infoLogger() << "[mlibc] sys_dup2(): success \n" << frg::endlog;
 +
 +  return 0;
 +}
 +
-+
-+int sys_waitpid(pid_t pid, int *status,  int flags, struct rusage * ru, pid_t *ret_pid){
++int sys_waitpid(pid_t pid, int *status, int flags, struct rusage *ru,
++                pid_t *ret_pid) {
 +  mlibc::infoLogger() << "[mlibc] Calling sys_waitpid()\n" << frg::endlog;
-+  
-+  if(ru)
-+      mlibc::infoLogger() << "[mlibc] waitpid(): rusage not supported\n" <<frg::endlog;
-+  pid_t ret; int errno;
 +
++  if (ru) {
++    mlibc::infoLogger() << "[mlibc] waitpid(): rusage not supported\n"
++                        << frg::endlog;
++    return EINVAL;
++  }
++
++  pid_t ret = 0;
++  int errno = 0;
 +again:
-+
 +  SYSCALL_NA3(SYS_WAIT, pid, status, flags);
 +
++  if (ret == -1) {
++    if (errno == EINTR) {
++      goto again;
++    } else
++      return errno;
++  }
 +
-+  if(ret == -1)
-+      if(errno == EINTR) goto again;
-+      else  return ENOSYS;
-+
-+  mlibc::infoLogger() << "[mlibc] got exit code " << *status << " pid " << ret << frg::endlog;
 +  *ret_pid = ret;
++  return 0;
++}
 +
++int sys_getcwd(char *buffer, size_t size) {
++  if (size < 2)
++    return EINVAL;
++  mlibc::infoLogger() << "[mlibc]  getcwd called buffer size" << size
++                      << frg::endlog;
++  buffer[0] = '/';
++  buffer[1] = '\0';
++  return 0;
++}
++
++int sys_sigaction(int signum, const struct sigaction *act,
++                  struct sigaction *oldact) {
++  mlibc::infoLogger() << "[mlibc] Calling sys_sigaction() STUB; Signal:"
++                      << signum << " \n"
++                      << frg::endlog;
++  return ENOSYS;
++
++  switch (signum) {
++  case SIGCHLD: {
++    mlibc::infoLogger() << "[mlibc] SIGCHLD"
++                        << " \n"
++                        << frg::endlog;
++    *oldact = *act;
++    break;
++  }
++  case SIGUSR1: {
++    mlibc::infoLogger() << "[mlibc] SIGUSR1"
++                        << " \n"
++                        << frg::endlog;
++    *oldact = *act;
++    break;
++  }
++  case SIGUSR2: {
++    mlibc::infoLogger() << "[mlibc] SIGUSR2"
++                        << " \n"
++                        << frg::endlog;
++    *oldact = *act;
++    break;
++  }
++  default:
++    break;
++  }
 +
 +  return 0;
 +}
 +
-+
-+int sys_getcwd(char* buffer, size_t size){
-+    if(size < 2)
-+        return EINVAL;
-+    mlibc::infoLogger() <<"[mlibc]  getcwd called buffer size"  <<  size << frg::endlog;
-+    buffer[0] = '/';
-+    buffer[1] = '\0';
-+    return 0;
-+}
-+
-+int sys_sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
-+  mlibc::infoLogger() << "[mlibc] Calling sys_sigaction() STUB; Signal:" << signum << " \n" << frg::endlog;
-+  return ENOSYS;
-+
-+  switch(signum){
-+    case SIGCHLD:{
-+        mlibc::infoLogger() << "[mlibc] SIGCHLD"  << " \n" << frg::endlog;
-+        *oldact = *act;
-+        break;
-+    }
-+    case SIGUSR1:{
-+        mlibc::infoLogger() << "[mlibc] SIGUSR1"  << " \n" << frg::endlog;
-+        *oldact = *act;
-+        break;
-+    }
-+    case SIGUSR2:{
-+        mlibc::infoLogger() << "[mlibc] SIGUSR2"  << " \n" << frg::endlog;
-+        *oldact = *act;
-+        break;
-+    }
-+    default:
-+        break;
-+  }
-+
-+
++int sys_pipe(int *fds, int flags) {
++  mlibc::infoLogger() << "[mlibc] Calling sys_pipe() STUB\n" << frg::endlog;
 +  return 0;
 +}
 +
-+int sys_pipe(int *fds, int flags){
-+    mlibc::infoLogger() << "[mlibc] Calling sys_pipe() STUB\n" << frg::endlog;
-+    return 0;
-+}
++int sys_fcntl(int fd, int request, va_list args, int *result_value) {
 +
-+int sys_fcntl(int fd, int request, va_list args, int* result_value){
-+  
-+  mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n" << frg::endlog;
-+  switch(request){
-+      case F_DUPFD:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD " << "\n" << frg::endlog;
-+          return sys_dup(fd, 0, result_value);
-+          break;
-+      case F_DUPFD_CLOEXEC:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD_CLOEXEC " << "\n" << frg::endlog;
-+          break;
-+      case F_SETFD:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_SETFD " << fd <<  "\n" << frg::endlog;
++  mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n"
++                      << frg::endlog;
++  switch (request) {
++  case F_DUPFD:
++    mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD "
++                        << "\n"
++                        << frg::endlog;
++    return sys_dup(fd, 0, result_value);
++    break;
++  case F_DUPFD_CLOEXEC:
++    mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD_CLOEXEC "
++                        << "\n"
++                        << frg::endlog;
++    break;
++  case F_SETFD:
++    mlibc::infoLogger() << "[mlibc] REQ: F_SETFD " << fd << "\n" << frg::endlog;
 +
++    if (fd < 255) {
++      mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n"
++                          << frg::endlog;
++      *result_value = 0;
++      return fd;
++    } else {
++      mlibc::infoLogger() << "[mlibc] Returning EBADF"
++                          << "\n"
++                          << frg::endlog;
++      return EBADF;
++    }
++    break;
++  case F_GETFD:
++    mlibc::infoLogger() << "[mlibc] REQ: F_GETFD "
++                        << "\n"
++                        << frg::endlog;
++    break;
 +
-+          if(fd<255){
-+              mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n" << frg::endlog;
-+              *result_value = 0;
-+              return fd;
-+          }else{
-+              mlibc::infoLogger() << "[mlibc] Returning EBADF" << "\n" << frg::endlog;
-+              return EBADF;
-+          }
-+          break;
-+      case F_GETFD:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_GETFD " << "\n" << frg::endlog;
-+          break;
-+
-+      case F_SETFL:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_SETFL " << "\n" << frg::endlog;
-+          break;
-+      case F_GETFL:
-+          mlibc::infoLogger() << "[mlibc] REQ: F_GETFL " << "\n" << frg::endlog;
-+          break;
-+      default: sys_libc_panic();
++  case F_SETFL:
++    mlibc::infoLogger() << "[mlibc] REQ: F_SETFL "
++                        << "\n"
++                        << frg::endlog;
++    break;
++  case F_GETFL:
++    mlibc::infoLogger() << "[mlibc] REQ: F_GETFL "
++                        << "\n"
++                        << frg::endlog;
++    break;
++  default:
++    sys_libc_panic();
 +  }
 +
-+
-+
 +  return ENOSYS;
-+
 +}
 +
-+
-+int sys_gethostname(char *buffer, size_t bufsize){
-+  if(bufsize < 0)
++int sys_gethostname(char *buffer, size_t bufsize) {
++  if (bufsize < 0)
 +    return EINVAL;
 +
-+  for(size_t i=0; i<bufsize; i++)
++  for (size_t i = 0; i < bufsize; i++)
 +    buffer[i] = "root"[i];
 +
 +  return 0;
 +}
 +
 +#endif // MLIBC_BUILDING_RTDL
++
++int sys_poll(struct pollfd *fds, nfds_t cnt, int timeout, int *events) {
++  if(!fds || !events)
++    return EINVAL;
++
++  int ret;
++  int errno;
++  SYSCALL_NA3(SYS_POLL, fds, cnt, timeout);
++
++  if (ret == -1)
++    return errno;
++
++  mlibc::infoLogger() << "events is at " << events <<"\n"<<frg::endlog;
++
++  *events = ret;
++
++  return 0;
++}
 +
 +} // namespace mlibc
 diff --git a/sysdeps/atlas/generic/thread.cpp b/sysdeps/atlas/generic/thread.cpp
