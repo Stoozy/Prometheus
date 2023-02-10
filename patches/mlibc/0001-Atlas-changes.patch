@@ -1,6 +1,6 @@
-From 49407cf61662629258b0779d2f44ea2d6c6c8377 Mon Sep 17 00:00:00 2001
+From bd4692455ca66f6694aca5cf67d36de63351c63f Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Wed, 8 Feb 2023 13:27:16 -0500
+Date: Wed, 8 Feb 2023 21:22:32 -0500
 Subject: [PATCH] Atlas changes
 
 ---
@@ -22,12 +22,16 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/epoll.h       |   6 +
  sysdeps/atlas/include/abi-bits/errno.h       | 139 ++++
  sysdeps/atlas/include/abi-bits/fcntl.h       |  74 ++
+ sysdeps/atlas/include/abi-bits/fsblkcnt_t.h  |   8 +
+ sysdeps/atlas/include/abi-bits/fsfilcnt_t.h  |   8 +
  sysdeps/atlas/include/abi-bits/gid_t.h       |   8 +
  sysdeps/atlas/include/abi-bits/in.h          | 104 +++
  sysdeps/atlas/include/abi-bits/ino_t.h       |   9 +
  sysdeps/atlas/include/abi-bits/inotify.h     |   9 +
+ sysdeps/atlas/include/abi-bits/ioctls.h      |  11 +
  sysdeps/atlas/include/abi-bits/limits.h      |   9 +
  sysdeps/atlas/include/abi-bits/mode_t.h      |   8 +
+ sysdeps/atlas/include/abi-bits/mqueue.h      |  21 +
  sysdeps/atlas/include/abi-bits/nlink_t.h     |   8 +
  sysdeps/atlas/include/abi-bits/packet.h      |   6 +
  sysdeps/atlas/include/abi-bits/pid_t.h       |   8 +
@@ -39,7 +43,11 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/shm.h         |  21 +
  sysdeps/atlas/include/abi-bits/signal.h      | 350 ++++++++++
  sysdeps/atlas/include/abi-bits/socket.h      | 291 ++++++++
+ sysdeps/atlas/include/abi-bits/socklen_t.h   |   6 +
  sysdeps/atlas/include/abi-bits/stat.h        |  94 +++
+ sysdeps/atlas/include/abi-bits/statfs.h      |  28 +
+ sysdeps/atlas/include/abi-bits/statvfs.h     |  28 +
+ sysdeps/atlas/include/abi-bits/suseconds_t.h |   8 +
  sysdeps/atlas/include/abi-bits/termios.h     | 117 ++++
  sysdeps/atlas/include/abi-bits/time.h        |  15 +
  sysdeps/atlas/include/abi-bits/uid_t.h       |   8 +
@@ -47,11 +55,12 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/vm-flags.h    |  44 ++
  sysdeps/atlas/include/abi-bits/vt.h          |  76 +++
  sysdeps/atlas/include/abi-bits/wait.h        |  25 +
+ sysdeps/atlas/include/abi-bits/xattr.h       |  21 +
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
  sysdeps/atlas/include/syscall.h              | 101 +++
  sysdeps/atlas/include/vfs.h                  |  28 +
- sysdeps/atlas/meson.build                    |  59 ++
- 47 files changed, 2608 insertions(+), 3 deletions(-)
+ sysdeps/atlas/meson.build                    |  68 ++
+ 56 files changed, 2756 insertions(+), 3 deletions(-)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -66,12 +75,16 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/include/abi-bits/epoll.h
  create mode 100644 sysdeps/atlas/include/abi-bits/errno.h
  create mode 100644 sysdeps/atlas/include/abi-bits/fcntl.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/fsblkcnt_t.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/fsfilcnt_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/gid_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/in.h
  create mode 100644 sysdeps/atlas/include/abi-bits/ino_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/inotify.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/ioctls.h
  create mode 100644 sysdeps/atlas/include/abi-bits/limits.h
  create mode 100644 sysdeps/atlas/include/abi-bits/mode_t.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/mqueue.h
  create mode 100644 sysdeps/atlas/include/abi-bits/nlink_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/packet.h
  create mode 100644 sysdeps/atlas/include/abi-bits/pid_t.h
@@ -83,7 +96,11 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/include/abi-bits/shm.h
  create mode 100644 sysdeps/atlas/include/abi-bits/signal.h
  create mode 100644 sysdeps/atlas/include/abi-bits/socket.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/socklen_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/stat.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/statfs.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/statvfs.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/suseconds_t.h
  create mode 100644 sysdeps/atlas/include/abi-bits/termios.h
  create mode 100644 sysdeps/atlas/include/abi-bits/time.h
  create mode 100644 sysdeps/atlas/include/abi-bits/uid_t.h
@@ -91,16 +108,17 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/include/abi-bits/vm-flags.h
  create mode 100644 sysdeps/atlas/include/abi-bits/vt.h
  create mode 100644 sysdeps/atlas/include/abi-bits/wait.h
+ create mode 100644 sysdeps/atlas/include/abi-bits/xattr.h
  create mode 100644 sysdeps/atlas/include/mlibc/thread-entry.hpp
  create mode 100644 sysdeps/atlas/include/syscall.h
  create mode 100644 sysdeps/atlas/include/vfs.h
  create mode 100644 sysdeps/atlas/meson.build
 
 diff --git a/meson.build b/meson.build
-index 4c4668f0..78b6d090 100644
+index a8cd3fec..d0da72ab 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -135,6 +135,11 @@ elif host_machine.system() == 'dripos'
+@@ -144,6 +144,11 @@ elif host_machine.system() == 'dripos'
  	rtdl_include_dirs += include_directories('sysdeps/dripos/include')
  	libc_include_dirs += include_directories('sysdeps/dripos/include')
  	subdir('sysdeps/dripos')
@@ -112,7 +130,7 @@ index 4c4668f0..78b6d090 100644
  else
  	error('No sysdeps defined for OS: ' + host_machine.system())
  endif
-@@ -305,8 +310,9 @@ if not headers_only
+@@ -315,8 +320,9 @@ if not headers_only
  	endif
  
  	ld_cpp_args = [
@@ -151,10 +169,10 @@ index 0095c7b9..4114b6db 100644
  		return -1;
  	}
 diff --git a/options/rtdl/generic/main.cpp b/options/rtdl/generic/main.cpp
-index eb7c176a..b4f7a3e6 100644
+index 0754aec4..7bd005fa 100644
 --- a/options/rtdl/generic/main.cpp
 +++ b/options/rtdl/generic/main.cpp
-@@ -152,6 +152,8 @@ extern "C" [[gnu::alias("dl_debug_state"), gnu::visibility("default")]] void _dl
+@@ -155,6 +155,8 @@ extern "C" [[gnu::alias("dl_debug_state"), gnu::visibility("default")]] void _dl
  extern "C" void *interpreterMain(uintptr_t *entry_stack) {
  	if(logEntryExit)
  		mlibc::infoLogger() << "Entering ld.so" << frg::endlog;
@@ -1302,6 +1320,34 @@ index 00000000..822790b4
 +#define AT_EMPTY_PATH 0x1000
 +
 +#endif // _ABIBITS_FCNTL_H
+diff --git a/sysdeps/atlas/include/abi-bits/fsblkcnt_t.h b/sysdeps/atlas/include/abi-bits/fsblkcnt_t.h
+new file mode 100644
+index 00000000..0d744561
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/fsblkcnt_t.h
+@@ -0,0 +1,8 @@
++#ifndef _ABIBITS_FSBLKCNT_T_H
++#define _ABIBITS_FSBLKCNT_T_H
++
++#include <bits/types.h>
++
++typedef __mlibc_uint64 fsblkcnt_t;
++
++#endif /* _ABIBITS_FSBLKCNT_T_H */
+diff --git a/sysdeps/atlas/include/abi-bits/fsfilcnt_t.h b/sysdeps/atlas/include/abi-bits/fsfilcnt_t.h
+new file mode 100644
+index 00000000..1abda9a9
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/fsfilcnt_t.h
+@@ -0,0 +1,8 @@
++#ifndef _ABIBITS_FSFILCNT_T_H
++#define _ABIBITS_FSFILCNT_T_H
++
++#include <bits/types.h>
++
++typedef __mlibc_uint64 fsfilcnt_t;
++
++#endif /* _ABIBITS_FSFILCNT_T_H */
 diff --git a/sysdeps/atlas/include/abi-bits/gid_t.h b/sysdeps/atlas/include/abi-bits/gid_t.h
 new file mode 100644
 index 00000000..62ac1930
@@ -1456,6 +1502,23 @@ index 00000000..4a0bd4cb
 +#define IN_NONBLOCK O_NONBLOCK
 +
 +#endif // _ABIBITS_INOTIFY_H
+diff --git a/sysdeps/atlas/include/abi-bits/ioctls.h b/sysdeps/atlas/include/abi-bits/ioctls.h
+new file mode 100644
+index 00000000..e2961842
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/ioctls.h
+@@ -0,0 +1,11 @@
++#ifndef _ABIBITS_IOCTLS_H
++#define _ABIBITS_IOCTLS_H
++
++#define SIOCPROTOPRIVATE 0x89E0
++#define SIOCGIFNAME 0x8910
++#define SIOCGIFCONF 0x8912
++#define SIOCGIFFLAGS 0x8913
++#define SIOCSIFFLAGS 0x8914
++#define SIOCGIFINDEX 0x8933
++
++#endif /* _ABIBITS_IOCTLS_H */
 diff --git a/sysdeps/atlas/include/abi-bits/limits.h b/sysdeps/atlas/include/abi-bits/limits.h
 new file mode 100644
 index 00000000..091b14ba
@@ -1484,6 +1547,33 @@ index 00000000..8374c125
 +typedef unsigned int mode_t;
 +
 +#endif // _ABIBITS_MODE_T_H
++
+diff --git a/sysdeps/atlas/include/abi-bits/mqueue.h b/sysdeps/atlas/include/abi-bits/mqueue.h
+new file mode 100644
+index 00000000..1e2d3eb8
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/mqueue.h
+@@ -0,0 +1,21 @@
++#ifndef _ABIBITS_MQUEUE_H
++#define _ABIBITS_MQUEUE_H
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++struct mq_attr {
++	long mq_flags;
++	long mq_maxmsg;
++	long mq_msgsize;
++	long mq_curmsgs;
++	long __pad[4];
++};
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _ABIBITS_MQUEUE_H */
 +
 diff --git a/sysdeps/atlas/include/abi-bits/nlink_t.h b/sysdeps/atlas/include/abi-bits/nlink_t.h
 new file mode 100644
@@ -2354,6 +2444,18 @@ index 00000000..d2995411
 +#define MSG_CMSG_CLOEXEC 0x40000000
 +
 +#endif
+diff --git a/sysdeps/atlas/include/abi-bits/socklen_t.h b/sysdeps/atlas/include/abi-bits/socklen_t.h
+new file mode 100644
+index 00000000..190e5f9f
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/socklen_t.h
+@@ -0,0 +1,6 @@
++#ifndef _ABIBITS_SOCKLEN_T_H
++#define _ABIBITS_SOCKLEN_T_H
++
++typedef unsigned socklen_t;
++
++#endif /* _ABIBITS_SOCKLEN_T_H */
 diff --git a/sysdeps/atlas/include/abi-bits/stat.h b/sysdeps/atlas/include/abi-bits/stat.h
 new file mode 100644
 index 00000000..ca4b5f7f
@@ -2454,6 +2556,88 @@ index 00000000..ca4b5f7f
 +#endif
 +
 +#endif // _ABIBITS_STAT_H
+diff --git a/sysdeps/atlas/include/abi-bits/statfs.h b/sysdeps/atlas/include/abi-bits/statfs.h
+new file mode 100644
+index 00000000..60c977f6
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/statfs.h
+@@ -0,0 +1,28 @@
++#ifndef _ABIBITS_STATFS_H
++#define _ABIBITS_STATFS_H
++
++#include <abi-bits/fsblkcnt_t.h>
++#include <abi-bits/fsfilcnt_t.h>
++
++typedef struct __mlibc_fsid {
++	int __val[2];
++} fsid_t;
++
++struct statfs {
++	unsigned long f_type;
++	unsigned long f_bsize;
++	fsblkcnt_t f_blocks;
++	fsblkcnt_t f_bfree;
++	fsblkcnt_t f_bavail;
++
++	fsfilcnt_t f_files;
++	fsfilcnt_t f_ffree;
++	fsid_t f_fsid;
++	unsigned long f_namelen;
++	unsigned long f_frsize;
++	unsigned long f_flags;
++	unsigned long __f_spare[4];
++};
++
++#endif /* _ABIBITS_STATFS_H */
++
+diff --git a/sysdeps/atlas/include/abi-bits/statvfs.h b/sysdeps/atlas/include/abi-bits/statvfs.h
+new file mode 100644
+index 00000000..7742bad8
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/statvfs.h
+@@ -0,0 +1,28 @@
++#ifndef _ABIBITS_STATVFS_H
++#define _ABIBITS_STATVFS_H
++
++#include <abi-bits/fsblkcnt_t.h>
++#include <abi-bits/fsfilcnt_t.h>
++
++#define ST_RDONLY 1
++#define ST_NOSUID 2
++
++// On Linux, this struct is not directly used by the kernel.
++struct statvfs {
++	unsigned long f_bsize;
++	unsigned long f_frsize;
++	fsblkcnt_t f_blocks;
++	fsblkcnt_t f_bfree;
++	fsblkcnt_t f_bavail;
++
++	fsfilcnt_t f_files;
++	fsfilcnt_t f_ffree;
++	fsfilcnt_t f_favail;
++
++	unsigned long f_fsid;
++	unsigned long f_flag;
++	unsigned long f_namemax;
++};
++
++#endif /* _ABIBITS_STATVFS_H */
++
+diff --git a/sysdeps/atlas/include/abi-bits/suseconds_t.h b/sysdeps/atlas/include/abi-bits/suseconds_t.h
+new file mode 100644
+index 00000000..723ddfae
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/suseconds_t.h
+@@ -0,0 +1,8 @@
++#ifndef _ABIBITS_SUSECONDS_T_H
++#define _ABIBITS_SUSECONDS_T_H
++
++#include <bits/types.h>
++
++typedef __mlibc_int64 suseconds_t;
++
++#endif /* _ABIBITS_SUSECONDS_T_H */
 diff --git a/sysdeps/atlas/include/abi-bits/termios.h b/sysdeps/atlas/include/abi-bits/termios.h
 new file mode 100644
 index 00000000..bb2ed9a0
@@ -2793,6 +2977,33 @@ index 00000000..9412e5e7
 +#define WCOREDUMP(x) ((x) & WCOREFLAG)
 +
 +#endif //_ABIBITS_WAIT_H
+diff --git a/sysdeps/atlas/include/abi-bits/xattr.h b/sysdeps/atlas/include/abi-bits/xattr.h
+new file mode 100644
+index 00000000..c0e7fbeb
+--- /dev/null
++++ b/sysdeps/atlas/include/abi-bits/xattr.h
+@@ -0,0 +1,21 @@
++#ifndef MLIBC_ABIS_LINUX_XATTR_H
++#define MLIBC_ABIS_LINUX_XATTR_H
++
++/* __USE_KERNEL_XATTR_DEFS is exported when XATTR_* are emitted, and
++ * __UAPI_DEF_XATTR is used to determine the behaviour of the
++ * <linux/xattr.h> header (through <linux/libc-compat.h>), if it's set
++ * to 1, the header exports xattr defines and __USE_KERNEL_XATTR_DEFS.
++ * This applies for pretty much all other defines in libc-compat.h
++ * AFAICT.
++ */
++#ifndef __USE_KERNEL_XATTR_DEFS
++enum {
++	XATTR_CREATE = 1,
++#define XATTR_CREATE XATTR_CREATE
++	XATTR_REPLACE = 2,
++#define XATTR_REPLACE XATTR_REPLACE
++};
++#	define __UAPI_DEF_XATTR 0
++#endif
++
++#endif /* MLIBC_ABIS_LINUX_XATTR_H */
 diff --git a/sysdeps/atlas/include/mlibc/thread-entry.hpp b/sysdeps/atlas/include/mlibc/thread-entry.hpp
 new file mode 100644
 index 00000000..2dd88a64
@@ -2952,10 +3163,10 @@ index 00000000..ba870bff
 +
 diff --git a/sysdeps/atlas/meson.build b/sysdeps/atlas/meson.build
 new file mode 100644
-index 00000000..6f4531ea
+index 00000000..22039f30
 --- /dev/null
 +++ b/sysdeps/atlas/meson.build
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,68 @@
 +
 +rtdl_sources += files(
 +	'generic/generic.cpp'
@@ -2971,6 +3182,15 @@ index 00000000..6f4531ea
 +if not no_headers
 +	install_headers(
 +		'include/abi-bits/auxv.h',
++        'include/abi-bits/fsblkcnt_t.h',
++        'include/abi-bits/fsfilcnt_t.h',
++        'include/abi-bits/ioctls.h',
++        'include/abi-bits/inotify.h',
++        'include/abi-bits/mqueue.h',
++        'include/abi-bits/socklen_t.h',
++        'include/abi-bits/statfs.h',
++        'include/abi-bits/suseconds_t.h',
++        'include/abi-bits/xattr.h',
 +		'include/abi-bits/seek-whence.h',
 +		'include/abi-bits/vm-flags.h',
 +		'include/abi-bits/errno.h',
