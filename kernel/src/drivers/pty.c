@@ -290,7 +290,6 @@ static int ptm_poll(struct file *file, struct pollfd *pfd, int timeout) {
   /* struct tty *tty = pts->tty; */
 
   struct ptm_data *ptm = file->private_data;
-  kprintf("ptm is at %x\n", ptm);
 
   int evt = 0;
   if (pfd->events & POLLIN) {

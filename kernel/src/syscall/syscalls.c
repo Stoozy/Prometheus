@@ -66,6 +66,8 @@ void sys_log_libc(const char *message) {
 void sys_exit(int status) {
   kprintf("sys_exit(): status: %d; called by %s (pid: %d)\n", status,
           running->name, running->pid);
+  for (;;)
+    ;
   extern void kill_cur_proc(int ec);
   kill_cur_proc(status);
   // enable_irq();
@@ -79,8 +81,8 @@ void sys_exit(int status) {
 }
 
 void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
-  kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
-          flags, running->name, running->pid);
+  /* kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid, */
+  /*         flags, running->name, running->pid); */
 
   if (pid < -1) {
     kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
@@ -135,15 +137,20 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
 }
 
 void sys_open(const char *name, int flags, Registers *regs) {
-  File *file = vfs_open(name, flags);
+
+  File *file;
+
+  if (strcmp(name, ".") == 0) {
+    file = vfs_open(running->cwd, flags);
+    kprintf("Got file %s with size %d bytes\n", file->name, file->size);
+  } else
+    file = vfs_open(name, flags);
 
   if (!file) {
     regs->rdx = ENOENT;
     regs->rax = -1;
     return;
   }
-
-  kprintf("Got file %s with size %d bytes\n", file->name, file->size);
 
   int fd = map_file_to_proc(running, file);
 
@@ -527,7 +534,7 @@ int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
     return 0;
   }
 
-  return 0;
+  return -1;
 }
 
 int sys_fcntl(int fd, int request, va_list args) {
@@ -696,7 +703,6 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_POLL: {
-    kprintf("[SYS]  POLL CALLED\n");
     regs->rax = sys_poll((struct pollfd *)regs->rdi, regs->rsi, regs->rdx);
     break;
   }

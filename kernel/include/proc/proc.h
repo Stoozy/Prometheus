@@ -36,14 +36,14 @@ typedef struct process_control_block {
     uint64_t pid;
     char name[256];
 
+    char * cwd;
+
+    uintptr_t fs_base;
     Registers trapframe;
     void * kstack;
     PageTable *cr3;
 
     enum TaskState state;
-
-
-    uintptr_t fs_base;
 
     VASRangeNode *vas;
 

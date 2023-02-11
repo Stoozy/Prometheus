@@ -254,5 +254,8 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   kprintf("fd 1 is at %x\n", proc->fd_table[1]);
   kprintf("fd 2 is at %x\n", proc->fd_table[2]);
 
+  proc->cwd = kmalloc(2);
+  sprintf(proc->cwd, "/");
+
   return proc;
 }
