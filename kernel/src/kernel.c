@@ -22,7 +22,6 @@
 #include <proc/elf.h>
 #include <proc/proc.h>
 
-#include <fs/tarfs.h>
 #include <stivale2.h>
 #include <string/string.h>
 #include <syscall/syscalls.h>
@@ -167,14 +166,14 @@ void _start(struct stivale2_struct *boot_info) {
   if (!framebuffer_tag)
     hang();
 
-  fb_init(framebuffer_tag);
+  // fb_init(framebuffer_tag);
 
-  kbd_init();
-  tty_init();
-  pty_init();
+  // kbd_init();
+  // tty_init();
+  // pty_init();
 
-  extern int input_init();
-  input_init();
+  // extern int input_init();
+  // input_init();
 
   sys_init();
   multitasking_init();

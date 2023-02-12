@@ -123,9 +123,6 @@ void task_a() {
   extern uint8_t kbd_read_from_buffer();
   for (;;) {
     kprintf("Running task A ...\n");
-    uint8_t c = kbd_read_from_buffer();
-    for (;;)
-      kprintf("Task A woke up, got character %c \n", c);
   }
 }
 
@@ -257,25 +254,26 @@ void multitasking_init() {
   extern void refresh_screen_proc();
   extern void terminal_main();
 
-  // register_process(create_kernel_process(task_a));
-  // register_process(create_kernel_process(idle_task));
-  // register_process(create_kernel_process(task_b));
+  register_process(create_kernel_process(task_a, "Task A"));
+  register_process(create_kernel_process(idle_task, "Idle"));
+  register_process(create_kernel_process(task_b, "Task B"));
 
-  char *argv[2] = {"/usr/bin/nomterm", NULL};
-  char *envp[2] = {"PATH=/usr/bin", NULL};
-  ProcessControlBlock *bash =
-      create_elf_process("/usr/bin/nomterm", argv, envp);
-  // register_process(create_kernel_process(terminal_main, "Terminal"));
-  register_process(bash);
-  register_process(create_kernel_process(refresh_screen_proc, "Screen"));
+  // char *argv[2] = {"/usr/bin/nomterm", NULL};
+  // char *envp[2] = {"PATH=/usr/bin", NULL};
+  // ProcessControlBlock *bash =
+  //     create_elf_process("/usr/bin/nomterm", argv, envp);
+  // // register_process(create_kernel_process(terminal_main, "Terminal"));
+  // register_process(bash);
+  // register_process(create_kernel_process(refresh_screen_proc, "Screen"));
 
-  running = ready_queue.first->pcb;
-  kprintf("Ready queue has %d procs\n", ready_queue.count);
-  dump_pqueue(&ready_queue);
+  // running = ready_queue.first->pcb;
+  // kprintf("Ready queue has %d procs\n", ready_queue.count);
+  // dump_pqueue(&ready_queue);
 
-  dump_regs(&ready_queue.first->pcb->trapframe);
-  kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
-  kprintf("Cr3 is %x\n", running->cr3);
-  switch_to_process(&running->trapframe, (void *)running->cr3);
+  // dump_regs(&ready_queue.first->pcb->trapframe);
+  // kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
+  // kprintf("Cr3 is %x\n", running->cr3);
+  // switch_to_process(&running->trapframe, (void *)running->cr3);
+
   return;
 }

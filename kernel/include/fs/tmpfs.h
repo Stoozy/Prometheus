@@ -2,32 +2,45 @@
 
 #include "fs/vfs.h"
 
+#include <stdint.h>
+#include <sys/queue.h>
+#include <unistd.h>
+
 struct anon {
-    int swap;
-    void * page;
+  int swap;
+  void *page;
 };
 
 struct tmpnode;
 
 struct tmpfs_dirent {
-    char * filename;
-    struct tmpnode * inode;
-    struct tmpfs_dirent * next;
+  TAILQ_ENTRY(tmpfs_dirent) entries;
+
+  const char *filename;
+  struct tmpnode *inode;
 };
 
+typedef struct tmp_dir {
+  TAILQ_HEAD(tmp_dir_q, tmpfs_dirent) dirents;
+  struct tmpnode *parent;
+} TmpDir;
 
-struct tmpnode {
-    VFSNode * vnode;
+typedef struct tmp_file {
+  struct anon *map;
+} TmpFile;
 
-    struct tmpfs_dirent * dirents;
+typedef struct tmpnode {
+  VFSNode *vnode;
 
-    int status;
-    uint64_t device;
-    uint64_t position;
-    size_t size;
-    uint8_t  mode;
-    uint8_t  type;
-};
+  union {
+    /* can be either a file or directory */
+    TmpDir dir;
+    TmpFile file;
+  };
+
+  VAttr attr;
+
+} TmpNode;
 
 int tmpfs_init();
 
