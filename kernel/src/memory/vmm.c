@@ -16,8 +16,7 @@
 
 extern void load_pagedir(PageTable *);
 
-extern u64 k_start;
-extern u64 k_end;
+PageTable *kernel_cr3 = NULL;
 
 static PageIndex vmm_get_page_index(uintptr_t vaddr) {
   PageIndex ret;
@@ -181,3 +180,5 @@ PageTable *vmm_get_current_cr3() {
   asm volatile(" mov %%cr3, %0" : "=r"(current_cr3));
   return current_cr3;
 }
+
+void vmm_init() { kernel_cr3 = vmm_get_current_cr3(); }

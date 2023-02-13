@@ -6,11 +6,6 @@
 #include <sys/queue.h>
 #include <unistd.h>
 
-struct anon {
-  int swap;
-  void *page;
-};
-
 struct tmpnode;
 
 struct tmpfs_dirent {
@@ -25,8 +20,15 @@ typedef struct tmp_dir {
   struct tmpnode *parent;
 } TmpDir;
 
+struct anon {
+  TAILQ_ENTRY(anon) anonq;
+
+  int swap;
+  void *page;
+};
+
 typedef struct tmp_file {
-  struct anon *map;
+  TAILQ_HEAD(, anon) anonmap;
 } TmpFile;
 
 typedef struct tmpnode {

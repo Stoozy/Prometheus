@@ -101,7 +101,6 @@ typedef struct vnops {
 } VNodeOps;
 
 typedef struct vfsops {
-
   int (*mount)(VFS *vfs, const char *path, void *data);
   int (*root)(VFS *vfs, VFSNode **out);
   int (*vget)(VFS *vfs, VFSNode **out, ino_t inode);

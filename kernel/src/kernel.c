@@ -123,7 +123,6 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 extern void enable_sce();
-extern void to_userspace(void *entry, void *stack);
 
 void hang() {
   for (;;)
@@ -149,6 +148,7 @@ void _start(struct stivale2_struct *boot_info) {
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
   pmm_init(meminfo);
+  vmm_init();
   kmalloc_init(0xff0000);
 
   gdt_init();

@@ -21,42 +21,41 @@ typedef struct vas_range_node VASRangeNode;
 struct process_control_block;
 
 typedef struct pqueue_node {
-    struct  process_control_block * pcb;
-    struct pqueue_node * next;
+  struct process_control_block *pcb;
+  struct pqueue_node *next;
 } PQNode;
 
 typedef struct pqueue {
-    int count;
-    PQNode *first;
-    PQNode *last;
+  int count;
+  PQNode *first;
+  PQNode *last;
 } ProcessQueue;
 
-
 typedef struct process_control_block {
-    uint64_t pid;
-    char name[256];
+  uint64_t pid;
+  char name[256];
 
-    char * cwd;
+  char *cwd;
 
-    uintptr_t fs_base;
-    Registers trapframe;
-    void * kstack;
-    PageTable *cr3;
+  uintptr_t fs_base;
+  Registers trapframe;
+  void *kstack;
+  PageTable *cr3;
 
-    enum TaskState state;
+  enum TaskState state;
 
-    VASRangeNode *vas;
+  VASRangeNode *vas;
 
-    uint64_t mmap_base;
+  uint64_t mmap_base;
 
-    struct file *fd_table[MAX_PROC_FDS];
-    int fd_length;
+  struct file *fd_table[MAX_PROC_FDS];
+  int fd_length;
 
-    int exit_code;
-    bool childDied;
-    ProcessQueue children;
+  int exit_code;
+  bool childDied;
+  ProcessQueue children;
 
-    struct process_control_block *parent;
+  struct process_control_block *parent;
 } ProcessControlBlock;
 
 void block_process(ProcessControlBlock *, int);
@@ -84,3 +83,5 @@ ProcessControlBlock *get_next_ready_process();
 void register_process(ProcessControlBlock *);
 
 void schedule(Registers *);
+
+extern PageTable *kernel_cr3;

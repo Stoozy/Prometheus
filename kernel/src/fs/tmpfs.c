@@ -1,4 +1,8 @@
+#include "libk/util.h"
+#include "memory/pmm.h"
+#include "memory/vmm.h"
 #include "misc/ssfn.h"
+#include "proc/proc.h"
 #include <fs/tmpfs.h>
 #include <fs/vfs.h>
 #include <libk/kmalloc.h>
@@ -6,6 +10,8 @@
 #include <string/string.h>
 
 #include <sys/queue.h>
+
+#define TMPFS_VIRT_BASE 0xD000000000
 
 static int tmpfs_mount(VFS *vfs, const char *path, void *data) {
   TmpNode *tmp_root_node = kmalloc(sizeof(TmpNode));
@@ -23,6 +29,7 @@ static int tmpfs_mount(VFS *vfs, const char *path, void *data) {
 
   return 0;
 }
+
 static int tmpfs_root(VFS *vfs, VFSNode **out) {
   TmpNode *tmp_root = (TmpNode *)vfs->private_data;
   *out = tmp_root->vnode;
@@ -97,18 +104,18 @@ loop:
       return 0;
     }
 
-    kprintf("Checking if %s starts with %s ", cnp->cn_nameptr,
-            dirent->filename);
+    // kprintf("Checking if %s starts with %s ", cnp->cn_nameptr,
+    //  dirent->filename);
     if (strncmp(dirent->filename, cnp->cn_nameptr, strlen(dirent->filename)) ==
         0) {
-      kprintf("  ... it does\n");
+      // kprintf("  ... it does\n");
       tnode = dirent->inode;
       goto loop;
     }
-    kprintf("\n");
+    // kprintf("\n");
   }
 
-  kprintf("Couldn't find %s\n", cnp->cn_nameptr);
+  // kprintf("Couldn't find %s\n", cnp->cn_nameptr);
   return -1;
 }
 
@@ -122,7 +129,33 @@ static int tmpfs_create(VFSNode *dvn, VFSNode **out, ComponentName *cnp,
   struct tmpfs_dirent *new_dirent = kmalloc(sizeof(struct tmpfs_dirent));
 
   new_tnode->attr.type = VFS_FILE;
+  new_tnode->attr.size = vap->size;
+  kprintf("set size to %d \n", new_tnode->attr.size);
+
   new_dirent->inode = new_tnode;
+  TAILQ_INIT(&new_tnode->file.anonmap);
+
+  int numpages = DIV_ROUND_UP(vap->size, PAGE_SIZE);
+
+  uintptr_t pages = (uintptr_t)pmm_alloc_blocks(numpages);
+  uintptr_t virt = (uintptr_t)(TMPFS_VIRT_BASE + pages);
+  vmm_map_page(kernel_cr3, virt, pages,
+               PAGE_PRESENT | PAGE_WRITE | PAGE_PRESENT);
+
+  // struct anon *new_amap = kmalloc(sizeof(struct anon));
+  // new_amap->page = (void*)pages;
+  // TAILQ_INSERT_TAIL(&new_tnode->file.anonmap, new_amap, anonq);
+
+  for (uint64_t i = 0; i < DIV_ROUND_UP(vap->size, PAGE_SIZE); i++) {
+    uintptr_t page = (uintptr_t)pmm_alloc_block();
+    uintptr_t virt = (uintptr_t)(TMPFS_VIRT_BASE + page);
+    vmm_map_page(kernel_cr3, virt, page,
+                 PAGE_PRESENT | PAGE_WRITE | PAGE_PRESENT);
+
+    struct anon *new = kmalloc(sizeof(struct anon));
+    new->page = (void *)virt;
+    TAILQ_INSERT_TAIL(&new_tnode->file.anonmap, new, anonq);
+  }
 
   new_dirent->filename = cnp->cn_nameptr;
   new_tnode->dir.parent = tmp_dir_node;
@@ -131,17 +164,13 @@ static int tmpfs_create(VFSNode *dvn, VFSNode **out, ComponentName *cnp,
   new_vnode->private_data = new_tnode;
 
   TAILQ_INSERT_TAIL(&tmp_dir_node->dir.dirents, new_dirent, entries);
-
-  kprintf("Created %s at %x\n", new_dirent->filename, new_tnode);
-
-  return -1;
+  *out = new_vnode;
+  return 0;
 }
 
 static int tmpfs_getattr(VFSNode *dvn, VAttr *out) { return -1; }
 static int tmpfs_open(VFSNode *vn, VFSNode **out, int mode) { return -1; }
-static int tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
-  return -1;
-}
+
 static int tmpfs_readdir(VFSNode *dvn, void *buf, size_t nbyte,
                          size_t *bytesRead, off_t seqno) {
   return -1;
@@ -176,6 +205,40 @@ int tmpfs_mkdir(VFSNode *dvp, VFSNode **vpp, ComponentName *cnp,
   return 0;
 }
 
+static int tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+  TmpNode *tmpnode = vn->private_data;
+
+  struct anon *first = TAILQ_FIRST(&tmpnode->file.anonmap);
+  void *startpg = first->page + nbyte + off;
+
+  if (nbyte + off > tmpnode->attr.size) {
+    kprintf("Reading outside of file ... \n");
+    return -1;
+  }
+
+  memcpy(buf, startpg + off, nbyte);
+  return 0;
+}
+
+int tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+  kprintf("Called tmpfs_write, buffer at %x; size %d\n", buf, nbyte);
+
+  TmpNode *tmpnode = (TmpNode *)vn->private_data;
+  kprintf("File size is %d\n", tmpnode->attr.size);
+
+  if (nbyte + off > tmpnode->attr.size) {
+    kprintf("Extending file isn't supported yet\n");
+    return -1;
+  }
+
+  struct anon *first = TAILQ_FIRST(&tmpnode->file.anonmap);
+  void *startpg = first->page + nbyte + off;
+
+  memcpy(startpg + off, buf, nbyte);
+
+  return 0;
+}
+
 void tmpfs_dump(TmpNode *root) {
   if (TAILQ_EMPTY(&root->dir.dirents))
     return;
@@ -186,8 +249,6 @@ void tmpfs_dump(TmpNode *root) {
     tmpfs_dump(dirent->inode);
   }
 }
-
-int tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) { return -1; }
 
 VNodeOps tmpfs_vnops = {.create = tmpfs_create,
                         .open = tmpfs_open,
