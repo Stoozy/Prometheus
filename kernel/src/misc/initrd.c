@@ -99,10 +99,17 @@ static int copy_file(UstarFile *file) {
   char *parent_dir = get_parent_dir(filename);
   kprintf("Got parent dir %s\n", parent_dir);
 
+  if (strcmp(parent_dir, "") == 0) {
+    kprintf("Parent dir is empty!!\n");
+    for (;;)
+      ;
+  }
+
   int filesize = oct2bin(file->size, 11);
 
+  TmpNode *tmp_root = vfs_root.private_data;
+  VFSNode *root_vn = tmp_root->vnode;
   if (ustar_type_to_vfs_type(file->type) & VFS_DIRECTORY) {
-    TmpNode *tmp_root = vfs_root.private_data;
     VFSNode *new;
     VAttr attr = {.type = VFS_FILE, -1, filesize, 0};
     struct componentname cnp = {.cn_nameptr = filename};
@@ -125,15 +132,15 @@ static int copy_file(UstarFile *file) {
     if (tmp_root->vnode->ops->lookup(tmp_root->vnode, &new, &cnp)) {
       VFSNode *parent_node;
 
-      struct componentname pcnp = {.cn_nameptr = get_parent_dir(filename)};
+      struct componentname pcnp = {.cn_nameptr = parent_dir};
       if (tmp_root->vnode->ops->lookup(tmp_root->vnode, &parent_node, &pcnp))
         return -1;
       kprintf("Parent node is at %x\n", parent_node);
       tmp_root->vnode->ops->create(parent_node, &new, &cnp, &attr);
 
       kprintf("Writing to %s\n", filename);
-      if (tmp_root->vnode->ops->write(new, ((void *)file + 512), filesize, 0))
-        return -1;
+      // if (tmp_root->vnode->ops->write(new, ((void *)file + 512), filesize,
+      // 0)) return -1;
     }
   }
   return 0;
@@ -165,5 +172,7 @@ int load_initrd(struct stivale2_struct_tag_modules *modules_tag) {
   tmpfs_dump((TmpNode *)vfs_root.private_data);
 
   kprintf("Done printing all entries");
+  for (;;)
+    ;
   return 0;
 }

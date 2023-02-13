@@ -96,16 +96,15 @@ static int tmpfs_lookup(VFSNode *dvn, VFSNode **out,
   struct tmpfs_dirent *dirent;
 loop:
   TAILQ_FOREACH(dirent, &tnode->dir.dirents, entries) {
-    if (strcmp(dirent->filename, cnp->cn_nameptr) == 0 ||
-        strcmp(dirent->filename + 1, cnp->cn_nameptr) == 0) {
+    if (strcmp(dirent->filename, cnp->cn_nameptr) == 0) {
       kprintf("Found entry: %s\n", dirent->filename);
       TmpNode *next_tnode = dirent->inode;
       *out = next_tnode->vnode;
       return 0;
     }
 
-    // kprintf("Checking if %s starts with %s ", cnp->cn_nameptr,
-    //  dirent->filename);
+    kprintf("Checking if %s starts with %s \n", cnp->cn_nameptr,
+            dirent->filename);
     if (strncmp(dirent->filename, cnp->cn_nameptr, strlen(dirent->filename)) ==
         0) {
       // kprintf("  ... it does\n");
@@ -133,30 +132,6 @@ static int tmpfs_create(VFSNode *dvn, VFSNode **out, ComponentName *cnp,
   kprintf("set size to %d \n", new_tnode->attr.size);
 
   new_dirent->inode = new_tnode;
-  TAILQ_INIT(&new_tnode->file.anonmap);
-
-  int numpages = DIV_ROUND_UP(vap->size, PAGE_SIZE);
-
-  uintptr_t pages = (uintptr_t)pmm_alloc_blocks(numpages);
-  uintptr_t virt = (uintptr_t)(TMPFS_VIRT_BASE + pages);
-  vmm_map_page(kernel_cr3, virt, pages,
-               PAGE_PRESENT | PAGE_WRITE | PAGE_PRESENT);
-
-  // struct anon *new_amap = kmalloc(sizeof(struct anon));
-  // new_amap->page = (void*)pages;
-  // TAILQ_INSERT_TAIL(&new_tnode->file.anonmap, new_amap, anonq);
-
-  for (uint64_t i = 0; i < DIV_ROUND_UP(vap->size, PAGE_SIZE); i++) {
-    uintptr_t page = (uintptr_t)pmm_alloc_block();
-    uintptr_t virt = (uintptr_t)(TMPFS_VIRT_BASE + page);
-    vmm_map_page(kernel_cr3, virt, page,
-                 PAGE_PRESENT | PAGE_WRITE | PAGE_PRESENT);
-
-    struct anon *new = kmalloc(sizeof(struct anon));
-    new->page = (void *)virt;
-    TAILQ_INSERT_TAIL(&new_tnode->file.anonmap, new, anonq);
-  }
-
   new_dirent->filename = cnp->cn_nameptr;
   new_tnode->dir.parent = tmp_dir_node;
 
@@ -201,7 +176,7 @@ int tmpfs_mkdir(VFSNode *dvp, VFSNode **vpp, ComponentName *cnp,
   TAILQ_INSERT_TAIL(&tmp_dir_node->dir.dirents, new_dirent, entries);
 
   kprintf("Created %s at %x\n", new_dirent->filename, new_tnode);
-
+  *vpp = new_vnode;
   return 0;
 }
 
