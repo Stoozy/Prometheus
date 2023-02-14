@@ -135,6 +135,7 @@ void err13_handler(Registers *regs, int error_code) {
   dump_regs(regs);
   kprintf("Error code: %d\n", error_code);
   kprintf("EXCEPTION: General Protection Fault #GP\n");
+  stacktrace((struct stackframe *)regs->rbp, 5);
   for (;;)
     ;
 }

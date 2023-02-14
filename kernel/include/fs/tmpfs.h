@@ -11,7 +11,7 @@ struct tmpnode;
 struct tmpfs_dirent {
   TAILQ_ENTRY(tmpfs_dirent) entries;
 
-  const char *filename;
+  char *filename;
   struct tmpnode *inode;
 };
 
@@ -21,7 +21,7 @@ typedef struct tmp_dir {
 } TmpDir;
 
 struct anon {
-  TAILQ_ENTRY(anon) anonq;
+  TAILQ_ENTRY(anon) entries;
 
   int swap;
   void *page;

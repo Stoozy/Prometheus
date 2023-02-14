@@ -248,29 +248,22 @@ void multitasking_init() {
   // kprintf("Got process at %x\n", nomterm);
   // register_process(nomterm);
 
-  extern void refresh_screen_proc();
-  extern void terminal_main();
+  // extern void refresh_screen_proc();
+  // extern void terminal_main();
 
-  register_process(create_kernel_process(task_a, "Task A"));
-  register_process(create_kernel_process(idle_task, "Idle"));
-  register_process(create_kernel_process(task_b, "Task B"));
+  // register_process(create_kernel_process(task_a, "Task A"));
+  // register_process(create_kernel_process(idle_task, "Idle"));
+  // register_process(create_kernel_process(task_b, "Task B"));
 
   char *argv[2] = {"/usr/bin/nomterm", NULL};
   char *envp[2] = {"PATH=/usr/bin", NULL};
-  // ProcessControlBlock *bash =
-  // create_elf_process("/usr/bin/nomterm", argv, envp);
-  // register_process(create_kernel_process(terminal_main, "Terminal"));
-  // register_process(bash);
-  // register_process(create_kernel_process(refresh_screen_proc, "Screen"));
+  ProcessControlBlock *terminal =
+      create_elf_process("/usr/bin/nomterm", argv, envp);
 
-  running = ready_queue.first->pcb;
-  // kprintf("Ready queue has %d procs\n", ready_queue.count);
-  // dump_pqueue(&ready_queue);
-
-  // dump_regs(&ready_queue.first->pcb->trapframe);
+  // running = ready_queue.first->pcb;
   // kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
   // kprintf("Cr3 is %x\n", running->cr3);
-  switch_to_process(&running->trapframe, (void *)running->cr3);
+  // switch_to_process(&running->trapframe, (void *)running->cr3);
 
   return;
 }

@@ -110,37 +110,41 @@ static int copy_file(UstarFile *file) {
   TmpNode *tmp_root = vfs_root.private_data;
   VFSNode *root_vn = tmp_root->vnode;
   if (ustar_type_to_vfs_type(file->type) & VFS_DIRECTORY) {
+    struct componentname pcnp = {.cn_nameptr = get_parent_dir(filename)};
+    VFSNode *parent;
+    if (root_vn->ops->lookup(root_vn, &parent, &pcnp)) {
+      kprintf("Couldn't find parent %s\n", pcnp.cn_nameptr);
+      return -1;
+    }
+
     VFSNode *new;
-    VAttr attr = {.type = VFS_FILE, -1, filesize, 0};
     struct componentname cnp = {.cn_nameptr = filename};
-    if (tmp_root->vnode->ops->lookup(tmp_root->vnode, &new, &cnp)) {
-      // look up for file failed, lets lookup for parent
-      VFSNode *parent_node;
-      struct componentname pcnp = {.cn_nameptr = get_parent_dir(filename)};
-      if (tmp_root->vnode->ops->lookup(tmp_root->vnode, &parent_node, &pcnp))
-        return -1;
-      kprintf("Parent node is at %x\n", parent_node);
-      tmp_root->vnode->ops->mkdir(parent_node, &new, &cnp, &attr);
+    VAttr attr = {.type = VFS_DIRECTORY, .size = filesize};
+    if (root_vn->ops->mkdir(parent, &new, &cnp, &attr)) {
+      kprintf("Couldn't create %s\n", cnp.cn_nameptr);
+      return -1;
     }
 
   } else if (ustar_type_to_vfs_type(file->type) & VFS_FILE) {
     kprintf("Regular file\n");
-    TmpNode *tmp_root = vfs_root.private_data;
+    struct componentname pcnp = {.cn_nameptr = get_parent_dir(filename)};
+    VFSNode *parent;
+    if (root_vn->ops->lookup(root_vn, &parent, &pcnp)) {
+      kprintf("Couldn't find parent %s\n", pcnp.cn_nameptr);
+      return -1;
+    }
+
     VFSNode *new;
     struct componentname cnp = {.cn_nameptr = filename};
     VAttr attr = {.type = VFS_FILE, .size = filesize};
-    if (tmp_root->vnode->ops->lookup(tmp_root->vnode, &new, &cnp)) {
-      VFSNode *parent_node;
+    if (root_vn->ops->create(parent, &new, &cnp, &attr)) {
+      kprintf("Couldn't create %s\n", cnp.cn_nameptr);
+      return -1;
+    }
 
-      struct componentname pcnp = {.cn_nameptr = parent_dir};
-      if (tmp_root->vnode->ops->lookup(tmp_root->vnode, &parent_node, &pcnp))
-        return -1;
-      kprintf("Parent node is at %x\n", parent_node);
-      tmp_root->vnode->ops->create(parent_node, &new, &cnp, &attr);
-
-      kprintf("Writing to %s\n", filename);
-      // if (tmp_root->vnode->ops->write(new, ((void *)file + 512), filesize,
-      // 0)) return -1;
+    if (root_vn->ops->write(new, ((void *)file + 512), filesize, 0)) {
+      kprintf("Couldn't write to file %s\n", filename);
+      return -1;
     }
   }
   return 0;
@@ -169,10 +173,8 @@ int load_initrd(struct stivale2_struct_tag_modules *modules_tag) {
 
   extern void tmpfs_dump(TmpNode *);
   kprintf("TMPFS entries: \n");
-  tmpfs_dump((TmpNode *)vfs_root.private_data);
-
+  tmpfs_dump((TmpNode *)root_vnode->private_data);
   kprintf("Done printing all entries");
-  for (;;)
-    ;
+
   return 0;
 }

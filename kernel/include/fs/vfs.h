@@ -92,6 +92,8 @@ typedef struct vnops {
 
   int (*mkdir)(struct vnode *dvp, struct vnode **vpp, struct componentname *cnp,
                struct vattr *vap);
+  int (*mknod)(struct vnode *dvp, struct vnode **vpp, struct componentname *cnp,
+               struct vattr *vap);
   int (*open)(VFSNode *vn, VFSNode **out, int mode);
   int (*read)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
   int (*readdir)(VFSNode *dvn, void *buf, size_t nbyte, size_t *bytesRead,
@@ -110,3 +112,4 @@ int vfs_lookup(VFSNode *cwd, VFSNode **out, const char *path, uint32_t flags,
                VAttr *attr);
 
 extern VFS vfs_root;
+extern VFSNode *root_vnode;
