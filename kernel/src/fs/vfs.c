@@ -1,104 +1,38 @@
 #include <fs/vfs.h>
+#include <libk/kmalloc.h>
 #include <string/string.h>
 
 VFS vfs_root;
 VFSNode *root_vnode;
 
-VFSNode *reduce(VFSNode *vn) { return NULL; }
+File *vfs_open(const char *name, int flags) {
+  File *file = kmalloc(sizeof(File));
 
-// int vfs_lookup(VFSNode *cwd, VFSNode **out, const char *pathname, int flags,
-//                VAttr *attr) {
-//   VFSNode *vn, *prevvn = NULL;
-//   char path[255], *sub, *next;
-//   size_t sublen;
-//   bool last = false;
-//   bool mustdir = flags & kLookupMustDir;
-//   size_t len = strlen(pathname);
-//   int r;
+  struct componentname cn = {.cn_nameptr = name, .cn_namelen = strlen(name)};
+  VFSNode *vnode;
+  root_vnode->ops->lookup(root_vnode, &vnode, &cn);
 
-//   if (pathname[0] == '/' || cwd == NULL) {
-//     vn = root_vnode;
-//     if (*(pathname + 1) == '\0') {
-//       *out = vn;
-//       return 0;
-//     }
-//   } else
-//     vn = cwd;
+  if (!vnode)
+    return NULL;
 
-//   strcpy(path, pathname);
-//   sub = path;
+  root_vnode->ops->open(vnode, flags);
 
-//   if (path[len - 1] == '/') {
-//     size_t last = len - 1;
-//     while (path[last] == '/')
-//       path[last--] = '\0';
-//     mustdir = true;
-//     if (*path == '\0') {
-//       *out = vn;
-//       return 0;
-//     }
-//   }
+  file->vn = vnode;
+  file->pos = 0;
+  file->refcnt = 1;
 
-// loop:
-//   sublen = 0;
-//   next = sub;
+  return file;
+}
 
-//   while (*next != '\0' && *next != '/') {
-//     next++;
-//     sublen++;
-//   }
+ssize_t vfs_read(File *file, void *buffer, size_t size) {
+  return file->vn->ops->read(file->vn, buffer, size, file->pos);
+}
 
-//   if (*next == '\0') {
-//     /* end of path */
-//     last = true;
-//   } else
-//     *next = '\0';
+ssize_t vfs_write(File *file, void *buffer, size_t size) {}
 
-//   /* reduce here? */
-
-//   if (strcmp(sub, ".") == 0 || sublen == 0)
-//     goto next; /* . or trailing */
-
-//   prevvn = vn;
-
-//   if (!last || !(flags & kLookupCreat))
-//     // kprintf("lookup %s in %p\n", sub, vn);
-//     r = vn->ops->lookup(vn, &vn, sub);
-//   else if (flags & kLookupCreat)
-//     r = vn->ops->create(vn, &vn, sub, attr);
-
-//   if (prevvn != vn)
-//     // vn_unref(vn); TODO:
-//     ;
-
-//   if (r < 0) {
-//     // vn_unref(vn);
-//     return r;
-//   }
-
-//   while (vn->vfs_mountedhere != NULL) {
-//     VFSNode *root;
-//     int r;
-
-//     r = vn->vfs_mountedhere->ops->root(vn->vfs_mountedhere, &root);
-//     if (r < 0) {
-//       // vn_unref(vn);
-//       return r;
-//     }
-//     // vn_unref(vn); todo
-//     vn = root;
-//   }
-
-// next:
-//   if (last)
-//     goto out;
-
-//   sub += sublen + 1;
-//   goto loop;
-
-// out:
-//   if (mustdir)
-//     vn = reduce(vn);
-//   *out = vn;
-//   return 0;
-// }
+int vfs_close(File *file) {
+  if (--file->refcnt == 0) {
+    kfree(file);
+  }
+  return 0;
+}

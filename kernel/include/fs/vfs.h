@@ -49,7 +49,8 @@ typedef struct vnode {
 
   struct vnops *ops;
 
-  enum vtype v_type; /* vnode type */
+  size_t size;
+  enum vtype type; /* vnode type */
   void *private_data;
 
 } VFSNode;
@@ -94,11 +95,11 @@ typedef struct vnops {
                struct vattr *vap);
   int (*mknod)(struct vnode *dvp, struct vnode **vpp, struct componentname *cnp,
                struct vattr *vap);
-  int (*open)(VFSNode *vn, VFSNode **out, int mode);
-  int (*read)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  int (*open)(VFSNode *vn, int mode);
   int (*readdir)(VFSNode *dvn, void *buf, size_t nbyte, size_t *bytesRead,
                  off_t seqno);
-  int (*write)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  ssize_t (*read)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  ssize_t (*write)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
 
 } VNodeOps;
 
@@ -113,3 +114,8 @@ int vfs_lookup(VFSNode *cwd, VFSNode **out, const char *path, uint32_t flags,
 
 extern VFS vfs_root;
 extern VFSNode *root_vnode;
+
+File *vfs_open(const char *name, int flags);
+ssize_t vfs_read(File *file, void *buffer, size_t size);
+ssize_t vfs_write(File *file, void *buffer, size_t size);
+int vfs_close(File *);

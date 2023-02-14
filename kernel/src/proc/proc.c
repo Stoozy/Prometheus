@@ -260,6 +260,9 @@ void multitasking_init() {
   ProcessControlBlock *terminal =
       create_elf_process("/usr/bin/nomterm", argv, envp);
 
+  kprintf("Loaded binary !");
+  for (;;)
+    ;
   // running = ready_queue.first->pcb;
   // kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
   // kprintf("Cr3 is %x\n", running->cr3);

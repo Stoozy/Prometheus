@@ -51,11 +51,12 @@ static int tmpfs_vget(VFS *vfs, VFSNode **out, ino_t inode) {
   node->vnode = vnode;
   vnode->refcnt = 1;
 
-  vnode->v_type = node->attr.type;
+  vnode->type = node->attr.type;
   vnode->ops = &tmpfs_vnops;
   vnode->vfs = vfs;
   vnode->vfs_mountedhere = NULL;
   vnode->isroot = false;
+  vnode->size = node->attr.size;
 
   vnode->private_data = node;
   *out = vnode;
@@ -170,7 +171,15 @@ static int tmpfs_create(VFSNode *dvn, VFSNode **out, ComponentName *cnp,
 }
 
 static int tmpfs_getattr(VFSNode *dvn, VAttr *out) { return -1; }
-static int tmpfs_open(VFSNode *vn, VFSNode **out, int mode) { return -1; }
+static int tmpfs_open(VFSNode *vn, int mode) {
+  if (!vn)
+    for (;;)
+      kprintf("Called open on NULL vfs node!!\n");
+
+  vn->refcnt++;
+
+  return 0;
+}
 
 static int tmpfs_readdir(VFSNode *dvn, void *buf, size_t nbyte,
                          size_t *bytesRead, off_t seqno) {
@@ -199,7 +208,7 @@ static int tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
   memcpy(buf, start, nbyte);
 
-  return 0;
+  return nbyte;
 }
 
 int tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
@@ -220,7 +229,7 @@ int tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
 
   void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
   memcpy(start, buf, nbyte);
-  return 0;
+  return nbyte;
 }
 
 void tmpfs_dump(TmpNode *root) {

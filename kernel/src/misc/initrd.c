@@ -142,7 +142,8 @@ static int copy_file(UstarFile *file) {
       return -1;
     }
 
-    if (root_vn->ops->write(new, ((void *)file + 512), filesize, 0)) {
+    if (root_vn->ops->write(new, ((void *)file + 512), filesize, 0) !=
+        filesize) {
       kprintf("Couldn't write to file %s\n", filename);
       return -1;
     }
