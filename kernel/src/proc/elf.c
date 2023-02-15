@@ -135,10 +135,11 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
       ;
   }
 
-  u8 *elf_data = kmalloc(elf_file->vn->size);
+  uint8_t *elf_data = kmalloc(elf_file->vn->size);
 
   int br = vfs_read(elf_file, elf_data, elf_file->vn->size);
 
+  kprintf("Read data %s\n", elf_data);
   if (!validate_elf(elf_data))
     return NULL;
 
@@ -235,7 +236,13 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
   memset(proc->fd_table, 0, sizeof(uintptr_t) * MAX_PROC_FDS);
 
-  proc->fd_table[0] = vfs_open("/dev/tty", O_RDONLY);
+  proc->fd_table[0] = vfs_open("/dev/tty", O_RDONLY | O_CREAT);
+
+  if (proc->fd_table[0] == NULL) {
+    kprintf("Couldn't open /dev/tty\n");
+    for (;;)
+      ;
+  }
   proc->fd_table[1] = vfs_open("/dev/tty", O_WRONLY);
   proc->fd_table[2] = vfs_open("/dev/tty", O_WRONLY);
 

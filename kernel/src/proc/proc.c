@@ -259,14 +259,16 @@ void multitasking_init() {
   char *envp[2] = {"PATH=/usr/bin", NULL};
   ProcessControlBlock *terminal =
       create_elf_process("/usr/bin/nomterm", argv, envp);
+  if (!terminal) {
+    kprintf("Couldn't load bin");
+  }
+  register_process(terminal);
+  running = terminal;
 
-  kprintf("Loaded binary !");
-  for (;;)
-    ;
   // running = ready_queue.first->pcb;
   // kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
   // kprintf("Cr3 is %x\n", running->cr3);
-  // switch_to_process(&running->trapframe, (void *)running->cr3);
+  switch_to_process(&running->trapframe, (void *)running->cr3);
 
   return;
 }

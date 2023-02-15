@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fs/devfs.h"
 #include "fs/vfs.h"
 
 #include <stdint.h>
@@ -38,12 +39,14 @@ typedef struct tmpnode {
     /* can be either a file or directory */
     TmpDir dir;
     TmpFile file;
+    Device dev;
   };
 
   VAttr attr;
 
 } TmpNode;
 
+TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap);
 int tmpfs_init();
 
 extern struct vfsops tmpfs_vfsops;

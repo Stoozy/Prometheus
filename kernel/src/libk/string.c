@@ -1,3 +1,4 @@
+#include <libk/kmalloc.h>
 #include <string/string.h>
 
 int memcmp(const void *aptr, const void *bptr, size_t size) {
@@ -96,6 +97,23 @@ char *strcpy(char *destination, const char *source) {
   *destination = '\0';
 
   return ptr;
+}
+char *strncpy(char *dest, const char *src, size_t n) {
+  size_t i;
+  for (i = 0; i < n && src[i] != '\0'; i++) {
+    dest[i] = src[i];
+  }
+  for (; i < n; i++) {
+    dest[i] = '\0';
+  }
+  return dest;
+}
+
+char *strdup(const char *src) {
+  size_t size = strlen(src) + 1;
+  char *str = kmalloc(size);
+  memcpy(str, src, size);
+  return str;
 }
 
 size_t strlen(const char *str) {

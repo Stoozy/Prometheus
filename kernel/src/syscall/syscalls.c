@@ -136,35 +136,29 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
   return;
 }
 
-// void sys_open(const char *name, int flags, Registers *regs) {
-// 
-//   File *file;
-// 
-//   if (strcmp(name, ".") == 0) {
-//     file = vfs_open(running->cwd, flags);
-//     kprintf("Got file %s with size %d bytes\n", file->name, file->size);
-//   } else
-//     file = vfs_open(name, flags);
-// 
-//   if (!file) {
-//     regs->rdx = ENOENT;
-//     regs->rax = -1;
-//     return;
-//   }
-// 
-//   int fd = map_file_to_proc(running, file);
-// 
-//   // error on overflow
-//   if (fd > MAX_PROC_FDS) {
-//     regs->rdx = ENOMEM;
-//     regs->rax = -1;
-//     return;
-//   }
-// 
-//   regs->rax = fd;
-//   return;
-// }
-// 
+int sys_open(const char *name, int flags, Registers *regs) {
+  kprintf("Opening %s\n", name);
+
+  File *file = vfs_open(name, flags);
+
+  file = vfs_open(name, flags);
+
+  if (!file) {
+    regs->rdx = ENOENT;
+    return -1;
+  }
+
+  int fd = map_file_to_proc(running, file);
+
+  // error on overflow
+  if (fd > MAX_PROC_FDS) {
+    regs->rdx = ENOMEM;
+    return -1;
+  }
+
+  return fd;
+}
+
 // int sys_close(int fd) {
 //   vmm_switch_page_directory(kernel_cr3);
 //   unmap_fd_from_proc(running, fd);
@@ -172,43 +166,36 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
 //   return 0;
 // }
 
-// void sys_read(int file, char *ptr, size_t len, Registers *regs) {
+ssize_t sys_read(int file, char *ptr, size_t len, Registers *regs) {
+  kprintf("Read called for %d bytes\n", len);
 
-//   if (file > MAX_PROC_FDS) {
-//     regs->rdx = EBADF;
-//     regs->rax = -1;
-//     return;
-//   }
+  if (file > MAX_PROC_FDS) {
+    regs->rdx = EBADF;
+    return -1;
+  }
 
-//   struct file *f = running->fd_table[file];
-//   kprintf("File ptr %x. Name %s. Device %x\n", f, f->name, f->device);
-//   int bytes_read = vfs_read(f, (u8 *)ptr, len);
+  struct file *f = running->fd_table[file];
+  int bytes_read = vfs_read(f, (u8 *)ptr, len);
 
-//   regs->rax = bytes_read;
-//   return;
-// }
+  return bytes_read;
+}
 
-// int sys_write(int fd, char *ptr, int len) {
-//   kprintf("sys_write(): FD is %d\n", fd);
+ssize_t sys_write(int fd, char *ptr, int len) {
+  kprintf("sys_write(): FD is %d\n", fd);
 
-//   if (!valid_fd(fd))
-//     return -1;
+  if (!valid_fd(fd))
+    return -1;
 
-//   File *file = running->fd_table[fd];
-//   if (file) {
-//     vfs_write(file, (uint8_t *)ptr, len);
-//   } else {
-//     kprintf("File not open!\n");
-//     return -1;
-//   }
+  File *file = running->fd_table[fd];
+  if (file) {
+    return vfs_write(file, (uint8_t *)ptr, len);
+  } else {
+    kprintf("File not open!\n");
+    return -1;
+  }
 
-// #ifdef SYSCALL_DEBUG
-//   kprintf("sys_write(): %s; Buffer addr: 0x%x Length: %d\n", file->name, ptr,
-//           len);
-// #endif
-
-//   return len;
-// }
+  return len;
+}
 
 void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
                  int flags, int fd, off_t offset) {
@@ -280,41 +267,36 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   return virt_base;
 }
 
-// off_t sys_seek(int fd, off_t offset, int whence) {
+off_t sys_seek(int fd, off_t offset, int whence) {
 
-//   File *file = running->fd_table[fd];
+  File *file = running->fd_table[fd];
 
-//   if (!file) {
-//     kprintf("File dne: %d\n", fd);
-//     return -1;
-//   }
+  if (!file) {
+    kprintf("File dne: %d\n", fd);
+    return -1;
+  }
 
-//   kprintf("[SYS_SEEK] Name %s\n", file->name);
-//   kprintf("[SYS_SEEK] FD addr: %llx\n", file);
-//   kprintf("[SYS_SEEK] FD is %d. Offset is %d. Whence is %d\n", fd, offset,
-//           whence);
+  switch (whence) {
+  case SEEK_CUR:
+    kprintf("[SYS_SEEK] whence is SEEK_CUR\n");
+    running->fd_table[fd]->pos += offset;
+    break;
+  case SEEK_SET:
+    kprintf("[SYS_SEEK] whence is SEEK_SET\n");
+    running->fd_table[fd]->pos = offset;
+    break;
+  case SEEK_END:
+    kprintf("[SYS_SEEK] whence is SEEK_END\n");
+    running->fd_table[fd]->pos = running->fd_table[fd]->vn->size + offset;
+    break;
+  default:
+    kprintf("[SYS_SEEK] Whence is none\n");
+    break;
+  }
 
-//   switch (whence) {
-//   case SEEK_CUR:
-//     kprintf("[SYS_SEEK] whence is SEEK_CUR\n");
-//     running->fd_table[fd]->position += offset;
-//     break;
-//   case SEEK_SET:
-//     kprintf("[SYS_SEEK] whence is SEEK_SET\n");
-//     running->fd_table[fd]->position = offset;
-//     break;
-//   case SEEK_END:
-//     kprintf("[SYS_SEEK] whence is SEEK_END\n");
-//     running->fd_table[fd]->position = running->fd_table[fd]->size + offset;
-//     break;
-//   default:
-//     kprintf("[SYS_SEEK] Whence is none\n");
-//     break;
-//   }
-
-//   kprintf("\n");
-//   return running->fd_table[fd]->position;
-// }
+  kprintf("\n");
+  return running->fd_table[fd]->pos;
+}
 
 // void sys_fstat(int fd, VfsNodeStat *vns, Registers *regs) {
 //   if (fd > MAX_PROC_FDS || fd < 0)
@@ -434,7 +416,8 @@ int count_args(char **args) {
 
 //   // running = new;
 
-//   // kprintf("process (%s pid: %d) cr3 at %x\n", running->name, running->pid,
+//   // kprintf("process (%s pid: %d) cr3 at %x\n", running->name,
+//   running->pid,
 //   //         running->cr3);
 //   // kprintf("Entrypoint 0x%x\n", running->trapframe.rip);
 
@@ -629,22 +612,21 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_OPEN: {
     kprintf("[SYS]  OPEN CALLED by %s (%d)\n", running->name, running->pid);
-    // sys_open((char *)regs->rdi, (int)regs->rsi, regs);
+    regs->rax = sys_open((char *)regs->rdi, (int)regs->rsi, regs);
     break;
   }
   case SYS_CLOSE: {
     kprintf("[SYS]  CLOSE CALLED\n");
-    // regs->rax = sys_close(regs->rdi);
+    for (;;)
+      ;
     break;
   }
   case SYS_READ: {
-    // kprintf("[SYS]  READ CALLED\n");
-    // sys_read(regs->rdi, (char *)regs->rsi, regs->rdx, regs);
+    regs->rax = sys_read(regs->rdi, (char *)regs->rsi, regs->rdx, regs);
     break;
   }
   case SYS_WRITE: {
-    // kprintf("[SYS]  WRITE CALLED\n");
-    // regs->rax = sys_write(regs->rdi, (char *)regs->rsi, regs->rdx);
+    regs->rax = sys_write(regs->rdi, (char *)regs->rsi, regs->rdx);
     break;
   }
   case SYS_LOG_LIBC: {
@@ -661,12 +643,7 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_SEEK: {
     kprintf("[SYS]  SEEK CALLED\n");
-    int fd = regs->rdi;
-    off_t off = regs->rsi;
-    int whence = regs->rdx;
-    // regs->rax = sys_seek(fd, off, whence);
-    kprintf("Returning offset %d\n", regs->rax);
-
+    regs->rax = sys_seek(regs->rdi, regs->rsi, regs->rdx);
     break;
   }
   case SYS_TCB_SET: {
@@ -676,11 +653,8 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_IOCTL: {
     kprintf("[SYS]  IOCTL CALLED\n");
-    int fd = regs->rdi;
-    unsigned long req = regs->rsi;
-    void *arg = (void *)regs->rdx;
-
-    // regs->rax = sys_ioctl(fd, req, arg);
+    regs->rdx = ENOTSUP;
+    regs->rax = -1;
     break;
   }
   case SYS_STAT: {
@@ -715,7 +689,8 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_READDIR: {
-    // regs->rax = sys_readdir(regs->rdi, (struct dirent*)regs->rsi, regs->rdx, regs);
+    // regs->rax = sys_readdir(regs->rdi, (struct dirent*)regs->rsi,
+    // regs->rdx, regs);
     break;
   }
   case SYS_FORK: {

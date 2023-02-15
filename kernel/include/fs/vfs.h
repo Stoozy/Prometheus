@@ -14,7 +14,6 @@ typedef enum vtype {
   VFS_BLOCKDEVICE = 0x04,
   VFS_PIPE = 0x05,
   VFS_SYMLINK = 0x06,
-  VFS_MOUNTPOINT = 0x08,
   VFS_INVALID_FS = 0x09,
 } vtype_t;
 
@@ -77,29 +76,21 @@ typedef struct vfs {
 #define RENAME 4 // set up for file renaming
 #define OPMASK 5 // mask for operation
 
-typedef struct componentname {
-  uint32_t cn_nameiop;    /* namei operation */
-  uint32_t cn_flags;      /* flags to namei */
-  const char *cn_nameptr; /* pointer to looked up name */
-  size_t cn_namelen;      /* length of looked up component */
-  size_t cn_consume;      /* chars to consume in lookup() */
-} ComponentName;
-
 typedef struct vnops {
-  int (*create)(VFSNode *dvn, VFSNode **out, struct componentname *cname,
-                VAttr *attr);
+  int (*create)(VFSNode *dvn, VFSNode **out, const char *name, VAttr *attr);
   int (*getattr)(VFSNode *vn, VAttr *out);
-  int (*lookup)(VFSNode *dvn, VFSNode **out, struct componentname *name);
+  int (*lookup)(VFSNode *dvn, VFSNode **out, const char *name);
 
-  int (*mkdir)(struct vnode *dvp, struct vnode **vpp, struct componentname *cnp,
+  int (*mkdir)(struct vnode *dvp, struct vnode **vpp, const char *name,
                struct vattr *vap);
-  int (*mknod)(struct vnode *dvp, struct vnode **vpp, struct componentname *cnp,
+  int (*mknod)(struct vnode *dvp, struct vnode **vpp, const char *name,
                struct vattr *vap);
   int (*open)(VFSNode *vn, int mode);
   int (*readdir)(VFSNode *dvn, void *buf, size_t nbyte, size_t *bytesRead,
                  off_t seqno);
   ssize_t (*read)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
   ssize_t (*write)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  int (*ioctl)(struct vnode *vp, uint64_t, void *data, int fflag);
 
 } VNodeOps;
 

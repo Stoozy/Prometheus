@@ -66,13 +66,12 @@ static int tmpfs_vget(VFS *vfs, VFSNode **out, ino_t inode) {
 VFSOps tmpfs_vfsops = {
     .mount = tmpfs_mount, .root = tmpfs_root, .vget = tmpfs_vget};
 
-static int tmpfs_lookup(VFSNode *dvn, VFSNode **out,
-                        struct componentname *cnp) {
+static int tmpfs_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
 
-  kprintf("Looking up %s\n", cnp->cn_nameptr);
+  // kprintf("Looking up %s\n", cnp->cn_nameptr);
   TmpNode *tnode = dvn->private_data;
 
-  if (strcmp(cnp->cn_nameptr, "/") == 0) {
+  if (strcmp(name, "/") == 0) {
     VFSNode *ret;
     tmpfs_root(&vfs_root, &ret);
     kprintf("Found root at 0x%x\n", ret);
@@ -80,13 +79,13 @@ static int tmpfs_lookup(VFSNode *dvn, VFSNode **out,
     return 0;
   }
 
-  if (strcmp(cnp->cn_nameptr, ".") == 0) {
+  if (strcmp(name, ".") == 0) {
     dvn->refcnt++;
     *out = dvn;
     return 0;
   }
 
-  if (strcmp(cnp->cn_nameptr, "..") == 0) {
+  if (strcmp(name, "..") == 0) {
     if (tnode->dir.parent) {
       *out = tnode->dir.parent->vnode;
       return 0;
@@ -99,25 +98,21 @@ static int tmpfs_lookup(VFSNode *dvn, VFSNode **out,
   struct tmpfs_dirent *dirent;
 loop:
   TAILQ_FOREACH(dirent, &tnode->dir.dirents, entries) {
-    if (strcmp(dirent->filename, cnp->cn_nameptr) == 0) {
-      kprintf("Found entry: %s\n", dirent->filename);
+    if (strcmp(dirent->filename, name) == 0) {
       TmpNode *next_tnode = dirent->inode;
       *out = next_tnode->vnode;
       return 0;
     }
 
-    // kprintf("Checking if %s starts with %s \n", cnp->cn_nameptr,
-    // dirent->filename);
-    if (strncmp(dirent->filename, cnp->cn_nameptr, strlen(dirent->filename)) ==
-        0) {
-      // kprintf("  ... it does\n");
+    if (strncmp(dirent->filename, name, strlen(dirent->filename)) == 0) {
+
       tnode = dirent->inode;
+      // TODO: follow mountpoints
       goto loop;
     }
     // kprintf("\n");
   }
 
-  // kprintf("Couldn't find %s\n", cnp->cn_nameptr);
   return -1;
 }
 
@@ -126,9 +121,7 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   TmpNode *tnode = kmalloc(sizeof(TmpNode));
   struct tmpfs_dirent *dent = kmalloc(sizeof(struct tmpfs_dirent));
 
-  dent->filename = kmalloc(strlen(name));
-  strcpy(dent->filename, name);
-
+  dent->filename = strdup(name);
   dent->inode = tnode;
 
   if (vap) {
@@ -145,13 +138,24 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
     tnode->dir.parent = dtn;
     break;
   }
+  case VFS_CHARDEVICE: {
+    tnode->dev.cdev.rdev = vap->rdev;
+    tnode->dev.cdev.filename = strdup(name);
+    tnode->dev.cdev.private_data =
+        PAGING_VIRTUAL_OFFSET +
+        pmm_alloc_blocks(DIV_ROUND_UP(vap->size, PAGE_SIZE));
+    tnode->dev.cdev.size = vap->size;
+
+    break;
+  }
   case VFS_FILE: {
     TAILQ_INIT(&tnode->file.anonmap);
     break;
   }
   default:
+    kprintf("tmpfs::mknod() unhandled type %d\n", vap->type);
     for (;;)
-      kprintf("tmpfs::mknod() unhandled type\n");
+      ;
   }
 
   TAILQ_INSERT_TAIL(&dtn->dir.dirents, dent, entries);
@@ -159,10 +163,10 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   return tnode;
 }
 
-static int tmpfs_create(VFSNode *dvn, VFSNode **out, ComponentName *cnp,
+static int tmpfs_create(VFSNode *dvn, VFSNode **out, const char *name,
                         VAttr *vap) {
 
-  TmpNode *new = tmakenode(dvn->private_data, cnp->cn_nameptr, vap);
+  TmpNode *new = tmakenode(dvn->private_data, name, vap);
 
   if (!new)
     kprintf("Couldn't make node :(\n");
@@ -186,19 +190,17 @@ static int tmpfs_readdir(VFSNode *dvn, void *buf, size_t nbyte,
   return -1;
 }
 
-int tmpfs_mkdir(VFSNode *dvp, VFSNode **out, ComponentName *cnp,
+int tmpfs_mkdir(VFSNode *dvp, VFSNode **out, const char *name,
                 struct vattr *vap) {
-  kprintf("Called create on directory %s with size %d \n", cnp->cn_nameptr,
-          vap->size);
 
-  TmpNode *new = tmakenode(dvp->private_data, cnp->cn_nameptr, vap);
+  TmpNode *new = tmakenode(dvp->private_data, name, vap);
   if (!new)
     kprintf("Couldn't make node :(\n");
 
   return dvp->vfs->ops->vget(dvp->vfs, out, (ino_t) new);
 }
 
-static int tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+static ssize_t tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   TmpNode *tnode = vn->private_data;
   if (nbyte + off > tnode->attr.size) {
     for (;;)
@@ -211,7 +213,8 @@ static int tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   return nbyte;
 }
 
-int tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+static ssize_t tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+
   TmpNode *tnode = vn->private_data;
 
   // kprintf("tnode is @ 0x%x\n", tnode);
@@ -219,12 +222,13 @@ int tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   if (nbyte + off > tnode->attr.size) {
     int pages_needed =
         DIV_ROUND_UP((nbyte + off) - tnode->attr.size, PAGE_SIZE);
-    void *pages = pmm_alloc_blocks(pages_needed);
+    void *pages = PAGING_VIRTUAL_OFFSET + pmm_alloc_blocks(pages_needed);
     struct anon *na = kmalloc(sizeof(struct anon));
     na->page = pages;
     TAILQ_INSERT_TAIL(&tnode->file.anonmap, na, entries);
 
     tnode->attr.size = nbyte + off; // new size
+    tnode->vnode->size = tnode->attr.size;
   }
 
   void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
@@ -254,3 +258,8 @@ VNodeOps tmpfs_vnops = {.create = tmpfs_create,
                         .mkdir = tmpfs_mkdir,
                         .readdir = tmpfs_readdir,
                         .lookup = tmpfs_lookup};
+
+int tmpfs_init() {
+  vfs_root.ops = &tmpfs_vfsops;
+  return vfs_root.ops->mount(&vfs_root, NULL, NULL);
+}

@@ -16,6 +16,8 @@ size_t strlen(const char *);
 int strcmp(const char *X, const char *Y);
 int strncmp(const char *X, const char *Y, unsigned long n);
 char *strcpy(char *destination, const char *source);
+char *strncpy(char *dest, const char *src, size_t n);
+char *strdup(const char *src);
 
 #ifdef __cplusplus
 }

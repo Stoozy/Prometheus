@@ -124,13 +124,9 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 
 extern void enable_sce();
 
-void hang() {
-  for (;;)
-    ;
-}
+void panic(const char *msg) {
+  kprintf("Kernel panic. Reason: %s \n", msg);
 
-void panic() {
-  kprintf("KERNEL PANIC\n");
   for (;;)
     ;
 }
@@ -158,15 +154,24 @@ void _start(struct stivale2_struct *boot_info) {
   extern void sse_init();
   sse_init();
 
-  if (load_initrd(modules_tag)) {
-    kprintf("Failed to read ramdisk... ");
-    hang();
-  }
+  if (tmpfs_init())
+    panic("Failed to initialize tmpfs\n");
+
+  if (load_initrd(modules_tag))
+    panic("Failed to read ramdisk... ");
+
+  if (devfs_init())
+    panic("Failed to mount devfs");
+
+  kprintf("Loaded initrd\n");
 
   if (!framebuffer_tag)
-    hang();
+    panic("No available framebuffer\n");
 
-  // fb_init(framebuffer_tag);
+  if (fb_init(framebuffer_tag))
+    panic("Failed to initialize framebuffer\n");
+  for (;;)
+    ;
 
   // kbd_init();
   // tty_init();
@@ -177,6 +182,4 @@ void _start(struct stivale2_struct *boot_info) {
 
   sys_init();
   multitasking_init();
-
-  hang();
 }
