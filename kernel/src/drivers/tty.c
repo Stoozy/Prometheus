@@ -24,6 +24,30 @@ static uint8_t g_tty_counter;
 struct tty_ldisc g_ldiscs[MAX_TTYS];
 struct tty_driver g_tty_drivers[MAX_TTYS];
 
+size_t tty_default_read(struct tty *tty, size_t size, uint8_t *buffer);
+size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer);
+size_t tty_default_write_room(struct tty *tty);
+int tty_default_set_termios(struct tty *tty, struct termios tios);
+int tty_default_set_ldisc(struct tty *tty, struct tty_ldisc ldisc);
+int tty_default_poll(struct tty *tty, struct pollfd *fd, int timeout);
+void tty_default_flush_chars(struct tty *tty);
+int tty_default_ioctl(struct tty *tty, uint64_t request, void *arg);
+
+static struct tty_driver default_tty_driver = {
+    .tty_table = &g_tty_table[0],
+    .driver_name = "tty",
+    .name = "tty",
+    .dev_major = TTY_MAJOR,
+    .num_devices = MAX_TTYS,
+    .read = tty_default_read,
+    .write = tty_default_write,
+    .flush_chars = tty_default_flush_chars,
+    .write_room = tty_default_write_room,
+    .set_termios = tty_default_set_termios,
+    .set_ldisc = tty_default_set_ldisc,
+    .poll = tty_default_poll,
+    .ioctl = tty_default_ioctl};
+
 int tty_create(VFSNode *dvn, VFSNode **out, const char *name, VAttr *attr) {
   kprintf("tty_create()");
   for (;;)
@@ -44,6 +68,7 @@ int tty_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
     ;
   return -1;
 }
+
 int tty_open(File *file, VFSNode *vn, int mode) {
   kprintf("tty_open()");
   vn->refcnt++;
@@ -58,13 +83,19 @@ int tty_open(File *file, VFSNode *vn, int mode) {
 ssize_t tty_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   TmpNode *tmpnode = vn->private_data;
   struct tty *tty = tmpnode->dev.cdev.private_data;
-  return tty->driver.read(tty, nbyte, buf);
+  if (tty->driver.read)
+    return tty->driver.read(tty, nbyte, buf);
+
+  return tty_default_read(tty, nbyte, buf);
 }
 
 ssize_t tty_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   TmpNode *tmpnode = vn->private_data;
   struct tty *tty = tmpnode->dev.cdev.private_data;
-  return tty->driver.write(tty, nbyte, buf);
+  if (tty->driver.write)
+    return tty->driver.write(tty, nbyte, buf);
+
+  return tty_default_write(tty, nbyte, buf);
 }
 
 int tty_ioctl(struct vnode *vp, uint64_t req, void *data, int fflag) {
@@ -74,7 +105,7 @@ int tty_ioctl(struct vnode *vp, uint64_t req, void *data, int fflag) {
   if (tty->driver.ioctl)
     return tty->driver.ioctl(tty, req, data);
 
-  return -1;
+  return tty_default_ioctl(tty, req, data);
 }
 
 int tty_poll(struct vnode *vp, int events) {
@@ -83,57 +114,6 @@ int tty_poll(struct vnode *vp, int events) {
     ;
   return -1;
 }
-/* initializes new device */
-
-// struct tty *tty_init_dev(struct tty_driver driver, int minor) {
-//   RingBuffer *in = kmalloc(sizeof(RingBuffer));
-//   RingBuffer *out = kmalloc(sizeof(RingBuffer));
-
-//   rb_init(in, TTY_BUFSIZE, sizeof(uint8_t));
-//   rb_init(out, TTY_BUFSIZE, sizeof(uint8_t));
-
-//   g_tty_table[g_tty_counter] =
-//       (struct tty){.driver = driver, .ibuf = in, .obuf = out};
-
-//   return &g_tty_table[g_tty_counter++];
-// }
-
-// static File *file_from_tty(struct tty *tty, int minor) {
-//   File *file = kmalloc(sizeof(File));
-//   file->size = TTY_BUFSIZE;
-//   file->device = MKDEV(tty->driver.dev_major, minor);
-//   file->fs = &tty_fops;
-//   file->position = 0;
-//   file->private_data = tty;
-
-//   file->name = kmalloc(50);
-//   sprintf(file->name, "tty%d\0", minor);
-
-//   return file;
-// }
-
-// int tty_open(VFSNode *vn, const char *filename, int flags) {
-//   kprintf("[TTY]  Called open on %s\n", filename);
-
-//   // FIXME: hardcoded
-//   int minor = 1;
-
-//   /* // first search for it */
-//   /* if (g_tty_table[minor].driver.dev_major) */
-//   /*   return file_from_tty(&g_tty_table[minor], minor); */
-
-//   struct tty *new_tty = tty_init_dev(default_tty_driver);
-//   kprintf("Tty not found, making a new one\n");
-
-//   gp_active_tty = new_tty;
-
-//   return file_from_tty(new_tty, g_tty_counter);
-// }
-
-// void tty_close(struct file *file) {
-//   // TODO
-//   return;
-// }
 
 // size_t tty_read(struct file *file, size_t size, uint8_t *buf) {
 //   struct tty *tty = file->private_data;
@@ -191,8 +171,6 @@ read:
   for (; s < size; s++)
     if (!rb_pop(tty->ibuf, &buffer[s]))
       break;
-    else
-      echo(tty, buffer[s]);
   enable_irq();
   /* extern ProcessControlBlock * running; */
   if (s == 0) {
@@ -330,21 +308,6 @@ VNodeOps tty_vnops = {.open = tty_open,
                       .write = tty_write,
                       .ioctl = tty_ioctl,
                       .poll = tty_poll};
-
-static struct tty_driver default_tty_driver = {
-    .tty_table = &g_tty_table[0],
-    .driver_name = "tty",
-    .name = "tty",
-    .dev_major = 5,
-    .num_devices = MAX_TTYS,
-    .read = tty_default_read,
-    .write = tty_default_write,
-    .flush_chars = tty_default_flush_chars,
-    .write_room = tty_default_write_room,
-    .set_termios = tty_default_set_termios,
-    .set_ldisc = tty_default_set_ldisc,
-    .poll = tty_default_poll,
-    .ioctl = tty_default_ioctl};
 
 int tty_init_node(VFSNode *tty_node) {
   if (!tty_node)

@@ -70,8 +70,6 @@ void sys_log_libc(const char *message) {
 void sys_exit(int status) {
   kprintf("sys_exit(): status: %d; called by %s (pid: %d)\n", status,
           running->name, running->pid);
-  for (;;)
-    ;
   extern void kill_cur_proc(int ec);
   kill_cur_proc(status);
   // enable_irq();
@@ -595,6 +593,7 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
         kprintf("Poll is not implemented for %s \n", tnode->name);
       } else {
         int revents = file->vn->ops->poll(file->vn, fds[i].events);
+
         if (revents) {
           fds[i].revents = revents;
           events++;
@@ -674,7 +673,7 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_FSTAT: {
     kprintf("[SYS]  FSTAT CALLED\n");
-    // sys_fstat(regs->rdi, (VfsNodeStat *)regs->rsi, regs);
+    sys_fstat(regs->rdi, (VFSNodeStat *)regs->rsi, regs);
     break;
   }
   case SYS_GETPID: {
@@ -683,6 +682,9 @@ void syscall_dispatcher(Registers *regs) {
   }
 
   case SYS_FCNTL: {
+    kprintf("SYS_FCNTL called\n");
+    for (;;)
+      ;
     // regs->rax = sys_fcntl(regs->rdi, regs->rsi, (void *)regs->rdx);
     break;
   }
@@ -699,6 +701,9 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_READDIR: {
+    kprintf("SYS_READDIR called\n");
+    for (;;)
+      ;
     // regs->rax = sys_readdir(regs->rdi, (struct dirent*)regs->rsi,
     // regs->rdx, regs);
     break;

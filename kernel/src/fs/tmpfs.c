@@ -206,6 +206,9 @@ int tmpfs_mkdir(VFSNode *dvp, VFSNode **out, const char *name,
 
 static ssize_t tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   TmpNode *tnode = vn->private_data;
+  if (tnode->attr.type == VFS_CHARDEVICE) {
+    return tnode->dev.cdev.fs->read(vn, buf, nbyte, off);
+  }
   kprintf("Reading %lu bytes from %s\n", nbyte, tnode->name);
   if (nbyte + off > tnode->attr.size) {
     kprintf("Reading outside of file ... ");

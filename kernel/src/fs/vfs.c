@@ -63,10 +63,10 @@ File *vfs_open(const char *name, int flags) {
 }
 
 ssize_t vfs_read(File *file, void *buffer, size_t size) {
-  kprintf("file is @ 0x%llx\n", file);
-  kprintf("vnode is @ 0x%llx\n", file->vn);
-  TmpNode *tnode = file->vn->private_data;
-  kprintf("Calling read on %s for %lu bytes\n", tnode->name, size);
+  // kprintf("file is @ 0x%llx\n", file);
+  // kprintf("vnode is @ 0x%llx\n", file->vn);
+  // TmpNode *tnode = file->vn->private_data;
+  // kprintf("Calling read on %s for %lu bytes\n", tnode->name, size);
   return file->vn->ops->read(file->vn, buffer, size, file->pos);
 }
 

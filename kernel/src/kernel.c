@@ -26,6 +26,7 @@
 #include <string/string.h>
 #include <syscall/syscalls.h>
 
+#include <drivers/input.h>
 #include <drivers/tty.h>
 #include <syscall/syscalls.h>
 
@@ -174,13 +175,9 @@ void _start(struct stivale2_struct *boot_info) {
   if (tty_init() || pty_init())
     panic("Failed to initialize ttys;");
 
-  // for (;;)
-  //   ;
-
-  // kbd_init();
-
-  // extern int input_init();
-  // input_init();
+  kbd_init();
+  if (input_init())
+    panic("Failed to initialize keyboard input;");
 
   sys_init();
   multitasking_init();
