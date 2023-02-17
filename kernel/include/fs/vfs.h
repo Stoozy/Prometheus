@@ -1,6 +1,5 @@
 #pragma once
 
-#include <asm-generic/poll.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -20,14 +19,6 @@ typedef enum vtype {
 typedef int dev_t;
 typedef uint64_t ino_t;
 typedef uint32_t mode_t;
-
-struct dirent {
-  ino_t d_ino;
-  ssize_t d_off;
-  unsigned short int d_reclen;
-  unsigned char d_type;
-  char d_name[256]; /* We must not include limits.h! */
-};
 
 struct vnops;
 struct vfs;
@@ -53,6 +44,13 @@ typedef struct vnode {
   void *private_data;
 
 } VFSNode;
+
+typedef struct vfs_node_stat {
+  enum vtype type;
+  ino_t inode;
+  size_t filesize;
+  dev_t rdev;
+} __attribute__((packed)) VFSNodeStat;
 
 typedef struct file {
   void *magic;
@@ -85,12 +83,14 @@ typedef struct vnops {
                struct vattr *vap);
   int (*mknod)(struct vnode *dvp, struct vnode **vpp, const char *name,
                struct vattr *vap);
-  int (*open)(VFSNode *vn, int mode);
+  int (*open)(File *file, VFSNode *vn, int mode);
   int (*readdir)(VFSNode *dvn, void *buf, size_t nbyte, size_t *bytesRead,
                  off_t seqno);
+
   ssize_t (*read)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
   ssize_t (*write)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
-  int (*ioctl)(struct vnode *vp, uint64_t, void *data, int fflag);
+  int (*ioctl)(VFSNode *vp, uint64_t, void *data, int fflag);
+  int (*poll)(VFSNode *vp, int events);
 
 } VNodeOps;
 
@@ -109,4 +109,6 @@ extern VFSNode *root_vnode;
 File *vfs_open(const char *name, int flags);
 ssize_t vfs_read(File *file, void *buffer, size_t size);
 ssize_t vfs_write(File *file, void *buffer, size_t size);
+ssize_t vfs_write(File *file, void *buffer, size_t size);
+int vfs_stat(const char *path, VFSNodeStat *);
 int vfs_close(File *);

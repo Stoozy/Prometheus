@@ -107,23 +107,3 @@
 //   for (u64 cy = y; cy < y + h; ++cy)
 //     draw_line(x, cy, x + w, cy, color);
 // }
-
-// void refresh_screen_proc() {
-
-//   struct fb_fix_screeninfo fb_fsi = fb_getfscreeninfo();
-//   extern struct fb_file g_framebuffer;
-//   for (;;)
-//     memcpy((u8 *)fb_fsi.mmio_start, (void *)g_framebuffer.data,
-//            fb_fsi.mmio_len);
-
-//   /* File *fb_file = vfs_open("/dev/fb0", 0); */
-//   /* struct fb_fix_screeninfo fb_fsi = fb_getfscreeninfo(); */
-//   /* uint8_t *backbuffer = kmalloc(fb_fsi.mmio_len); */
-
-//   /* for (;;) { */
-//   /*   // seek */
-//   /*   fb_file->position = 0; */
-//   /*   vfs_read(fb_file, (void *)backbuffer, fb_fsi.mmio_len); */
-//   /*   memcpy((u8 *)fb_fsi.mmio_start, (void *)backbuffer, fb_fsi.mmio_len); */
-//   /* } */
-// }

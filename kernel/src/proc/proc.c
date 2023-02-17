@@ -248,26 +248,23 @@ void multitasking_init() {
   // kprintf("Got process at %x\n", nomterm);
   // register_process(nomterm);
 
-  // extern void refresh_screen_proc();
   // extern void terminal_main();
 
   // register_process(create_kernel_process(task_a, "Task A"));
   // register_process(create_kernel_process(idle_task, "Idle"));
   // register_process(create_kernel_process(task_b, "Task B"));
 
+  extern void fb_proc();
+
   char *argv[2] = {"/usr/bin/nomterm", NULL};
   char *envp[2] = {"PATH=/usr/bin", NULL};
-  ProcessControlBlock *terminal =
-      create_elf_process("/usr/bin/nomterm", argv, envp);
-  if (!terminal) {
-    kprintf("Couldn't load bin");
-  }
-  register_process(terminal);
-  running = terminal;
 
-  // running = ready_queue.first->pcb;
-  // kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
-  // kprintf("Cr3 is %x\n", running->cr3);
+  register_process(create_kernel_process(fb_proc, "Screen"));
+  register_process(create_elf_process("/usr/bin/nomterm", argv, envp));
+
+  dump_pqueue(&ready_queue);
+
+  running = ready_queue.first->pcb;
   switch_to_process(&running->trapframe, (void *)running->cr3);
 
   return;

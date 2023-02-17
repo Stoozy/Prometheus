@@ -1,4 +1,5 @@
 #include "cpu/idt.h"
+#include "fs/tmpfs.h"
 #include <abi-bits/seek-whence.h>
 #include <abi-bits/vm-flags.h>
 #include <config.h>
@@ -42,6 +43,9 @@ extern void set_kernel_entry(void *rip);
 
 static bool valid_fd(int fd) {
   if (fd < 0 || fd > MAX_PROC_FDS)
+    return false;
+
+  if (!running->fd_table[fd])
     return false;
 
   return true;
@@ -137,14 +141,18 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
 }
 
 int sys_open(const char *name, int flags, Registers *regs) {
-  kprintf("Opening %s\n", name);
+
+  // if (strcmp(name, "/dev/fb0") == 0) {
+  //   kprintf("opening /dev/fb0");
+  //   for (;;)
+  //     ;
+  // }
 
   File *file = vfs_open(name, flags);
 
-  file = vfs_open(name, flags);
-
   if (!file) {
     regs->rdx = ENOENT;
+
     return -1;
   }
 
@@ -166,18 +174,16 @@ int sys_open(const char *name, int flags, Registers *regs) {
 //   return 0;
 // }
 
-ssize_t sys_read(int file, char *ptr, size_t len, Registers *regs) {
-  kprintf("Read called for %d bytes\n", len);
+ssize_t sys_read(int fd, char *ptr, size_t len, Registers *regs) {
 
-  if (file > MAX_PROC_FDS) {
+  if (!valid_fd(fd)) {
     regs->rdx = EBADF;
     return -1;
   }
 
-  struct file *f = running->fd_table[file];
-  int bytes_read = vfs_read(f, (u8 *)ptr, len);
+  struct file *file = running->fd_table[fd];
 
-  return bytes_read;
+  return vfs_read(file, (u8 *)ptr, len);
 }
 
 ssize_t sys_write(int fd, char *ptr, int len) {
@@ -194,7 +200,7 @@ ssize_t sys_write(int fd, char *ptr, int len) {
     return -1;
   }
 
-  return len;
+  return 0;
 }
 
 void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
@@ -211,8 +217,24 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
     return NULL;
   }
 
-  int pages = (size / PAGE_SIZE) + 1;
-  void *phys_base = pmm_alloc_blocks(pages);
+  int pages = DIV_ROUND_UP(size, PAGE_SIZE);
+  void *phys_base;
+
+  if (flags & MAP_SHARED) {
+    if (!valid_fd(fd)) {
+      for (;;)
+        kprintf("Called mmap on invalid fd...");
+    }
+
+    VFSNode *vnode = proc->fd_table[fd]->vn;
+    TmpNode *tnode = vnode->private_data;
+
+    // FIXME: only being used for /dev/fb0
+    phys_base = tnode->dev.cdev.private_data - PAGING_VIRTUAL_OFFSET;
+    kprintf("Called mmap on %s\n", tnode->name);
+  } else {
+    phys_base = pmm_alloc_blocks(pages);
+  }
 
   if (phys_base == NULL) {
     // out of memory
@@ -252,29 +274,16 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
 
   kprintf("[MMAP] Returning 0x%x\n", virt_base);
 
-  // if (flags & MAP_SHARED) {
-  //   if (!proc->fd_table[fd]) {
-  //     for (;;)
-  //       kprintf("Called mmap on invalid fd...");
-  //   }
-
-  //   if (strcmp(proc->fd_table[fd]->name, "/dev/fb0") == 0) {
-  //     extern struct fb_file g_framebuffer;
-  //     g_framebuffer.data = phys_base;
-  //   }
-  // }
-
   return virt_base;
 }
 
 off_t sys_seek(int fd, off_t offset, int whence) {
-
-  File *file = running->fd_table[fd];
-
-  if (!file) {
-    kprintf("File dne: %d\n", fd);
+  if (!valid_fd(fd)) {
+    kprintf("Invalid fd ...");
     return -1;
   }
+
+  File *file = running->fd_table[fd];
 
   switch (whence) {
   case SEEK_CUR:
@@ -298,39 +307,34 @@ off_t sys_seek(int fd, off_t offset, int whence) {
   return running->fd_table[fd]->pos;
 }
 
-// void sys_fstat(int fd, VfsNodeStat *vns, Registers *regs) {
-//   if (fd > MAX_PROC_FDS || fd < 0)
-//     kprintf("[SYS_STAT] Invalid FD");
+void sys_fstat(int fd, VFSNodeStat *vns, Registers *regs) {
+  if (fd > MAX_PROC_FDS || fd < 0)
+    kprintf("[SYS_STAT] Invalid FD");
 
-//   File *file = running->fd_table[fd];
+  File *file = running->fd_table[fd];
 
-//   if (!file) {
-//     regs->rdx = EBADF;
-//     regs->rax = -1;
-//     return;
-//   }
+  if (!file) {
+    regs->rdx = EBADF;
+    regs->rax = -1;
+    return;
+  }
 
-//   kprintf("getting stat for %s\n", file->name);
+  vns->filesize = file->vn->size;
+  vns->type = file->vn->type;
+  vns->inode = (ino_t)file->vn->private_data;
 
-//   vns->filesize = file->size;
-//   vns->type = file->type;
-//   vns->inode = file->inode;
+  regs->rax = 0;
 
-//   regs->rax = 0;
+  return;
+}
 
-//   return;
-// }
-
-// void sys_stat(const char *path, VfsNodeStat *statbuf, Registers *regs) {
-//   int ret = vfs_stat(path, statbuf);
-//   if (ret) {
-//     regs->rdx = ENOENT;
-//     regs->rax = -1;
-//     return;
-//   }
-
-//   regs->rax = ret;
-// }
+int sys_stat(const char *path, VFSNodeStat *statbuf, Registers *regs) {
+  if (vfs_stat(path, statbuf)) {
+    regs->rdx = ENOENT;
+    return -1;
+  }
+  return 0;
+}
 
 int sys_tcb_set(void *ptr) {
 
@@ -346,86 +350,86 @@ int count_args(char **args) {
   return n + 1;
 }
 
-// void sys_execve(char *name, char **argvp, char **envp) {
-//   kprintf("sys_exec: %s\n", name);
+void sys_execve(char *name, char **argvp, char **envp) {
+  kprintf("sys_exec: %s\n", name);
 
-//   extern volatile ProcessQueue ready_queue;
-//   extern void dump_pqueue(ProcessQueue *);
-//   kprintf("Before removing\n");
-//   dump_pqueue(&ready_queue);
-//   pqueue_remove(&ready_queue, running->pid);
+  extern volatile ProcessQueue ready_queue;
+  extern void dump_pqueue(ProcessQueue *);
+  kprintf("Before removing\n");
+  dump_pqueue(&ready_queue);
+  pqueue_remove(&ready_queue, running->pid);
 
-//   char *name_cp = kmalloc(strlen(name) + 1);
-//   strcpy(name_cp, name);
+  char *name_cp = kmalloc(strlen(name) + 1);
+  strcpy(name_cp, name);
 
-//   char *args_cp[count_args(argvp)];
-//   char *env_cp[count_args(envp)];
+  char *args_cp[count_args(argvp)];
+  char *env_cp[count_args(envp)];
 
-//   kprintf("Called exec on %s\n", name);
-//   kprintf("ARGS:  \n");
-//   int n = 0;
-//   while (argvp[n]) {
-//     size_t strl = strlen(argvp[n]) + 1;
-//     args_cp[n] = kmalloc(strl);
-//     strcpy(args_cp[n], argvp[n]);
+  kprintf("Called exec on %s\n", name);
+  kprintf("ARGS:  \n");
+  int n = 0;
+  while (argvp[n]) {
+    size_t strl = strlen(argvp[n]) + 1;
+    args_cp[n] = kmalloc(strl);
+    strcpy(args_cp[n], argvp[n]);
 
-//     kprintf("%s\n", argvp[n]);
-//     kprintf("%s\n", args_cp[n]);
-//     n++;
-//   }
+    kprintf("%s\n", argvp[n]);
+    kprintf("%s\n", args_cp[n]);
+    n++;
+  }
 
-//   args_cp[n] = NULL;
+  args_cp[n] = NULL;
 
-//   kprintf("ENV:  \n");
-//   n = 0;
-//   while (envp[n]) {
-//     size_t strl = strlen(envp[n]) + 1;
-//     env_cp[n] = kmalloc(strl);
-//     strcpy(env_cp[n], envp[n]);
-//     kprintf("%s\n", envp[n]);
-//     kprintf("%s\n", env_cp[n]);
-//     n++;
-//   }
+  kprintf("ENV:  \n");
+  n = 0;
+  while (envp[n]) {
+    size_t strl = strlen(envp[n]) + 1;
+    env_cp[n] = kmalloc(strl);
+    strcpy(env_cp[n], envp[n]);
+    kprintf("%s\n", envp[n]);
+    kprintf("%s\n", env_cp[n]);
+    n++;
+  }
 
-//   env_cp[n] = NULL;
+  env_cp[n] = NULL;
 
-//   extern void load_pagedir(PageTable *);
-//   load_pagedir(kernel_cr3);
+  extern void load_pagedir(PageTable *);
+  load_pagedir(kernel_cr3);
 
-//   ProcessControlBlock *new = create_elf_process(name_cp, args_cp, env_cp);
+  ProcessControlBlock *new = create_elf_process(name_cp, args_cp, env_cp);
 
-//   if (running->parent) {
-//     new->parent = running->parent;
-//     // pqueue_remove(&running->parent->children, running->pid);
-//     pqueue_push(&running->parent->children, new);
-//     dump_pqueue(&running->parent->children);
-//   }
+  if (running->parent) {
+    new->parent = running->parent;
+    // pqueue_remove(&running->parent->children, running->pid);
+    pqueue_push(&running->parent->children, new);
+    dump_pqueue(&running->parent->children);
+  }
 
-//   pqueue_push(&ready_queue, new);
+  pqueue_push(&ready_queue, new);
 
-//   for (int i = 0; i < MAX_PROC_FDS; i++) {
-//     // if (running->fd_table[i]->mode & FD_CLOEXEC)
-//       // continue;
+  for (int i = 0; i < MAX_PROC_FDS; i++) {
+    // if (running->fd_table[i]->mode & FD_CLOEXEC)
+    // continue;
 
-//     new->fd_table[i] = running->fd_table[i];
-//   }
+    new->fd_table[i] = running->fd_table[i];
+  }
 
-//   kprintf("[exec] scheduling \n");
-//   // asm volatile("sti; int $41; cli");
-//   schedule(&running->trapframe);
+  kprintf("[exec] scheduling \n");
+  // asm volatile("sti; int $41; cli");
+  schedule(&running->trapframe);
 
-//   // running = new;
+  // running = new;
 
-//   // kprintf("process (%s pid: %d) cr3 at %x\n", running->name,
-//   running->pid,
-//   //         running->cr3);
-//   // kprintf("Entrypoint 0x%x\n", running->trapframe.rip);
+  // kprintf("process (%s pid: %d) cr3 at %x\n", running->name,
+  // running->pid,
+  //         running->cr3);
+  // kprintf("Entrypoint 0x%x\n", running->trapframe.rip);
 
-//   // get_cpu_struct(0)->syscall_kernel_stack = running->kstack +
-//   // PAGING_VIRTUAL_OFFSET; switch_to_process(&running->trapframe,
-//   // running->cr3);
-//   //
-// }
+  // get_cpu_struct(0)->syscall_kernel_stack = running->kstack +
+  // PAGING_VIRTUAL_OFFSET; switch_to_process(&running->trapframe,
+  // running->cr3);
+  //
+}
 
 void sys_fork(Registers *regs) {
   disable_irq();
@@ -442,22 +446,21 @@ void sys_fork(Registers *regs) {
   return;
 }
 
-// int sys_ioctl(int fd, uint32_t req, void *arg) {
-//   kprintf("Request is %x\n", req);
-//   kprintf("FD is %d\n", fd);
-//   if (!(valid_fd(fd))) {
-//     return -1; // Invalid fd
-//   }
+int sys_ioctl(int fd, uint32_t req, void *arg) {
+  kprintf("Request is %x\n", req);
+  kprintf("FD is %d\n", fd);
+  if (!(valid_fd(fd))) {
+    return -1; // Invalid fd
+  }
 
-//   File *file = running->fd_table[fd];
-//   kprintf("File is at %x name: %s\n", file, file->name);
+  File *file = running->fd_table[fd];
 
-//   if (file->fs->ioctl)
-//     return file->fs->ioctl(file, req, arg);
+  if (file->vn->ops->ioctl)
+    return file->vn->ops->ioctl(file->vn, req, arg, 0);
 
-//   // kprintf("Name is %s\n", file->name);
-//   return -1;
-// }
+  // kprintf("Name is %s\n", file->name);
+  return -1;
+}
 
 pid_t sys_getpid() { return running->pid; }
 
@@ -577,27 +580,34 @@ int sys_dup2(int fd, int flags, int new_fd) {
 //   return 0;
 // }
 
-// int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
-//   int events = 0;
-//   // kprintf("[POLL] pollfd ptr %x; count %u; Timeout %d;\n", fds, count,
-//   // timeout);
-//   //  forget timeout, just loop forever
-//   for (uint32_t i = 0; i < count; i++) {
-//     int fd = fds[i].fd;
-//     if (valid_fd(fd)) {
-//       struct file *file = running->fd_table[fd];
-//       if (!file->fs->poll)
-//         kprintf("Poll is not implemented for %s :(\n", file->name);
-//       else {
-//         events += file->fs->poll(file, &fds[i], timeout);
-//       }
-//     } else {
-//       kprintf("[POLL]   Invalid fd %d\n", fd);
-//     }
-//   }
+int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
+  int events = 0;
+  // kprintf("[POLL] pollfd ptr %x; count %u; Timeout %d;\n", fds, count,
+  // timeout);
+  //  forget timeout, just loop forever
+  for (uint32_t i = 0; i < count; i++) {
+    int fd = fds[i].fd;
+    if (valid_fd(fd)) {
+      struct file *file = running->fd_table[fd];
+      if (!file->vn->ops->poll) {
 
-//   return events;
-// }
+        TmpNode *tnode = file->vn->private_data;
+        kprintf("Poll is not implemented for %s \n", tnode->name);
+      } else {
+        int revents = file->vn->ops->poll(file->vn, fds[i].events);
+        if (revents) {
+          fds[i].revents = revents;
+          events++;
+        }
+      }
+
+    } else {
+      kprintf("[POLL]   Invalid fd %d\n", fd);
+    }
+  }
+
+  return events;
+}
 
 void syscall_dispatcher(Registers *regs) {
 
@@ -653,13 +663,13 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_IOCTL: {
     kprintf("[SYS]  IOCTL CALLED\n");
-    regs->rdx = ENOTSUP;
-    regs->rax = -1;
+    regs->rax = sys_ioctl(regs->rdi, regs->rsi, (void *)regs->rdx);
     break;
   }
   case SYS_STAT: {
     kprintf("[SYS]  STAT CALLED\n");
-    // sys_stat((const char *)regs->rdi, (VfsNodeStat *)regs->rsi, regs);
+    regs->rax =
+        sys_stat((const char *)regs->rdi, (VFSNodeStat *)regs->rsi, regs);
     break;
   }
   case SYS_FSTAT: {
@@ -677,7 +687,7 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_POLL: {
-    // regs->rax = sys_poll((struct pollfd *)regs->rdi, regs->rsi, regs->rdx);
+    regs->rax = sys_poll((struct pollfd *)regs->rdi, regs->rsi, regs->rdx);
     break;
   }
   case SYS_DUP: {
@@ -698,28 +708,14 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_EXEC: {
-    // sys_execve((char *)regs->rdi, (char **)regs->rsi, (char **)regs->rdx);
+    sys_execve((char *)regs->rdi, (char **)regs->rsi, (char **)regs->rdx);
     break;
   }
   case SYS_WAIT: {
     sys_waitpid((pid_t)regs->rdi, (int *)regs->rsi, (int)regs->rdx, regs);
     break;
   }
-  case SYS_DBG_PUTC: {
-    /* TODO */
-    kprintf("Called DBG_PUTC\n");
-    break;
-  }
-  case SYS_DBG_GETC: {
-    /* TODO */
-    kprintf("Called DBG_GETC\n");
-    break;
-  }
-  case SYS_DBG_EXCH: {
-    /* TODO */
-    kprintf("Called DBG_EXCH\n");
-    break;
-  }
+
   default: {
     kprintf("Invalid syscall %d\n", syscall);
     break;

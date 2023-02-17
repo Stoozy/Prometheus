@@ -43,6 +43,7 @@ typedef struct tmpnode {
   };
 
   VAttr attr;
+  const char *name;
 
 } TmpNode;
 

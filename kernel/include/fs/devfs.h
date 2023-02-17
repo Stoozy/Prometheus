@@ -14,7 +14,7 @@ typedef enum device_type { BLOCKDEV, CHARDEV } DeviceType;
 #define MKDEV(ma, mi) (((ma) << MINORBITS) | (mi))
 
 typedef struct chardev {
-  VNodeOps fs;
+  VNodeOps *fs;
   dev_t rdev;
   char *filename;
   void *private_data;

@@ -1,3 +1,4 @@
+#include "fs/devfs.h"
 #include "libk/util.h"
 #include "memory/pmm.h"
 #include "memory/vmm.h"
@@ -124,6 +125,8 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   dent->filename = strdup(name);
   dent->inode = tnode;
 
+  tnode->name = name;
+
   if (vap) {
     tnode->attr = *vap;
   } else {
@@ -141,9 +144,6 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   case VFS_CHARDEVICE: {
     tnode->dev.cdev.rdev = vap->rdev;
     tnode->dev.cdev.filename = strdup(name);
-    tnode->dev.cdev.private_data =
-        PAGING_VIRTUAL_OFFSET +
-        pmm_alloc_blocks(DIV_ROUND_UP(vap->size, PAGE_SIZE));
     tnode->dev.cdev.size = vap->size;
 
     break;
@@ -175,12 +175,16 @@ static int tmpfs_create(VFSNode *dvn, VFSNode **out, const char *name,
 }
 
 static int tmpfs_getattr(VFSNode *dvn, VAttr *out) { return -1; }
-static int tmpfs_open(VFSNode *vn, int mode) {
+static int tmpfs_open(File *file, VFSNode *vn, int mode) {
   if (!vn)
     for (;;)
       kprintf("Called open on NULL vfs node!!\n");
 
   vn->refcnt++;
+
+  file->vn = vn;
+  file->pos = 0;
+  file->refcnt = 1;
 
   return 0;
 }
@@ -202,9 +206,16 @@ int tmpfs_mkdir(VFSNode *dvp, VFSNode **out, const char *name,
 
 static ssize_t tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   TmpNode *tnode = vn->private_data;
+  kprintf("Reading %lu bytes from %s\n", nbyte, tnode->name);
   if (nbyte + off > tnode->attr.size) {
-    for (;;)
-      kprintf("Reading outsie of file ... ");
+    kprintf("Reading outside of file ... ");
+    // do a partial read
+    if (tnode->attr.size != 0) {
+      // read entire file
+      void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
+      memcpy(buf, start, tnode->attr.size);
+      return tnode->attr.size;
+    }
   }
 
   void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
@@ -235,6 +246,35 @@ static ssize_t tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   memcpy(start, buf, nbyte);
   return nbyte;
 }
+int tmpfs_ioctl(VFSNode *vp, uint64_t req, void *data, int fflag) {
+  if (vp->type != VFS_CHARDEVICE) {
+    kprintf("[TMPFS] ioctl only supports chardevs for now\n");
+    for (;;)
+      ;
+  }
+
+  TmpNode *tnode = vp->private_data;
+  CharacterDevice chardev = tnode->dev.cdev;
+  if (chardev.fs->ioctl)
+    return chardev.fs->ioctl(vp, req, data, fflag);
+
+  return -1;
+}
+
+int tmpfs_poll(VFSNode *vp, int events) {
+  if (vp->type != VFS_CHARDEVICE) {
+    kprintf("[TMPFS] poll only supports chardevs for now\n");
+    for (;;)
+      ;
+  }
+
+  TmpNode *tnode = vp->private_data;
+  CharacterDevice chardev = tnode->dev.cdev;
+  if (chardev.fs->poll)
+    return chardev.fs->poll(vp, events);
+
+  return -1;
+}
 
 void tmpfs_dump(TmpNode *root) {
   if (TAILQ_EMPTY(&root->dir.dirents))
@@ -257,7 +297,9 @@ VNodeOps tmpfs_vnops = {.create = tmpfs_create,
                         .write = tmpfs_write,
                         .mkdir = tmpfs_mkdir,
                         .readdir = tmpfs_readdir,
-                        .lookup = tmpfs_lookup};
+                        .lookup = tmpfs_lookup,
+                        .ioctl = tmpfs_ioctl,
+                        .poll = tmpfs_poll};
 
 int tmpfs_init() {
   vfs_root.ops = &tmpfs_vfsops;

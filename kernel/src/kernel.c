@@ -155,7 +155,7 @@ void _start(struct stivale2_struct *boot_info) {
   sse_init();
 
   if (tmpfs_init())
-    panic("Failed to initialize tmpfs\n");
+    panic("Failed to initialize tmpfs");
 
   if (load_initrd(modules_tag))
     panic("Failed to read ramdisk... ");
@@ -163,19 +163,21 @@ void _start(struct stivale2_struct *boot_info) {
   if (devfs_init())
     panic("Failed to mount devfs");
 
-  kprintf("Loaded initrd\n");
+  kprintf("Loaded initrd");
 
   if (!framebuffer_tag)
-    panic("No available framebuffer\n");
+    panic("No available framebuffer");
 
   if (fb_init(framebuffer_tag))
-    panic("Failed to initialize framebuffer\n");
-  for (;;)
-    ;
+    panic("Failed to initialize framebuffer");
+
+  if (tty_init() || pty_init())
+    panic("Failed to initialize ttys;");
+
+  // for (;;)
+  //   ;
 
   // kbd_init();
-  // tty_init();
-  // pty_init();
 
   // extern int input_init();
   // input_init();

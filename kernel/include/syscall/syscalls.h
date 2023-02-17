@@ -1,8 +1,8 @@
 #pragma once
 
+#include <libk/typedefs.h>
 #include <memory/vmm.h>
 #include <stddef.h>
-#include <libk/typedefs.h>
 
 typedef unsigned long long caddr_t;
 
@@ -24,15 +24,9 @@ typedef unsigned long long caddr_t;
 #define SYS_GETPID 14
 #define SYS_DUP 15
 #define SYS_DUP2 16
-#define SYS_READDIR	17
-#define SYS_FCNTL	18
-#define SYS_POLL	19
-#define SYS_EXEC    20
-
-// GDB stubs
-#define SYS_DBG_PUTC    30
-#define SYS_DBG_GETC    31
-#define SYS_DBG_EXCH    32
-
+#define SYS_READDIR 17
+#define SYS_FCNTL 18
+#define SYS_POLL 19
+#define SYS_EXEC 20
 
 void sys_init();

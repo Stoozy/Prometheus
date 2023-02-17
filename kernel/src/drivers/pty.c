@@ -1,73 +1,278 @@
-// #include "fs/devfs.h"
-// #include "fs/vfs.h"
-// #include <abi-bits/fcntl.h>
-// #include <asm/ioctls.h>
-// #include <drivers/tty.h>
-// #include <libk/kmalloc.h>
-// #include <libk/kprintf.h>
-// #include <libk/ringbuffer.h>
+#include "fs/devfs.h"
+#include "fs/tmpfs.h"
+#include "fs/vfs.h"
+#include <abi-bits/fcntl.h>
+#include <asm-generic/ioctls.h>
+#include <asm/ioctls.h>
+#include <drivers/tty.h>
+#include <libk/kmalloc.h>
+#include <libk/kprintf.h>
+#include <libk/ringbuffer.h>
 
-// #include <string/string.h>
+#include <string/string.h>
 
-// #include <abi-bits/linux/vt.h>
-// #include <posix/termios.h>
+#include <abi-bits/linux/vt.h>
+#include <posix/termios.h>
 
-// #define PTMX_MAJOR 5
-// #define PTMX_MINOR 2
+#define PTMX_MAJOR 5
+#define PTMX_MINOR 2
 
-// #define MAX_LINE 1024
-// #define PTS_MAJOR 136
+#define MAX_LINE 1024
+#define PTS_MAJOR 136
 
-// struct ptm_data;
+struct ptm_data;
 
-// RingBuffer *ptm_kbd_rb;
+RingBuffer *ptm_kbd_rb;
 
-// struct pts_data {
-//   int slave;
-//   struct tty *tty;
+struct pts_data {
+  int slave_no;
+  struct tty *tty;
 
-//   struct ptm_data *master;
-//   struct winsize wsize;
+  struct ptm_data *master;
+  struct winsize wsize;
 
-//   int lock;
-// };
+  int lock;
+};
 
-// struct ptm_data {
-//   RingBuffer ibuf;
-//   struct pts_data *slave;
-// };
+struct ptm_data {
+  RingBuffer ibuf;
+  struct pts_data *slave;
+};
 
-// int ptmx_slave_ctr = 0;
+int ptmx_slave_ctr = 0;
 
-// static File *ptmx_open(const char *filename, int flags);
-// static size_t ptm_read(struct file *, size_t, uint8_t *buf);
-// static size_t ptm_write(struct file *, size_t, uint8_t *buf);
-// static int ptm_poll(struct file *, struct pollfd *, int timeout);
-// static int ptm_ioctl(struct file *, uint32_t request, void *arg);
+static int ptmx_open(File *file, VFSNode *vn, int flags);
 
-// static void pts_flush_output(struct tty *);
-// static int pts_ioctl(struct tty *, uint64_t, void *);
+static ssize_t ptm_read(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+static ssize_t ptm_write(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag);
+static int ptm_poll(VFSNode *vp, int events);
 
-// FileSystem ptmx_ops = {.open = ptmx_open};
-// FileSystem ptm_ops = {
-//     .read = ptm_read, .write = ptm_write, .ioctl = ptm_ioctl, .poll = ptm_poll};
+static void pts_flush_output(struct tty *tty);
+static int pts_ioctl(struct tty *tty, uint64_t req, void *args);
 
-// struct tty_driver pts_ops = {.flush_chars = pts_flush_output,
-//                              .ioctl = pts_ioctl};
+VNodeOps ptmx_ops = {.open = ptmx_open, .ioctl = ptm_ioctl};
+VNodeOps ptm_ops = {
+    .read = ptm_read, .write = ptm_write, .ioctl = ptm_ioctl, .poll = ptm_poll};
 
-// int pty_init() {
-//   CharacterDevice *chardev = kmalloc(sizeof(CharacterDevice));
+struct tty_driver pts_tty_ops = {.flush_chars = pts_flush_output,
+                                 .ioctl = pts_ioctl};
 
-//   chardev->fs = &ptmx_ops;
-//   chardev->dev = MKDEV(PTMX_MAJOR, PTMX_MINOR);
-//   chardev->name = kmalloc(256);
-//   strcpy(chardev->name, "ptmx");
+static int ptmx_open(File *file, VFSNode *vn, int flags) {
+  kprintf("ptmx_open()\n");
+  int slave_no = ptmx_slave_ctr++;
 
-//   if (devfs_register_chardev(chardev) == -1)
-//     return -1;
+  VFSNode *pts_dirnode;
+  if (dev_root->ops->lookup(dev_root, &pts_dirnode, "/dev/pts/")) {
+    kprintf("Couldn't find /dev/pts/");
+    return -1;
+  }
 
-//   return 0;
-// }
+  // return file with vnode as ptm node with ptm_ops
+  // setup pts/N node with proper tty driver (pts_tty_ops)
+
+  struct ptm_data *ptm_data = kmalloc(sizeof(struct ptm_data));
+  struct pts_data *pts_data = kmalloc(sizeof(struct pts_data));
+
+  /* Initialize ptm node (entirely virtual)*/
+  VFSNode *ptm_node = kmalloc(sizeof(VFSNode));
+  ptm_node->ops = &ptm_ops;
+  ptm_node->type = VFS_CHARDEVICE;
+  ptm_node->private_data = ptm_data;
+
+  /* init pts node `/dev/pts/N` */
+  VFSNode *pts_node;
+  char name[256];
+  sprintf(name, "/dev/pts/%d", slave_no);
+  pts_dirnode->ops->create(
+      pts_dirnode, &pts_node, name,
+      &(VAttr){.type = VFS_CHARDEVICE, .rdev = MKDEV(PTMX_MAJOR, slave_no)});
+  tty_init_node(pts_node);
+
+  return 0;
+}
+
+static ssize_t ptm_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+  kprintf("ptm_read()");
+  for (;;)
+    ;
+  return -1;
+}
+static ssize_t ptm_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+  kprintf("ptm_write()");
+  for (;;)
+    ;
+  return -1;
+}
+static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag) {
+
+  kprintf("ptm_ioctl()\n");
+  TmpNode *ptm_tnode = vp->private_data;
+  struct tty *pty = ptm_tnode->dev.cdev.private_data;
+
+  struct ptm_data *ptm = pty->private_data;
+  struct pts_data *pts = ptm->slave;
+
+  switch (request) {
+  case TIOCGPTN: {
+    int *ptn = arg;
+    *ptn = pts->slave_no;
+    return 0;
+  }
+  case TCGETS: {
+    struct termios *tios = arg;
+    *tios = pts->tty->tios;
+    return 0;
+  }
+  case TCSETS: {
+    struct termios *tios = arg;
+    pts->tty->tios = *tios;
+    return 0;
+  }
+  case TIOCSPTLCK: {
+    kprintf("Called TIOCSPTLCK");
+    int *lock = arg;
+    pts->lock = *lock;
+    return 0;
+  }
+  case TIOCSPGRP: {
+    // FIXME:
+    return 0;
+  }
+  case TIOCGPGRP: {
+    // FIXME: hardcoded value
+    pid_t *grp = arg;
+    *grp = 1000;
+    return 0;
+  }
+  case TIOCGPTLCK: {
+    kprintf("Called TIOCGPTLCK");
+    int *lock = arg;
+    *lock = pts->lock;
+    return 0;
+  }
+  case TIOCGWINSZ: {
+
+    struct winsize *ws = arg;
+    *ws = pts->wsize;
+    return 0;
+  }
+  case TIOCSWINSZ: {
+    struct winsize *ws = arg;
+    pts->wsize = *ws;
+    return 0;
+  }
+  case TIOCSCTTY: {
+    extern struct tty *gp_active_tty;
+    gp_active_tty = pts->tty;
+    return 0;
+  }
+  case VT_RELDISP:
+  case VT_SETMODE:
+    break;
+  default: {
+    kprintf("ioctl unimplemented 0x%x\n", request);
+    for (;;)
+      ;
+  }
+  }
+  return 0;
+}
+
+static int ptm_poll(VFSNode *vp, int events) {
+  kprintf("ptm_poll()");
+  for (;;)
+    ;
+  return -1;
+}
+
+static void pts_flush_output(struct tty *tty) {
+  kprintf("pts_flush_output()");
+  for (;;)
+    ;
+}
+static int pts_ioctl(struct tty *tty, uint64_t req, void *arg) {
+  kprintf("pts_ioctl()");
+  struct pts_data *pts_data = tty->private_data;
+
+  switch (req) {
+  case TIOCSCTTY: {
+    extern struct tty *gp_active_tty;
+    gp_active_tty = pts_data->tty;
+    return 0;
+  }
+  case TIOCSWINSZ: {
+    struct winsize *ws = arg;
+    pts_data->wsize = *ws;
+    return 0;
+  }
+  case TIOCGWINSZ: {
+    struct winsize *ws = arg;
+    *ws = pts_data->wsize;
+    return 0;
+  }
+  case TCGETS: {
+    struct termios *tios = arg;
+    *tios = tty->tios;
+    return 0;
+  }
+  case TCSETS: {
+    struct termios *tios = arg;
+    tty->tios = *tios;
+    return 0;
+  }
+  case TIOCSPGRP: {
+    pid_t *grp = arg;
+    // FIXME:
+    return 0;
+  }
+  case TIOCGPGRP: {
+    pid_t *grp = arg;
+    // FIXME: hardcoded value
+    *grp = 200;
+    return 0;
+  }
+  case TIOCGPTN: {
+    kprintf("get ptn from pts :(\n");
+    for (;;)
+      ;
+  }
+  default: {
+    kprintf("Unimplemented\n");
+    for (;;)
+      ;
+  }
+  }
+
+  return -1;
+}
+
+int pty_init() {
+
+  VFSNode *new;
+  VAttr attr = {.type = VFS_CHARDEVICE, .rdev = MKDEV(PTMX_MAJOR, PTMX_MINOR)};
+  dev_root->ops->create(dev_root, &new, "/dev/ptmx", &attr);
+
+  new->ops = &ptmx_ops;
+
+  VFSNode *pts_dirnode;
+  if (dev_root->ops->lookup(dev_root, &pts_dirnode, "/dev/pts/")) {
+    VAttr attr = {.type = VFS_DIRECTORY};
+    dev_root->ops->mkdir(dev_root, &pts_dirnode, "/dev/pts/", &attr);
+  }
+
+  //   CharacterDevice *chardev = kmalloc(sizeof(CharacterDevice));
+
+  //   chardev->fs = &ptmx_ops;
+  //   chardev->dev = MKDEV(PTMX_MAJOR, PTMX_MINOR);
+  //   chardev->name = kmalloc(256);
+  //   strcpy(chardev->name, "ptmx");
+
+  //   if (devfs_register_chardev(chardev) == -1)
+  //     return -1;
+
+  return 0;
+}
 
 // static File *ptmx_open(const char *filename, int flags) {
 //   int slave_no = ptmx_slave_ctr++;

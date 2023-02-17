@@ -159,7 +159,7 @@ void err14_handler(Registers *regs, int error_code) {
   uintptr_t addr;
   asm("mov %%cr2, %0" : "=r"(addr)::);
 
-  kprintf("Faulting address: 0x%x\n", addr);
+  kprintf("Faulting address: 0x%llx\n", addr);
 
   dump_regs(regs);
   stacktrace((struct stackframe *)regs->rbp, 5);
