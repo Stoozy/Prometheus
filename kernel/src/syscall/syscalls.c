@@ -83,44 +83,48 @@ void sys_exit(int status) {
 }
 
 void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
-  /* kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid, */
-  /*         flags, running->name, running->pid); */
+  kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
+          flags, running->name, running->pid);
 
+  extern void dump_pqueue(ProcessQueue *);
+  dump_pqueue(&running->children);
   if (pid < -1) {
     kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
   } else if (pid == -1) {
     extern volatile ProcessControlBlock *running;
 
     if (running->children.count == 0) {
-      for (;;)
-        kprintf("NO children...\n ");
+      // for (;;)
+      //   kprintf("NO children...\n ");
       regs->rdx = ECHILD;
       regs->rax = -1;
       return;
     }
 
-    if (!running->childDied) {
-      regs->rax = -1;
-      regs->rdx = EINTR;
-      return;
-      ;
-    }
+    // if (!running->childDied) {
+    //   regs->rax = -1;
+    //   regs->rdx = EINTR;
+    //   return;
+    // }
 
     for (PQNode *pnode = running->children.first; pnode; pnode = pnode->next) {
       ProcessControlBlock *proc = pnode->pcb;
       if (proc->state == ZOMBIE) {
         // TODO: clean up the process (need a proper malloc)
+
         *status = proc->exit_code;
         regs->rax = proc->pid;
         kprintf("Got dead child %s (pid: %d; status %d)\n", proc->name,
                 proc->pid, *status);
         pqueue_remove(&running->children, proc->pid);
-        /* for(;;); */
+
+        // for (;;)
+        //   ;
         return;
       }
     }
 
-    regs->rdx = ECHILD;
+    regs->rdx = EINTR;
     regs->rax = -1;
     return;
 
@@ -398,7 +402,7 @@ void sys_execve(char *name, char **argvp, char **envp) {
 
   if (running->parent) {
     new->parent = running->parent;
-    // pqueue_remove(&running->parent->children, running->pid);
+    pqueue_remove(&running->parent->children, running->pid);
     pqueue_push(&running->parent->children, new);
     dump_pqueue(&running->parent->children);
   }
@@ -406,9 +410,7 @@ void sys_execve(char *name, char **argvp, char **envp) {
   pqueue_push(&ready_queue, new);
 
   for (int i = 0; i < MAX_PROC_FDS; i++) {
-    // if (running->fd_table[i]->mode & FD_CLOEXEC)
-    // continue;
-
+    // TODO: check CLOEXEC
     new->fd_table[i] = running->fd_table[i];
   }
 
@@ -499,84 +501,24 @@ int sys_dup2(int fd, int flags, int new_fd) {
   return new_fd;
 }
 
-// int sys_readdir(int handle, struct dirent *buffer, size_t max_size) {
-//   kprintf("Dirent buffer is at %x\n", buffer);
+int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
+  kprintf("Dirent buffer is at %x\n", buffer);
 
-//   if (max_size < sizeof(DirectoryEntry))
-//     return -1;
+  if (max_size < sizeof(DirectoryEntry))
+    return -1;
 
-//   File *file = running->fd_table[handle];
-//   if (!file) {
-//     kprintf("Invalid open stream\n");
-//     return -1;
-//   }
+  if (!valid_fd(handle)) {
+    kprintf("Invalid handle for readdir\n");
+    return -1;
+  }
 
-//   kprintf("Reading entries from %s\n", file->name);
-//   DirectoryEntry *entry = vfs_readdir(file);
-//   if (entry) {
-//     *buffer = *entry;
-//     return 0;
-//   }
+  File *file = running->fd_table[handle];
 
-//   return -1;
-// }
+  if (vfs_readdir(file, buffer))
+    return -1;
 
-// int sys_fcntl(int fd, int request, va_list args) {
-
-//   switch (request) {
-//   case F_SETFD: {
-//     kprintf("F_SETFD\n");
-//     if (valid_fd(fd)) {
-//       File *fp = running->fd_table[fd];
-//       if (fp) {
-//         int flags = va_arg(args, int);
-//         fp->mode |= flags;
-//         return 0;
-//       }
-//     }
-//     return -1;
-//   }
-//   case F_GETFD: {
-//     kprintf("F_GETFD\n");
-//     if (valid_fd(fd)) {
-//       File *fp = running->fd_table[fd];
-//       if (fp) {
-//         return fp->mode;
-//       }
-//     }
-//     break;
-//   }
-//   case F_GETFL: {
-//     if (valid_fd(fd)) {
-//       File *fp = running->fd_table[fd];
-//       if (fp) {
-//         return fp->status;
-//       }
-//     }
-//     return -1;
-//     break;
-//   }
-//   case F_SETFL: {
-//     kprintf("F_SETFL\n");
-//     if (valid_fd(fd)) {
-//       File *fp = running->fd_table[fd];
-//       if (fp) {
-//         int status = va_arg(args, int);
-//         fp->status = status;
-//         return 0;
-//       }
-//     }
-//     return -1;
-//     break;
-//   }
-//   default: {
-//     kprintf("unknown request\n");
-//     return -1;
-//   }
-//   }
-
-//   return 0;
-// }
+  return 0;
+}
 
 int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
   int events = 0;
@@ -606,6 +548,22 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
   }
 
   return events;
+}
+
+int sys_chdir(const char *path) {
+  running->cwd = strdup(path);
+  return 0;
+}
+
+int sys_getcwd(char *buffer, size_t size) {
+  if (size < strlen(running->cwd)) {
+    kprintf("[get_cwd] name too small\n");
+    for (;;)
+      ;
+  }
+
+  strcpy(buffer, running->cwd);
+  return 0;
 }
 
 void syscall_dispatcher(Registers *regs) {
@@ -680,14 +638,6 @@ void syscall_dispatcher(Registers *regs) {
     regs->rax = sys_getpid();
     break;
   }
-
-  case SYS_FCNTL: {
-    kprintf("SYS_FCNTL called\n");
-    for (;;)
-      ;
-    // regs->rax = sys_fcntl(regs->rdi, regs->rsi, (void *)regs->rdx);
-    break;
-  }
   case SYS_POLL: {
     regs->rax = sys_poll((struct pollfd *)regs->rdi, regs->rsi, regs->rdx);
     break;
@@ -702,10 +652,7 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_READDIR: {
     kprintf("SYS_READDIR called\n");
-    for (;;)
-      ;
-    // regs->rax = sys_readdir(regs->rdi, (struct dirent*)regs->rsi,
-    // regs->rdx, regs);
+    regs->rax = sys_readdir(regs->rdi, (DirectoryEntry *)regs->rsi, regs->rdx);
     break;
   }
   case SYS_FORK: {
@@ -720,9 +667,22 @@ void syscall_dispatcher(Registers *regs) {
     sys_waitpid((pid_t)regs->rdi, (int *)regs->rsi, (int)regs->rdx, regs);
     break;
   }
+  case SYS_CHDIR: {
+    regs->rax = sys_chdir((const char *)regs->rdi);
+    break;
+  }
+  case SYS_GETCWD: {
+    kprintf("Get cwd called\n");
+    for (;;)
+      ;
+    regs->rax = sys_getcwd((char *)regs->rdi, regs->rsi);
+    break;
+  }
 
   default: {
     kprintf("Invalid syscall %d\n", syscall);
+    for (;;)
+      ;
     break;
   }
   }
