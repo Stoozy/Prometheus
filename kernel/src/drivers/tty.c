@@ -115,44 +115,6 @@ int tty_poll(struct vnode *vp, int events) {
   return -1;
 }
 
-// size_t tty_read(struct file *file, size_t size, uint8_t *buf) {
-//   struct tty *tty = file->private_data;
-//   if (tty->driver.read)
-//     return tty->driver.read(tty, size, buf);
-//   else
-//     return tty_default_read(tty, size, buf);
-// }
-
-// size_t tty_write(struct file *file, size_t size, uint8_t *buf) {
-//   struct tty *tty = file->private_data;
-//   if (tty) {
-//     if (tty->driver.write) {
-//       return tty->driver.write(tty, size, buf);
-//     } else {
-//       // kprintf("Write not implemented :(\n");
-//       return tty_default_write(tty, size, buf);
-//     }
-//   }
-
-//   return 0;
-// }
-
-// int tty_ioctl(struct file *file, uint32_t request, void *arg) {
-//   struct tty *tty = file->private_data;
-//   if (tty)
-//     return tty->driver.ioctl(tty, request, arg);
-//   return 0;
-// }
-
-// int tty_poll(struct file *file, struct pollfd *pfd, int timeout) {
-//   struct tty *tty = file->private_data;
-
-//   if (tty)
-//     return tty->driver.poll(tty, pfd, timeout);
-
-//   return 0;
-// }
-
 static void echo(struct tty *tty, uint8_t val) {
   disable_irq();
   rb_push(tty->obuf, &val);
@@ -357,34 +319,3 @@ int tty_init() {
 
   return 0;
 }
-
-// int tty_init() {
-//   default_tty_driver =
-//       (struct tty_driver){.tty_table = &g_tty_table[0],
-//                           .driver_name = "tty",
-//                           .name = "tty",
-//                           .dev_major = 5,
-//                           .num_devices = MAX_TTYS,
-//                           .read = tty_default_read,
-//                           .write = tty_default_write,
-//                           .flush_chars = tty_default_flush_chars,
-//                           .write_room = tty_default_write_room,
-//                           .set_termios = tty_default_set_termios,
-//                           .set_ldisc = tty_default_set_ldisc,
-//                           .poll = tty_default_poll,
-//                           .ioctl = tty_default_ioctl};
-
-//   /* TODO */
-
-//   CharacterDevice *chdev = kmalloc(sizeof(CharacterDevice));
-//   chdev->name = kmalloc(256);
-//   strcpy(chdev->name, "tty");
-//   chdev->dev = MKDEV(TTY_MAJOR, 0);
-//   chdev->fs = &tty_fops;
-
-//   if (devfs_register_chardev(chdev) == -1) {
-//     return -1;
-//   }
-
-//   return 0;
-// }

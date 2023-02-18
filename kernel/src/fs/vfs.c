@@ -32,16 +32,32 @@ File *vfs_open(const char *name, int flags) {
   File *file = kmalloc(sizeof(File));
   kprintf("opening %s\n", name);
 
+  char *lookup_path = (char *)name;
   VFSNode *vnode;
-  if (root_vnode->ops->lookup(root_vnode, &vnode, name)) {
+
+  if (strcmp(name, ".") == 0) {
+    extern ProcessControlBlock *running;
+    lookup_path = strdup(running->cwd);
+    kprintf("lookup path is %s\n", lookup_path);
+  }
+
+  if (strcmp(name, "..") == 0) {
+    extern ProcessControlBlock *running;
+    lookup_path = get_parent_dir(running->cwd);
+  }
+
+  if (root_vnode->ops->lookup(root_vnode, &vnode, lookup_path)) {
     if (!(flags & O_CREAT)) {
+      kprintf("can't create file %s\n", lookup_path);
+      kprintf("lookup is @ 0x%lx\n", root_vnode->ops);
       return NULL;
     }
 
     // attempt to create file...
 
+    kprintf("Creating %s\n", lookup_path);
     VFSNode *parent;
-    char *parent_name = get_parent_dir(name);
+    char *parent_name = get_parent_dir(lookup_path);
     kprintf("Looking up %s\n", parent_name);
     if (root_vnode->ops->lookup(root_vnode, &parent, parent_name)) {
       kprintf("Couldn't find parent %s\n", parent_name);
@@ -50,16 +66,23 @@ File *vfs_open(const char *name, int flags) {
 
     kprintf("Got parent at %s\n", parent_name);
     VAttr attr = {.type = VFS_FILE};
-    if (parent->ops->create(parent, &vnode, name, &attr)) {
-      kprintf("Failed to create %s\n", name);
+    if (parent->ops->create(parent, &vnode, lookup_path, &attr)) {
+      kprintf("Failed to create %s\n", lookup_path);
       return NULL; // couldn't create file
     }
   }
+
+  kprintf("vfs_open(): vnode is @ 0x%x\n", vnode);
 
   if (vnode->ops->open(file, vnode, flags))
     return NULL;
 
   return file;
+}
+
+int vfs_readdir(File *file, DirectoryEntry *buf) {
+  VFSNode *vn = file->vn;
+  return vn->ops->readdir(vn, buf, sizeof(DirectoryEntry), NULL, file->pos++);
 }
 
 ssize_t vfs_read(File *file, void *buffer, size_t size) {
@@ -93,10 +116,10 @@ int vfs_stat(const char *path, VFSNodeStat *vns) {
     extern ProcessControlBlock *running;
     path = get_parent_dir(running->cwd);
   }
+  kprintf("lookup path %s\n", path);
 
   VFSNode *lookup;
   if (strcmp(path, "/") != 0) {
-
     kprintf("Looking up %s\n", path);
     if (root_vnode->ops->lookup(root_vnode, &lookup, path)) {
       kprintf("Couldn't find vnode for %s\n", path);

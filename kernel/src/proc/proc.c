@@ -209,6 +209,8 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
 
   clone->parent = proc;
 
+  // clone->cwd = strdup(proc->cwd);
+
   return clone;
 }
 
@@ -243,22 +245,10 @@ void multitasking_init() {
   memset(&ready_queue, 0, sizeof(ProcessQueue));
   memset(&wait_queue, 0, sizeof(ProcessQueue));
 
-  // ProcessControlBlock *nomterm =
-  //     create_elf_process("/usr/bin/nomterm", argvp, envp);
-  // kprintf("Got process at %x\n", nomterm);
-  // register_process(nomterm);
-
-  // extern void terminal_main();
-
-  // register_process(create_kernel_process(task_a, "Task A"));
-  // register_process(create_kernel_process(idle_task, "Idle"));
-  // register_process(create_kernel_process(task_b, "Task B"));
-
-  extern void fb_proc();
-
   char *argv[2] = {"/usr/bin/nomterm", NULL};
   char *envp[2] = {"PATH=/usr/bin", NULL};
 
+  extern void fb_proc();
   register_process(create_kernel_process(fb_proc, "Screen"));
   register_process(create_elf_process("/usr/bin/nomterm", argv, envp));
 

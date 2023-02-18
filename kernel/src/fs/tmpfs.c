@@ -30,6 +30,7 @@ static int tmpfs_mount(VFS *vfs, const char *path, void *data) {
 
   root_vnode = tmp_root_vnode;
 
+  tmp_root_node->name = strdup("/");
   return 0;
 }
 
@@ -69,7 +70,7 @@ VFSOps tmpfs_vfsops = {
 
 static int tmpfs_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
 
-  // kprintf("Looking up %s\n", cnp->cn_nameptr);
+  kprintf("Looking up %s\n", name);
   TmpNode *tnode = dvn->private_data;
 
   if (strcmp(name, "/") == 0) {
@@ -99,14 +100,23 @@ static int tmpfs_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
   struct tmpfs_dirent *dirent;
 loop:
   TAILQ_FOREACH(dirent, &tnode->dir.dirents, entries) {
-    if (strcmp(dirent->filename, name) == 0) {
-      TmpNode *next_tnode = dirent->inode;
+    TmpNode *next_tnode = dirent->inode;
+    if (strcmp(next_tnode->name, name) == 0) {
       *out = next_tnode->vnode;
       return 0;
     }
 
-    if (strncmp(dirent->filename, name, strlen(dirent->filename)) == 0) {
+    // in case of directory
+    char path[strlen(name) + 1];
+    sprintf(path, "%s/", name);
+    if (strcmp(next_tnode->name, path) == 0) {
+      *out = next_tnode->vnode;
+      return 0;
+    }
 
+    kprintf("Checking if %s starts with %s\n", next_tnode->name, name);
+    if (strncmp(next_tnode->name, name, strlen(next_tnode->name)) == 0) {
+      kprintf("Found matching dir %s\n", next_tnode->name);
       tnode = dirent->inode;
       // TODO: follow mountpoints
       goto loop;
@@ -122,10 +132,10 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   TmpNode *tnode = kmalloc(sizeof(TmpNode));
   struct tmpfs_dirent *dent = kmalloc(sizeof(struct tmpfs_dirent));
 
-  dent->filename = strdup(name);
+  dent->filename = strdup(name + strlen(dtn->name));
   dent->inode = tnode;
 
-  tnode->name = name;
+  tnode->name = strdup(name);
 
   if (vap) {
     tnode->attr = *vap;
@@ -139,6 +149,9 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   case VFS_DIRECTORY: {
     TAILQ_INIT(&tnode->dir.dirents);
     tnode->dir.parent = dtn;
+
+    dent->filename[strlen(dent->filename) - 1] = '\0';
+
     break;
   }
   case VFS_CHARDEVICE: {
@@ -176,6 +189,7 @@ static int tmpfs_create(VFSNode *dvn, VFSNode **out, const char *name,
 
 static int tmpfs_getattr(VFSNode *dvn, VAttr *out) { return -1; }
 static int tmpfs_open(File *file, VFSNode *vn, int mode) {
+  kprintf("tmpfs_open()\n");
   if (!vn)
     for (;;)
       kprintf("Called open on NULL vfs node!!\n");
@@ -191,6 +205,25 @@ static int tmpfs_open(File *file, VFSNode *vn, int mode) {
 
 static int tmpfs_readdir(VFSNode *dvn, void *buf, size_t nbyte,
                          size_t *bytesRead, off_t seqno) {
+  kprintf("tmpfs_readdir()");
+
+  TmpNode *dirnode = dvn->private_data;
+
+  DirectoryEntry *entry = buf;
+  struct tmpfs_dirent *dirent;
+  int i = 0;
+  TAILQ_FOREACH(dirent, &dirnode->dir.dirents, entries) {
+    if (i == seqno) {
+      entry->d_ino = (ino_t)dirent->inode;
+      strcpy(entry->d_name, dirent->filename);
+      entry->d_reclen = sizeof(DirectoryEntry);
+      entry->d_type = dirent->inode->attr.type;
+      entry->d_off = i;
+      return 0;
+    }
+    i++;
+  }
+
   return -1;
 }
 
@@ -231,7 +264,7 @@ static ssize_t tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
 
   TmpNode *tnode = vn->private_data;
 
-  // kprintf("tnode is @ 0x%x\n", tnode);
+  kprintf("writing to %s\n", tnode->name);
 
   if (nbyte + off > tnode->attr.size) {
     int pages_needed =

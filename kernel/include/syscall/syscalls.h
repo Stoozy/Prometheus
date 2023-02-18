@@ -28,5 +28,7 @@ typedef unsigned long long caddr_t;
 #define SYS_FCNTL 18
 #define SYS_POLL 19
 #define SYS_EXEC 20
+#define SYS_CHDIR 21
+#define SYS_GETCWD 22
 
 void sys_init();

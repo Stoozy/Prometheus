@@ -23,6 +23,14 @@ typedef uint32_t mode_t;
 struct vnops;
 struct vfs;
 
+typedef struct directory_entry {
+  ino_t d_ino;
+  off_t d_off;
+  uint16_t d_reclen;
+  vtype_t d_type;
+  char d_name[256];
+} DirectoryEntry;
+
 typedef struct vattr {
   vtype_t type;
   mode_t mode;
@@ -110,5 +118,6 @@ File *vfs_open(const char *name, int flags);
 ssize_t vfs_read(File *file, void *buffer, size_t size);
 ssize_t vfs_write(File *file, void *buffer, size_t size);
 ssize_t vfs_write(File *file, void *buffer, size_t size);
+int vfs_readdir(File *file, DirectoryEntry *buf);
 int vfs_stat(const char *path, VFSNodeStat *);
 int vfs_close(File *);

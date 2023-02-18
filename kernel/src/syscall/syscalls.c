@@ -152,9 +152,9 @@ int sys_open(const char *name, int flags, Registers *regs) {
 
   File *file = vfs_open(name, flags);
 
+  static int count = 0;
   if (!file) {
     regs->rdx = ENOENT;
-
     return -1;
   }
 
@@ -191,8 +191,11 @@ ssize_t sys_read(int fd, char *ptr, size_t len, Registers *regs) {
 ssize_t sys_write(int fd, char *ptr, int len) {
   kprintf("sys_write(): FD is %d\n", fd);
 
-  if (!valid_fd(fd))
-    return -1;
+  if (!valid_fd(fd)) {
+    kprintf("Invalid fd");
+    for (;;)
+      ;
+  }
 
   File *file = running->fd_table[fd];
   if (file) {
@@ -414,9 +417,11 @@ void sys_execve(char *name, char **argvp, char **envp) {
     new->fd_table[i] = running->fd_table[i];
   }
 
+  new->cwd = strdup(running->cwd);
+
   kprintf("[exec] scheduling \n");
-  // asm volatile("sti; int $41; cli");
-  schedule(&running->trapframe);
+  asm volatile("sti; int $41; cli");
+  // schedule(&running->trapframe);
 
   // running = new;
 
@@ -551,7 +556,9 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
 }
 
 int sys_chdir(const char *path) {
+  char *name = kmalloc(strlen(path));
   running->cwd = strdup(path);
+  kprintf("Changing directory to %s\n", name);
   return 0;
 }
 
