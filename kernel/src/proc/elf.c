@@ -54,8 +54,8 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
 
       kprintf("[ELF]  Got interpreter file path: %s\n", ld_path);
       File *ld_file = vfs_open(ld_path, 0);
-      u8 *ld_data = kmalloc(ld_file->size);
-      int br = vfs_read(ld_file, ld_data, ld_file->size);
+      u8 *ld_data = kmalloc(ld_file->vn->size);
+      int br = vfs_read(ld_file, ld_data, ld_file->vn->size);
 
       if (!(br != 0 && validate_elf(ld_data)))
         continue;
@@ -135,10 +135,11 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
       ;
   }
 
-  u8 *elf_data = kmalloc(elf_file->size);
+  uint8_t *elf_data = kmalloc(elf_file->vn->size);
 
-  int br = vfs_read(elf_file, elf_data, elf_file->size);
+  int br = vfs_read(elf_file, elf_data, elf_file->vn->size);
 
+  kprintf("Read data %s\n", elf_data);
   if (!validate_elf(elf_data))
     return NULL;
 
@@ -168,7 +169,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
   proc_add_vas_range(proc, range);
 
-  kprintf("Elf file size is %llu bytes\n", elf_file->size);
+  kprintf("Elf file size is %llu bytes\n", elf_file->vn->size);
 
   Auxval aux = load_elf_segments(proc, elf_data);
 
@@ -235,9 +236,16 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
   memset(proc->fd_table, 0, sizeof(uintptr_t) * MAX_PROC_FDS);
 
-  proc->fd_table[0] = vfs_open("/dev/tty", O_RDONLY);
-  proc->fd_table[1] = vfs_open("/dev/tty", O_WRONLY);
-  proc->fd_table[2] = vfs_open("/dev/tty", O_WRONLY);
+  proc->fd_table[0] = vfs_open("/dev/tty", O_RDONLY | O_CREAT);
+
+  if (proc->fd_table[0] == NULL) {
+    kprintf("Couldn't open /dev/tty\n");
+    for (;;)
+      ;
+  }
+  proc->fd_table[1] = vfs_open("/dev/tty0", O_RDONLY);
+  proc->fd_table[2] = vfs_open("/dev/tty0", O_WRONLY);
+  proc->fd_table[3] = vfs_open("/dev/tty0", O_WRONLY);
 
   proc->mmap_base = MMAP_BASE;
 
@@ -253,6 +261,9 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   kprintf("fd 0 is at %x\n", proc->fd_table[0]);
   kprintf("fd 1 is at %x\n", proc->fd_table[1]);
   kprintf("fd 2 is at %x\n", proc->fd_table[2]);
+
+  proc->cwd = kmalloc(2);
+  sprintf(proc->cwd, "/");
 
   return proc;
 }

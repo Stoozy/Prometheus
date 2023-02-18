@@ -1,3 +1,4 @@
+#include "misc/initrd.h"
 #define NULL (void *)0
 
 #include "fs/vfs.h"
@@ -21,13 +22,16 @@
 #include <proc/elf.h>
 #include <proc/proc.h>
 
-#include <fs/tarfs.h>
 #include <stivale2.h>
 #include <string/string.h>
 #include <syscall/syscalls.h>
 
+#include <drivers/input.h>
 #include <drivers/tty.h>
 #include <syscall/syscalls.h>
+
+#include <abi-bits/fcntl.h>
+#include <fs/tmpfs.h>
 
 u64 k_start;
 u64 k_end;
@@ -120,22 +124,16 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 extern void enable_sce();
-extern void to_userspace(void *entry, void *stack);
 
-void hang() {
-  for (;;)
-    ;
-}
+void panic(const char *msg) {
+  kprintf("Kernel panic. Reason: %s \n", msg);
 
-void panic() {
-  kprintf("KERNEL PANIC\n");
   for (;;)
     ;
 }
 
 void _start(struct stivale2_struct *boot_info) {
-
-  __asm__("cli");
+  disable_irq();
 
   serial_init(); /* init debugging */
 
@@ -143,67 +141,43 @@ void _start(struct stivale2_struct *boot_info) {
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MEMMAP_ID);
   struct stivale2_struct_tag_modules *modules_tag =
       stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_MODULES_ID);
-
-  extern void kernelStart;
-  extern void kernelEnd;
-  k_start = (uint64_t)&kernelStart;
-  k_end = (uint64_t)&kernelEnd;
-  k_size = ((k_end - k_start) / PAGE_SIZE) * PAGE_SIZE;
-
-  kprintf("kernel start is 0x%x\n", k_start);
-  kprintf("kernel size is 0x%x\n", k_size);
+  struct stivale2_struct_tag_framebuffer *framebuffer_tag =
+      stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 
   pmm_init(meminfo);
-
+  vmm_init();
   kmalloc_init(0xff0000);
 
   gdt_init();
   idt_init();
-
   pit_init(1000);
 
   extern void sse_init();
   sse_init();
 
-  vfs_init();
+  if (tmpfs_init())
+    panic("Failed to initialize tmpfs");
 
-  FileSystem *tarfs = NULL;
-  if (modules_tag == NULL) {
-    kprintf("[MAIN]   No modules found. Exiting.\n");
-    hang();
-  } else {
-    u64 num_modules = modules_tag->module_count;
-    kprintf("[MAIN]   Found %d modules\n", num_modules);
-    for (u64 m = 0; m < num_modules; ++m) {
-      struct stivale2_module module = modules_tag->modules[m];
-      kprintf("[MAIN]   Module name: %s\n", module.string);
-      kprintf("[MAIN]   Module start: %llx\n", module.begin);
-      kprintf("[MAIN]   Module end: %llx\n", module.end);
-      kprintf("\n");
-      if (strcmp(module.string, "INITRAMFS") == 0) {
-        kprintf("[MAIN]   Found INITRAMFS, initializing!\n");
+  if (load_initrd(modules_tag))
+    panic("Failed to read ramdisk... ");
 
-        extern void devfs_init();
-        tarfs_init((u8 *)module.begin);
-        devfs_init();
-      } else {
-        kprintf("INITRAMFS not found :(\n");
-      }
-    }
-  }
+  if (devfs_init())
+    panic("Failed to mount devfs");
 
-  struct stivale2_struct_tag_framebuffer *framebuffer_tag =
-      stivale2_get_tag(boot_info, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
+  kprintf("Loaded initrd");
 
   if (!framebuffer_tag)
-    hang();
+    panic("No available framebuffer");
+
+  if (fb_init(framebuffer_tag))
+    panic("Failed to initialize framebuffer");
+
+  if (tty_init() || pty_init())
+    panic("Failed to initialize ttys;");
 
   kbd_init();
-  fb_init(framebuffer_tag);
-  tty_init();
-  pty_init();
-  extern int input_init();
-  input_init();
+  if (input_init())
+    panic("Failed to initialize keyboard input;");
 
   sys_init();
   multitasking_init();

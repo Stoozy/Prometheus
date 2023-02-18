@@ -1,135 +1,123 @@
 #pragma once
 
-#include <asm-generic/poll.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
+#include <sys/queue.h>
+#include <unistd.h>
 
-#define ssize_t int64_t;
+typedef enum vtype {
+  VFS_FILE = 0x01,
+  VFS_DIRECTORY = 0x02,
+  VFS_CHARDEVICE = 0x03,
+  VFS_BLOCKDEVICE = 0x04,
+  VFS_PIPE = 0x05,
+  VFS_SYMLINK = 0x06,
+  VFS_INVALID_FS = 0x09,
+} vtype_t;
 
-#define VFS_FILE            0x01
-#define VFS_DIRECTORY       0x02
-#define VFS_CHARDEVICE      0x03
-#define VFS_BLOCKDEVICE     0x04
-#define VFS_PIPE            0x05
-#define VFS_SYMLINK         0x06
-#define VFS_MOUNTPOINT      0x08
-#define VFS_INVALID_FS      0x09
+typedef int dev_t;
+typedef uint64_t ino_t;
+typedef uint32_t mode_t;
 
+struct vnops;
+struct vfs;
 
-#define name_max            128
+typedef struct directory_entry {
+  ino_t d_ino;
+  off_t d_off;
+  uint16_t d_reclen;
+  vtype_t d_type;
+  char d_name[256];
+} DirectoryEntry;
 
-typedef struct  {
-    char name[name_max];
-    uint32_t ino;
-    uint32_t type;
-} __attribute__((packed)) DirectoryEntry; 
+typedef struct vattr {
+  vtype_t type;
+  mode_t mode;
+  size_t size;
+  dev_t rdev; /*! device represented by file */
+} VAttr;
 
+typedef struct vnode {
+  bool isroot;
+  uint64_t refcnt;
 
+  struct vfs *vfs;             /* ptr to vfs we are in */
+  struct vfs *vfs_mountedhere; /* ptr to vfs (VDIR) */
 
-struct file;
-struct vfs_node;
+  struct vnops *ops;
 
-typedef struct file * (*open_func_t)(const char * filename, int flags);
-typedef void (*close_func_t)(struct file *);
-typedef uint64_t (*read_func_t)(struct file *, size_t count, uint8_t * buf);
-typedef uint64_t (*write_func_t)(struct file *, size_t count, uint8_t * buf);
-typedef DirectoryEntry * (*readdir_func_t)(struct vfs_node *, uint32_t index);
-typedef struct file * (*finddir_func_t)(struct vfs_node *, const char * filename);
-typedef int (*ioctl_func_t)(struct file *, uint32_t request, void * arg);
-typedef int (*poll_func_t)(struct file *,  struct pollfd * fd, int timeout);
+  size_t size;
+  enum vtype type; /* vnode type */
+  void *private_data;
 
+} VFSNode;
 
-typedef struct fs {
-
-    char * name;
-
-    open_func_t     open;
-    close_func_t    close;
-    read_func_t     read;
-    write_func_t    write;
-    readdir_func_t  readdir;
-    finddir_func_t  finddir; 
-    ioctl_func_t    ioctl; 
-    poll_func_t     poll;
-
-
-    struct fs * next;
-
-} FileSystem;
-
-
-
-typedef struct vfs_node_stat  {
-    uint32_t type;
-    uint64_t inode;
-    uint64_t filesize;
-} __attribute__((packed)) VfsNodeStat;
+typedef struct vfs_node_stat {
+  enum vtype type;
+  ino_t inode;
+  size_t filesize;
+  dev_t rdev;
+} __attribute__((packed)) VFSNodeStat;
 
 typedef struct file {
-
-    char * name;
-    int status;
-    uint64_t inode;
-    uint64_t device;
-    uint64_t position;
-    size_t size;
-    uint8_t  mode;
-    uint8_t  type;
-
-
-    void * private_data;
-    FileSystem  * fs;
-
+  void *magic;
+  size_t refcnt;
+  VFSNode *vn;
+  size_t pos;
 } File;
 
-typedef struct vfs_node {
+typedef struct vfs {
+  SIMPLEQ_ENTRY(vfs) list;
+  const struct vfsops *ops;
+  VFSNode *vnodecovered; /* vnode this fs is mounted over */
+  void *private_data;    /* fs-private data */
+} VFS;
 
-    File * file;
+/*cn_nameiop flags*/
 
+#define LOOKUP 1 // perform name lookup only
+#define CREATE 2 // set up for file creation
+#define DELETE 3 // set up for file deletion
+#define RENAME 4 // set up for file renaming
+#define OPMASK 5 // mask for operation
 
-    struct vfs_node * parent;
-    struct vfs_node * children;     /* points to the head of children */
+typedef struct vnops {
+  int (*create)(VFSNode *dvn, VFSNode **out, const char *name, VAttr *attr);
+  int (*getattr)(VFSNode *vn, VAttr *out);
+  int (*lookup)(VFSNode *dvn, VFSNode **out, const char *name);
 
-    struct vfs_node * next;         /* next node in current directory */
+  int (*mkdir)(struct vnode *dvp, struct vnode **vpp, const char *name,
+               struct vattr *vap);
+  int (*mknod)(struct vnode *dvp, struct vnode **vpp, const char *name,
+               struct vattr *vap);
+  int (*open)(File *file, VFSNode *vn, int mode);
+  int (*readdir)(VFSNode *dvn, void *buf, size_t nbyte, size_t *bytesRead,
+                 off_t seqno);
 
-}   VfsNode;
+  ssize_t (*read)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  ssize_t (*write)(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  int (*ioctl)(VFSNode *vp, uint64_t, void *data, int fflag);
+  int (*poll)(VFSNode *vp, int events);
 
+} VNodeOps;
 
-typedef struct mountpoint {
-    char * path;
-    FileSystem * fs;
-    struct mountpoint * next;
-} Mountpoint;
+typedef struct vfsops {
+  int (*mount)(VFS *vfs, const char *path, void *data);
+  int (*root)(VFS *vfs, VFSNode **out);
+  int (*vget)(VFS *vfs, VFSNode **out, ino_t inode);
+} VFSOps;
 
+int vfs_lookup(VFSNode *cwd, VFSNode **out, const char *path, uint32_t flags,
+               VAttr *attr);
 
-typedef struct open_list_node {
+extern VFS vfs_root;
+extern VFSNode *root_vnode;
 
-    VfsNode * vfs_node;
-    struct open_list_node * next;
-
-} VfsOpenListNode;
-
-
-
-void vfs_dump();
-
-DirectoryEntry * vfs_readdir(File * file);
-
-VfsNode * vfs_mknod(File*);
-void vfs_add_to_open_list(VfsNode *);
-
-File * vfs_open(const char * filename , int flags);
-void vfs_close(File * file);
-
-ssize_t vfs_read(File * file, uint8_t * buffer, size_t size);
-ssize_t vfs_write(File * file,  uint8_t * buffer, size_t size);
-
-int vfs_stat(const char * path, VfsNodeStat * res);
-
-void vfs_register_fs(FileSystem *, uint64_t device_id);
-void vfs_unregister_fs(FileSystem * fs);
-int vfs_mount(const char * src, const char * dst, const char * fs_type, uint64_t flags, const char * data);
-
-void vfs_init();
-
+File *vfs_open(const char *name, int flags);
+ssize_t vfs_read(File *file, void *buffer, size_t size);
+ssize_t vfs_write(File *file, void *buffer, size_t size);
+ssize_t vfs_write(File *file, void *buffer, size_t size);
+int vfs_readdir(File *file, DirectoryEntry *buf);
+int vfs_stat(const char *path, VFSNodeStat *);
+int vfs_close(File *);

@@ -17,11 +17,9 @@ extern u64 g_ticks;
 extern void switch_to_process(Registers *new_stack, PageTable *cr3);
 extern void load_pagedir();
 
-volatile ProcessQueue ready_queue = {0, NULL, NULL};
-volatile ProcessQueue wait_queue = {0, NULL, NULL};
-volatile ProcessControlBlock *running = NULL;
-
-PageTable *kernel_cr3 = NULL;
+ProcessQueue ready_queue = {0, NULL, NULL};
+ProcessQueue wait_queue = {0, NULL, NULL};
+ProcessControlBlock *running = NULL;
 
 uint64_t pid_counter = 200;
 
@@ -123,9 +121,6 @@ void task_a() {
   extern uint8_t kbd_read_from_buffer();
   for (;;) {
     kprintf("Running task A ...\n");
-    uint8_t c = kbd_read_from_buffer();
-    for (;;)
-      kprintf("Task A woke up, got character %c \n", c);
   }
 }
 
@@ -214,6 +209,8 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
 
   clone->parent = proc;
 
+  // clone->cwd = strdup(proc->cwd);
+
   return clone;
 }
 
@@ -244,38 +241,21 @@ void unblock_process(ProcessControlBlock *proc) {
 
 void multitasking_init() {
   // save kernel page tables
-  kernel_cr3 = vmm_get_current_cr3();
 
   memset(&ready_queue, 0, sizeof(ProcessQueue));
   memset(&wait_queue, 0, sizeof(ProcessQueue));
 
-  // ProcessControlBlock *nomterm =
-  //     create_elf_process("/usr/bin/nomterm", argvp, envp);
-  // kprintf("Got process at %x\n", nomterm);
-  // register_process(nomterm);
-
-  extern void refresh_screen_proc();
-  extern void terminal_main();
-
-  // register_process(create_kernel_process(task_a));
-  // register_process(create_kernel_process(idle_task));
-  // register_process(create_kernel_process(task_b));
-
   char *argv[2] = {"/usr/bin/nomterm", NULL};
   char *envp[2] = {"PATH=/usr/bin", NULL};
-  ProcessControlBlock *bash =
-      create_elf_process("/usr/bin/nomterm", argv, envp);
-  // register_process(create_kernel_process(terminal_main, "Terminal"));
-  register_process(bash);
-  register_process(create_kernel_process(refresh_screen_proc, "Screen"));
 
-  running = ready_queue.first->pcb;
-  kprintf("Ready queue has %d procs\n", ready_queue.count);
+  extern void fb_proc();
+  register_process(create_kernel_process(fb_proc, "Screen"));
+  register_process(create_elf_process("/usr/bin/nomterm", argv, envp));
+
   dump_pqueue(&ready_queue);
 
-  dump_regs(&ready_queue.first->pcb->trapframe);
-  kprintf("switching to %s (pid:%d)\n", running->name, running->pid);
-  kprintf("Cr3 is %x\n", running->cr3);
+  running = ready_queue.first->pcb;
   switch_to_process(&running->trapframe, (void *)running->cr3);
+
   return;
 }

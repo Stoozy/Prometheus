@@ -32,7 +32,7 @@ libc:
 	yes | cp mlibc/build/*.so $(SYSROOT)/usr/lib/ && yes | cp mlibc/build/sysdeps/atlas/crt0.o $(SYSROOT)/usr/lib
 
 initrd: 
-	tar -C $(SYSROOT) -cvf initrd.tar etc usr fonts dev 
+	tar -C  $(SYSROOT)  -cvf initrd.tar ./etc ./usr
 	
 
 

@@ -9,6 +9,8 @@
 #define MINOR(dev) ((unsigned int)((dev)&MINORMASK))
 #define MKDEV(ma, mi) (((ma) << MINORBITS) | (mi))
 
+#define DIV_ROUND_UP(n, d) (((n) + (d)-1) / (d))
+
 #define CONTEXT(n) get_cpu_struct(n)->regs
 
 i32 abs(i32 val);

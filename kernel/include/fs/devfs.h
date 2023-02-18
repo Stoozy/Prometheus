@@ -1,22 +1,34 @@
 #pragma once
 
-#include <fs/vfs.h>
+#include "fs/vfs.h"
+extern struct vfsops devfs_vfsops;
+extern struct vnops devfs_vnops;
 
-/* from linux/kdev_t.h */
-#define MINORBITS	20
-#define MINORMASK	((1U << MINORBITS) - 1)
+typedef enum device_type { BLOCKDEV, CHARDEV } DeviceType;
 
-#define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
-#define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
-#define MKDEV(ma,mi)	(((ma) << MINORBITS) | (mi))
+#define MINORBITS 20
+#define MINORMASK ((1U << MINORBITS) - 1)
 
-#define dev_t uint64_t
+#define MAJOR(dev) ((unsigned int)((dev) >> MINORBITS))
+#define MINOR(dev) ((unsigned int)((dev)&MINORMASK))
+#define MKDEV(ma, mi) (((ma) << MINORBITS) | (mi))
 
 typedef struct chardev {
-	FileSystem * fs;
-	void * private_data;
-	dev_t dev;
-	char * name;
+  VNodeOps *fs;
+  dev_t rdev;
+  char *filename;
+  void *private_data;
+  size_t size;
 } CharacterDevice;
 
-int devfs_register_chardev(CharacterDevice *);
+typedef struct dev {
+  DeviceType type;
+  union {
+    CharacterDevice cdev;
+  };
+} Device;
+
+#define MAX_DEVICES 255
+
+extern VFSNode *dev_root;
+int devfs_init();

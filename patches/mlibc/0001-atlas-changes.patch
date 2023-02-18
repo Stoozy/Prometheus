@@ -1,7 +1,7 @@
-From bd4692455ca66f6694aca5cf67d36de63351c63f Mon Sep 17 00:00:00 2001
+From f10565f7829d5f59b7721373c269a9b02e166f0d Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Wed, 8 Feb 2023 21:22:32 -0500
-Subject: [PATCH] Atlas changes
+Date: Sat, 18 Feb 2023 01:39:34 -0500
+Subject: [PATCH] atlas changes
 
 ---
  meson.build                                  |   8 +-
@@ -10,7 +10,7 @@ Subject: [PATCH] Atlas changes
  options/rtdl/generic/main.cpp                |   2 +
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 +
- sysdeps/atlas/generic/generic.cpp            | 675 +++++++++++++++++++
+ sysdeps/atlas/generic/generic.cpp            | 690 +++++++++++++++++++
  sysdeps/atlas/generic/thread.cpp             |  44 ++
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/access.h      |   9 +
@@ -53,14 +53,14 @@ Subject: [PATCH] Atlas changes
  sysdeps/atlas/include/abi-bits/uid_t.h       |   8 +
  sysdeps/atlas/include/abi-bits/utsname.h     |  12 +
  sysdeps/atlas/include/abi-bits/vm-flags.h    |  44 ++
- sysdeps/atlas/include/abi-bits/vt.h          |  76 +++
+ sysdeps/atlas/include/abi-bits/vt.h          |  76 ++
  sysdeps/atlas/include/abi-bits/wait.h        |  25 +
  sysdeps/atlas/include/abi-bits/xattr.h       |  21 +
+ sysdeps/atlas/include/fs.h                   |  41 ++
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
- sysdeps/atlas/include/syscall.h              | 101 +++
- sysdeps/atlas/include/vfs.h                  |  28 +
+ sysdeps/atlas/include/syscall.h              |  88 +++
  sysdeps/atlas/meson.build                    |  68 ++
- 56 files changed, 2756 insertions(+), 3 deletions(-)
+ 56 files changed, 2771 insertions(+), 3 deletions(-)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -109,9 +109,9 @@ Subject: [PATCH] Atlas changes
  create mode 100644 sysdeps/atlas/include/abi-bits/vt.h
  create mode 100644 sysdeps/atlas/include/abi-bits/wait.h
  create mode 100644 sysdeps/atlas/include/abi-bits/xattr.h
+ create mode 100644 sysdeps/atlas/include/fs.h
  create mode 100644 sysdeps/atlas/include/mlibc/thread-entry.hpp
  create mode 100644 sysdeps/atlas/include/syscall.h
- create mode 100644 sysdeps/atlas/include/vfs.h
  create mode 100644 sysdeps/atlas/meson.build
 
 diff --git a/meson.build b/meson.build
@@ -236,14 +236,16 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..29b8d2b6
+index 00000000..caf1a34d
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,675 @@
+@@ -0,0 +1,690 @@
++#include "mlibc/lock.hpp"
 +#include <abi-bits/vt.h>
 +#include <bits/ensure.h>
 +#include <dirent.h>
 +#include <errno.h>
++#include <fs.h>
 +#include <limits.h>
 +#include <linux/fb.h>
 +#include <mlibc/all-sysdeps.hpp>
@@ -253,7 +255,6 @@ index 00000000..29b8d2b6
 +#include <sys/types.h>
 +#include <syscall.h>
 +#include <unistd.h>
-+#include <vfs.h>
 +
 +namespace mlibc {
 +
@@ -323,12 +324,12 @@ index 00000000..29b8d2b6
 +  int errno;
 +  SYSCALL_NA2(SYS_OPEN, path, flags);
 +
-+  if (ret != -1) {
-+    *fd = ret;
-+    mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd << "\n"
-+                        << frg::endlog;
-+  } else
-+    return ENOENT;
++  if (ret == -1)
++    return errno;
++
++  *fd = ret;
++  mlibc::infoLogger() << "[mlibc] Got sys_open return value " << *fd << "\n"
++                      << frg::endlog;
 +
 +  return 0;
 +}
@@ -348,28 +349,25 @@ index 00000000..29b8d2b6
 +                      << "\n"
 +                      << frg::endlog;
 +
-+  *bytes_read = 0;
-+  return 0;
-+
 +  int ret;
 +  int errno;
 +  SYSCALL_NA3(SYS_READDIR, handle, buffer, max_size);
 +
 +  dirent ret_entry;
-+  DirectoryEntry *entry = (DirectoryEntry *)(buffer);
++  DirectoryEntry *entry = (DirectoryEntry *)buffer;
 +
 +  if (ret == -1) {
 +    *bytes_read = 0;
 +    return 0;
 +  }
 +
-+  ret_entry.d_ino = entry->ino;
++  ret_entry.d_ino = entry->d_ino;
 +  ret_entry.d_off = 0;
 +  ret_entry.d_reclen = sizeof(DirectoryEntry);
-+  memcpy(ret_entry.d_name, entry->name, 128);
++  memcpy(ret_entry.d_name, entry->d_name, 128);
 +
-+  mlibc::infoLogger() << "Got entry " << entry->name << "\n" << frg::endlog;
-+  switch (entry->type) {
++  mlibc::infoLogger() << "Got entry " << entry->d_name << "\n" << frg::endlog;
++  switch (entry->d_type) {
 +  case VFS_DIRECTORY:
 +    ret_entry.d_type = DT_DIR;
 +    mlibc::infoLogger() << "Type is DIR"
@@ -382,6 +380,8 @@ index 00000000..29b8d2b6
 +                        << "\n"
 +                        << frg::endlog;
 +    break;
++  case VFS_CHARDEVICE:
++    ret_entry.d_type = DT_CHR;
 +  default:
 +    ret_entry.d_type = DT_UNKNOWN;
 +    mlibc::infoLogger() << "Type is UNKNOWN"
@@ -392,7 +392,6 @@ index 00000000..29b8d2b6
 +
 +  memcpy(buffer, &ret_entry, sizeof(dirent));
 +  *bytes_read = ret_entry.d_reclen;
-+  // for(;;);
 +
 +  return 0;
 +}
@@ -432,14 +431,36 @@ index 00000000..29b8d2b6
 +  int errno;
 +  SYSCALL_NA3(SYS_WRITE, fd, buf, count);
 +
-+  if (ret >= 0)
-+    *bytes_written = ret;
-+  else
-+    return EBADF;
++  if (ret == -1)
++    return errno;
++  *bytes_written = ret;
++  mlibc::infoLogger() << *bytes_written << " bytes written\n" << frg::endlog;
 +
 +  return 0;
 +}
 +#endif
++
++int sys_chdir(const char *path) {
++  int ret;
++  int errno;
++  SYSCALL_NA1(SYS_CHDIR, path);
++
++  if (ret == -1)
++    return errno;
++
++  return 0;
++}
++
++int sys_getcwd(char *buffer, size_t size) {
++  int ret;
++  int errno;
++  SYSCALL_NA2(SYS_GETCWD, buffer, size);
++
++  if (ret == -1)
++    return errno;
++
++  return 0;
++}
 +
 +int sys_seek(int fd, off_t offset, int whence, off_t *new_offset) {
 +  // TODO
@@ -468,7 +489,7 @@ index 00000000..29b8d2b6
 +             struct stat *statbuf) {
 +  mlibc::infoLogger() << "[mlibc] Calling sys_stat() STUB\n" << frg::endlog;
 +
-+  VfsNodeStat vns;
++  VFSNodeStat vns;
 +  switch (fsfdt) {
 +  case fsfd_target::fd: {
 +    mlibc::infoLogger() << "[mlibc] Calling fstat on " << fd << " fd\n"
@@ -505,7 +526,7 @@ index 00000000..29b8d2b6
 +
 +  memset(statbuf, 0, sizeof(struct stat));
 +
-+  statbuf->st_ino = (vns.inode % 15);
++  statbuf->st_ino = vns.inode;
 +  statbuf->st_size = vns.filesize;
 +  statbuf->st_dev = 0;
 +  statbuf->st_nlink = 1;
@@ -516,13 +537,14 @@ index 00000000..29b8d2b6
 +  statbuf->st_blocks = 0;
 +  statbuf->st_mode = 0;
 +
-+  switch (vns.type) {
++  vtype_t type = vns.type;
++
++  switch (type) {
 +  case VFS_FILE:
 +    mlibc::infoLogger() << "[mlibc] Regular file " << path << "\n"
 +                        << frg::endlog;
 +    statbuf->st_mode |= S_IFREG;
 +    break;
-+  case VFS_DIRECTORY | VFS_MOUNTPOINT:
 +  case VFS_DIRECTORY:
 +    mlibc::infoLogger() << "[mlibc] Regular directory " << path << "\n"
 +                        << frg::endlog;
@@ -531,9 +553,11 @@ index 00000000..29b8d2b6
 +  case VFS_CHARDEVICE:
 +    mlibc::infoLogger() << "[mlibc] Chardevice " << path << "\n" << frg::endlog;
 +    statbuf->st_mode |= S_IFCHR;
-+    statbuf->st_rdev = 0;
++    statbuf->st_dev = vns.rdev;
 +    break;
 +  default:
++    mlibc::panicLogger() << "[mlibc] unknown type " << type << "\n"
++                         << frg::endlog;
 +    sys_libc_panic();
 +  }
 +
@@ -779,16 +803,6 @@ index 00000000..29b8d2b6
 +  return 0;
 +}
 +
-+int sys_getcwd(char *buffer, size_t size) {
-+  if (size < 2)
-+    return EINVAL;
-+  mlibc::infoLogger() << "[mlibc]  getcwd called buffer size" << size
-+                      << frg::endlog;
-+  buffer[0] = '/';
-+  buffer[1] = '\0';
-+  return 0;
-+}
-+
 +int sys_sigaction(int signum, const struct sigaction *act,
 +                  struct sigaction *oldact) {
 +  mlibc::infoLogger() << "[mlibc] Calling sys_sigaction() STUB; Signal:"
@@ -834,6 +848,7 @@ index 00000000..29b8d2b6
 +
 +  mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n"
 +                      << frg::endlog;
++  return ENOSYS;
 +  switch (request) {
 +  case F_DUPFD:
 +    mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD "
@@ -897,7 +912,7 @@ index 00000000..29b8d2b6
 +#endif // MLIBC_BUILDING_RTDL
 +
 +int sys_poll(struct pollfd *fds, nfds_t cnt, int timeout, int *events) {
-+  if(!fds || !events)
++  if (!fds || !events)
 +    return EINVAL;
 +
 +  int ret;
@@ -907,7 +922,7 @@ index 00000000..29b8d2b6
 +  if (ret == -1)
 +    return errno;
 +
-+  mlibc::infoLogger() << "events is at " << events <<"\n"<<frg::endlog;
++  mlibc::infoLogger() << "events is at " << events << "\n" << frg::endlog;
 +
 +  *events = ret;
 +
@@ -3004,6 +3019,53 @@ index 00000000..c0e7fbeb
 +#endif
 +
 +#endif /* MLIBC_ABIS_LINUX_XATTR_H */
+diff --git a/sysdeps/atlas/include/fs.h b/sysdeps/atlas/include/fs.h
+new file mode 100644
+index 00000000..fb587908
+--- /dev/null
++++ b/sysdeps/atlas/include/fs.h
+@@ -0,0 +1,41 @@
++#pragma once
++
++#include <abi-bits/dev_t.h>
++#include <abi-bits/stat.h>
++#include <stddef.h>
++#include <stdint.h>
++
++typedef enum vtype {
++  VFS_FILE = 0x01,
++  VFS_DIRECTORY = 0x02,
++  VFS_CHARDEVICE = 0x03,
++  VFS_BLOCKDEVICE = 0x04,
++  VFS_PIPE = 0x05,
++  VFS_SYMLINK = 0x06,
++  VFS_INVALID_FS = 0x09,
++} vtype_t;
++
++struct vnops;
++struct vfs;
++
++typedef struct directory_entry {
++  ino_t d_ino;
++  off_t d_off;
++  uint16_t d_reclen;
++  vtype_t d_type;
++  char d_name[256];
++} DirectoryEntry;
++
++typedef struct vattr {
++  vtype_t type;
++  mode_t mode;
++  size_t size;
++  dev_t rdev; /*! device represented by file */
++} VAttr;
++
++typedef struct vfs_node_stat {
++  vtype_t type;
++  ino_t inode;
++  size_t filesize;
++  dev_t rdev;
++} __attribute__((packed)) VFSNodeStat;
 diff --git a/sysdeps/atlas/include/mlibc/thread-entry.hpp b/sysdeps/atlas/include/mlibc/thread-entry.hpp
 new file mode 100644
 index 00000000..2dd88a64
@@ -3022,10 +3084,10 @@ index 00000000..2dd88a64
 +}
 diff --git a/sysdeps/atlas/include/syscall.h b/sysdeps/atlas/include/syscall.h
 new file mode 100644
-index 00000000..f819d82b
+index 00000000..e69cfcde
 --- /dev/null
 +++ b/sysdeps/atlas/include/syscall.h
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,88 @@
 +
 +#define SYS_EXIT 0
 +#define SYS_OPEN 1
@@ -3045,122 +3107,75 @@ index 00000000..f819d82b
 +#define SYS_DUP 15
 +#define SYS_DUP2 16
 +#define SYS_READDIR 17
-+#define SYS_FCNTL	18
-+#define SYS_POLL	19
-+#define SYS_EXEC    20
++#define SYS_FCNTL 18
++#define SYS_POLL 19
++#define SYS_EXEC 20
++#define SYS_CHDIR 21
++#define SYS_GETCWD 22
 +
-+
-+
-+
-+#define SYSCALL_NA0(call)                                                       \
-+  ({                                                                            \
-+    asm volatile("syscall"                                                      \
-+                 : "=a"(ret), "=d"(errno)                                       \
-+                 : "a"(call)                                                 \
-+                 : "rcx", "r11", "memory");                                     \
++#define SYSCALL_NA0(call)                                                      \
++  ({                                                                           \
++    asm volatile("syscall"                                                     \
++                 : "=a"(ret), "=d"(errno)                                      \
++                 : "a"(call)                                                   \
++                 : "rcx", "r11", "memory");                                    \
 +  });
 +
-+
-+#define SYSCALL_NA1(call, arg0)                                                 \
-+  ({                                                                            \
-+    asm volatile("syscall"                                                      \
-+                 : "=a"(ret), "=d"(errno)                                       \
-+                 : "a"(call), "D"(arg0)                                      \
-+                 : "rcx", "r11", "memory");                                     \
++#define SYSCALL_NA1(call, arg0)                                                \
++  ({                                                                           \
++    asm volatile("syscall"                                                     \
++                 : "=a"(ret), "=d"(errno)                                      \
++                 : "a"(call), "D"(arg0)                                        \
++                 : "rcx", "r11", "memory");                                    \
 +  });
 +
-+
-+#define SYSCALL_NA2(call, arg0, arg1)                                           \
-+  ({                                                                            \
-+    asm volatile("syscall"                                                      \
-+                 : "=a"(ret), "=d"(errno)                                       \
-+                 : "a"(call), "D"(arg0), "S"(arg1)                           \
-+                 : "rcx", "r11", "memory");                                     \
++#define SYSCALL_NA2(call, arg0, arg1)                                          \
++  ({                                                                           \
++    asm volatile("syscall"                                                     \
++                 : "=a"(ret), "=d"(errno)                                      \
++                 : "a"(call), "D"(arg0), "S"(arg1)                             \
++                 : "rcx", "r11", "memory");                                    \
 +  });
 +
-+
-+
-+
-+#define SYSCALL_NA3(call, arg0, arg1, arg2)                                     \
-+  ({                                                                            \
-+    asm volatile("syscall"                                                      \
-+                 : "=a"(ret), "=d"(errno)                                       \
-+                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2)                \
-+                 : "rcx", "r11", "memory");                                     \
++#define SYSCALL_NA3(call, arg0, arg1, arg2)                                    \
++  ({                                                                           \
++    asm volatile("syscall"                                                     \
++                 : "=a"(ret), "=d"(errno)                                      \
++                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2)                  \
++                 : "rcx", "r11", "memory");                                    \
 +  });
 +
-+
-+
-+#define SYSCALL_NA4(call, arg0, arg1, arg2, arg3)                               \
-+  ({                                                                            \
-+    register auto r10 asm("r10") = (arg3);                                      \
-+    asm volatile("syscall"                                                      \
-+                 : "=a"(ret), "=d"(errno)                                       \
-+                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2), "r"(r10)      \
-+                 : "rcx", "r11", "memory");                                     \
++#define SYSCALL_NA4(call, arg0, arg1, arg2, arg3)                              \
++  ({                                                                           \
++    register auto r10 asm("r10") = (arg3);                                     \
++    asm volatile("syscall"                                                     \
++                 : "=a"(ret), "=d"(errno)                                      \
++                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2), "r"(r10)        \
++                 : "rcx", "r11", "memory");                                    \
 +  });
 +
-+
-+#define SYSCALL_NA5(call, arg0, arg1, arg2, arg3, arg4)                         \
-+  ({                                                                            \
-+    register auto r10 asm("r10") = (arg3);                                      \
-+    register auto r9 asm("r9") = (arg4);                                        \
-+    asm volatile("syscall"                                                      \
-+                 : "=a"(ret), "=d"(errno)                                       \
-+                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2), "r"(r10),     \
-+                   "r"(r9)                                                      \
-+                 : "rcx", "r11", "memory");                                     \
++#define SYSCALL_NA5(call, arg0, arg1, arg2, arg3, arg4)                        \
++  ({                                                                           \
++    register auto r10 asm("r10") = (arg3);                                     \
++    register auto r9 asm("r9") = (arg4);                                       \
++    asm volatile("syscall"                                                     \
++                 : "=a"(ret), "=d"(errno)                                      \
++                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2), "r"(r10),       \
++                   "r"(r9)                                                     \
++                 : "rcx", "r11", "memory");                                    \
 +  });
 +
-+
-+
-+#define SYSCALL_NA6(call, arg0, arg1, arg2, arg3, arg4, arg5)                   \
-+  ({                                                                            \
-+    register auto r10 asm("r10") = (arg3);                                      \
-+    register auto r9 asm("r9") = (arg4);                                        \
-+    register auto r8 asm("r8") = (arg5);                                        \
-+    asm volatile("syscall"                                                      \
-+                 : "=a"(ret), "=d"(errno)                                       \
-+                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2), "r"(r10),     \
-+                   "r"(r9), "r"(r8)                                             \
-+                 : "rcx", "r11", "memory");                                     \
++#define SYSCALL_NA6(call, arg0, arg1, arg2, arg3, arg4, arg5)                  \
++  ({                                                                           \
++    register auto r10 asm("r10") = (arg3);                                     \
++    register auto r9 asm("r9") = (arg4);                                       \
++    register auto r8 asm("r8") = (arg5);                                       \
++    asm volatile("syscall"                                                     \
++                 : "=a"(ret), "=d"(errno)                                      \
++                 : "a"(call), "D"(arg0), "S"(arg1), "d"(arg2), "r"(r10),       \
++                   "r"(r9), "r"(r8)                                            \
++                 : "rcx", "r11", "memory");                                    \
 +  });
-+
-+
-diff --git a/sysdeps/atlas/include/vfs.h b/sysdeps/atlas/include/vfs.h
-new file mode 100644
-index 00000000..ba870bff
---- /dev/null
-+++ b/sysdeps/atlas/include/vfs.h
-@@ -0,0 +1,28 @@
-+#pragma once
-+
-+#include <stdint.h>
-+
-+#define VFS_FILE            0x01
-+#define VFS_DIRECTORY       0x02
-+#define VFS_CHARDEVICE      0x03
-+#define VFS_BLOCKDEVICE     0x04
-+#define VFS_PIPE            0x05
-+#define VFS_SYMLINK         0x06
-+#define VFS_MOUNTPOINT      0x08
-+#define VFS_INVALID_FS      0x09
-+
-+
-+#define name_max            128
-+
-+typedef struct vfs_node_stat  {
-+    uint32_t type;
-+    uint64_t inode;
-+    uint64_t filesize;
-+} __attribute__((packed)) VfsNodeStat;
-+
-+typedef struct  {
-+    char name[name_max];
-+    uint32_t ino;
-+    uint32_t type;
-+} __attribute__((packed)) DirectoryEntry; 
-+
 diff --git a/sysdeps/atlas/meson.build b/sysdeps/atlas/meson.build
 new file mode 100644
 index 00000000..22039f30

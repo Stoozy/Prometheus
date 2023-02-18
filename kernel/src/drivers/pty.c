@@ -1,6 +1,10 @@
+#include "cpu/idt.h"
 #include "fs/devfs.h"
+#include "fs/tmpfs.h"
 #include "fs/vfs.h"
 #include <abi-bits/fcntl.h>
+#include <asm-generic/ioctls.h>
+#include <asm-generic/poll.h>
 #include <asm/ioctls.h>
 #include <drivers/tty.h>
 #include <libk/kmalloc.h>
@@ -23,7 +27,7 @@ struct ptm_data;
 RingBuffer *ptm_kbd_rb;
 
 struct pts_data {
-  int slave;
+  int slave_no;
   struct tty *tty;
 
   struct ptm_data *master;
@@ -39,90 +43,89 @@ struct ptm_data {
 
 int ptmx_slave_ctr = 0;
 
-static File *ptmx_open(const char *filename, int flags);
-static size_t ptm_read(struct file *, size_t, uint8_t *buf);
-static size_t ptm_write(struct file *, size_t, uint8_t *buf);
-static int ptm_poll(struct file *, struct pollfd *, int timeout);
-static int ptm_ioctl(struct file *, uint32_t request, void *arg);
+static int ptmx_open(File *file, VFSNode *vn, int flags);
+static int ptm_open(File *file, VFSNode *vn, int flags);
 
-static void pts_flush_output(struct tty *);
-static int pts_ioctl(struct tty *, uint64_t, void *);
+static ssize_t ptm_read(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+static ssize_t ptm_write(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag);
+static int ptm_poll(VFSNode *vp, int events);
 
-FileSystem ptmx_ops = {.open = ptmx_open};
-FileSystem ptm_ops = {
-    .read = ptm_read, .write = ptm_write, .ioctl = ptm_ioctl, .poll = ptm_poll};
+static void pts_flush_output(struct tty *tty);
+static int pts_ioctl(struct tty *tty, uint64_t req, void *args);
 
-struct tty_driver pts_ops = {.flush_chars = pts_flush_output,
-                             .ioctl = pts_ioctl};
+VNodeOps ptmx_ops = {.open = ptmx_open};
+VNodeOps ptm_ops = {.open = ptm_open,
+                    .read = ptm_read,
+                    .write = ptm_write,
+                    .ioctl = ptm_ioctl,
+                    .poll = ptm_poll};
 
-int pty_init() {
-  CharacterDevice *chardev = kmalloc(sizeof(CharacterDevice));
+struct tty_driver pts_tty_ops = {.flush_chars = pts_flush_output,
+                                 .ioctl = pts_ioctl};
 
-  chardev->fs = &ptmx_ops;
-  chardev->dev = MKDEV(PTMX_MAJOR, PTMX_MINOR);
-  chardev->name = kmalloc(256);
-  strcpy(chardev->name, "ptmx");
+static int ptm_open(File *file, VFSNode *vn, int flags) {
+  kprintf("ptm_open()\n");
+  for (;;)
+    ;
+}
+static int ptmx_open(File *file, VFSNode *vn, int flags) {
+  kprintf("ptmx_open()\n");
+  int slave_no = ptmx_slave_ctr++;
 
-  if (devfs_register_chardev(chardev) == -1)
+  VFSNode *pts_dirnode;
+  if (dev_root->ops->lookup(dev_root, &pts_dirnode, "/dev/pts/")) {
+    kprintf("Couldn't find /dev/pts/");
     return -1;
+  }
+
+  // return file with vnode as ptm node with ptm_ops
+  // setup pts/N node with proper tty driver (pts_tty_ops)
+
+  struct ptm_data *ptm_data = kmalloc(sizeof(struct ptm_data));
+  struct pts_data *pts_data = kmalloc(sizeof(struct pts_data));
+
+  /* Initialize ptm node (entirely virtual)*/
+  VFSNode *ptm_node = kmalloc(sizeof(VFSNode));
+  ptm_node->type = VFS_CHARDEVICE;
+  ptm_node->ops = &ptm_ops;
+  ptm_node->private_data = ptm_data;
+  rb_init(&ptm_data->ibuf, MAX_LINE, sizeof(char));
+
+  /* init pts node `/dev/pts/N` */
+  VFSNode *pts_node;
+  char name[256];
+  sprintf(name, "/dev/pts/%d", slave_no);
+  VAttr attr = {.type = VFS_CHARDEVICE, .rdev = MKDEV(PTMX_MAJOR, slave_no)};
+  pts_dirnode->ops->create(pts_dirnode, &pts_node, name, &attr);
+
+  tty_init_node(pts_node);
+  TmpNode *pts_tnode = pts_node->private_data;
+  struct tty *pts_tty = pts_tnode->dev.cdev.private_data;
+  pts_tty->driver = pts_tty_ops;
+  pts_tty->private_data = pts_data;
+
+  file->vn = ptm_node;
+  file->refcnt = 1;
+  file->pos = 0;
+
+  ptm_data->slave = pts_data;
+
+  pts_data->tty = pts_tty;
+  pts_data->master = ptm_data;
 
   return 0;
 }
 
-static File *ptmx_open(const char *filename, int flags) {
-  int slave_no = ptmx_slave_ctr++;
-
-  File *file = kmalloc(sizeof(struct file));
-
-  struct tty *pts_tty = tty_init_dev(pts_ops);
-
-  if (!(flags & O_NOCTTY)) {
-    extern struct tty *gp_active_tty;
-    gp_active_tty = pts_tty;
-  }
-
-  struct pts_data *pts_data = kmalloc(sizeof(struct pts_data));
-  struct ptm_data *ptm_data = kmalloc(sizeof(struct ptm_data));
-
-  pts_tty->private_data = pts_data;
-  pts_data->slave = slave_no;
-  pts_data->tty = pts_tty;
-  pts_data->master = ptm_data;
-
-  rb_init(&ptm_data->ibuf, MAX_LINE, sizeof(char));
-  ptm_kbd_rb = &ptm_data->ibuf;
-
-  ptm_data->slave = pts_data;
-
-  file->fs = &ptm_ops;
-  file->private_data = ptm_data;
-  file->name = kmalloc(256);
-  sprintf(file->name, "/dev/pts/%d", slave_no);
-
-  File *pts_file = kmalloc(sizeof(struct file));
-  pts_file->name = file->name;
-  extern FileSystem tty_fops;
-  pts_file->private_data = pts_tty;
-  pts_file->fs = &tty_fops;
-  pts_file->device = MKDEV(PTS_MAJOR, slave_no);
-
-  // tty_register(MKDEV(PTS_MAJOR, slave_no), pts_tty, pts_name);
-
-  vfs_add_to_open_list(vfs_mknod(pts_file));
-
-  kprintf("finshed creating pty pair\n");
-  return file;
-}
-
-static size_t ptm_read(struct file *file, size_t size, uint8_t *buf) {
-  kprintf("Reading %s\n", file->name);
-  struct ptm_data *ptm = file->private_data;
+static ssize_t ptm_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+  kprintf("ptm_read()");
+  struct ptm_data *ptm = vn->private_data;
 
   size_t s = 0;
 read:
   disable_irq();
 
-  for (; s < size; s++)
+  for (; s < nbyte; s++)
     if (!rb_pop(&ptm->ibuf, &buf[s]))
       break;
   enable_irq();
@@ -138,31 +141,27 @@ read:
   // should be in line disc
   return s;
 }
-
-static size_t ptm_write(struct file *file, size_t size, uint8_t *buf) {
-  struct ptm_data *ptm = file->private_data;
+static ssize_t ptm_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+  kprintf("ptm_write()");
+  struct ptm_data *ptm = vn->private_data;
   struct pts_data *pts = ptm->slave;
 
   size_t w = 0;
-  for (; w < size; w++) {
+  for (; w < nbyte; w++) {
     if (!rb_push(pts->tty->ibuf, &buf[w]))
       break;
   }
-
-  kprintf("Written %d bytes to %s\n", w, file->name);
-
-  /* kprintf("PTY write: TODO\n"); */
   return w;
 }
-
-static int ptm_ioctl(struct file *filep, uint32_t request, void *arg) {
-  struct ptm_data *ptm = filep->private_data;
+static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag) {
+  kprintf("ptm_ioctl()\n");
+  struct ptm_data *ptm = vp->private_data;
   struct pts_data *pts = ptm->slave;
 
   switch (request) {
   case TIOCGPTN: {
     int *ptn = arg;
-    *ptn = pts->slave;
+    *ptn = pts->slave_no;
     return 0;
   }
   case TCGETS: {
@@ -225,7 +224,32 @@ static int ptm_ioctl(struct file *filep, uint32_t request, void *arg) {
   return 0;
 }
 
+static int ptm_poll(VFSNode *vp, int events) {
+  kprintf("ptm_poll()");
+  int revents = 0;
+
+  struct ptm_data *ptm = vp->private_data;
+  struct pts_data *pts = ptm->slave;
+  //   /* struct tty *tty = pts->tty; */
+
+  int evt = 0;
+  if (events & POLLIN) {
+    if (ptm->ibuf.len) {
+      revents |= POLLIN;
+      evt++;
+    }
+  }
+
+  if (events & POLLOUT) {
+    revents |= POLLOUT;
+    evt++;
+  }
+
+  return evt;
+}
+
 static void pts_flush_output(struct tty *tty) {
+  kprintf("pts_flush_output()");
   struct pts_data *pts = tty->private_data;
   struct ptm_data *ptm = pts->master;
 
@@ -235,11 +259,11 @@ static void pts_flush_output(struct tty *tty) {
       break;
   }
 }
-
-static int pts_ioctl(struct tty *tty, uint64_t request, void *arg) {
+static int pts_ioctl(struct tty *tty, uint64_t req, void *arg) {
+  kprintf("pts_ioctl()");
   struct pts_data *pts_data = tty->private_data;
 
-  switch (request) {
+  switch (req) {
   case TIOCSCTTY: {
     extern struct tty *gp_active_tty;
     gp_active_tty = pts_data->tty;
@@ -276,34 +300,34 @@ static int pts_ioctl(struct tty *tty, uint64_t request, void *arg) {
     *grp = 200;
     return 0;
   }
-  default: {
-    kprintf("Unimplemented \n");
+  case TIOCGPTN: {
+    kprintf("get ptn from pts :(\n");
     for (;;)
       ;
   }
-    return 0;
+  default: {
+    kprintf("Unimplemented\n");
+    for (;;)
+      ;
   }
+  }
+
+  return -1;
 }
 
-static int ptm_poll(struct file *file, struct pollfd *pfd, int timeout) {
-  /* struct pts_data *pts = ptm->slave; */
-  /* struct tty *tty = pts->tty; */
+int pty_init() {
 
-  struct ptm_data *ptm = file->private_data;
-  kprintf("ptm is at %x\n", ptm);
+  VFSNode *new;
+  VAttr attr = {.type = VFS_CHARDEVICE, .rdev = MKDEV(PTMX_MAJOR, PTMX_MINOR)};
+  dev_root->ops->create(dev_root, &new, "/dev/ptmx", &attr);
 
-  int evt = 0;
-  if (pfd->events & POLLIN) {
-    if (ptm->ibuf.len) {
-      pfd->revents |= POLLIN;
-      evt++;
-    }
+  new->ops = &ptmx_ops;
+
+  VFSNode *pts_dirnode;
+  if (dev_root->ops->lookup(dev_root, &pts_dirnode, "/dev/pts/")) {
+    VAttr attr = {.type = VFS_DIRECTORY};
+    dev_root->ops->mkdir(dev_root, &pts_dirnode, "/dev/pts/", &attr);
   }
 
-  if (pfd->revents & POLLOUT) {
-    pfd->revents |= POLLOUT;
-    evt++;
-  }
-
-  return evt;
+  return 0;
 }

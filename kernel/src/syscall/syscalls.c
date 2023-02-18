@@ -1,4 +1,5 @@
 #include "cpu/idt.h"
+#include "fs/tmpfs.h"
 #include <abi-bits/seek-whence.h>
 #include <abi-bits/vm-flags.h>
 #include <config.h>
@@ -44,6 +45,9 @@ static bool valid_fd(int fd) {
   if (fd < 0 || fd > MAX_PROC_FDS)
     return false;
 
+  if (!running->fd_table[fd])
+    return false;
+
   return true;
 }
 
@@ -82,41 +86,45 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
   kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
           flags, running->name, running->pid);
 
+  extern void dump_pqueue(ProcessQueue *);
+  dump_pqueue(&running->children);
   if (pid < -1) {
     kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
   } else if (pid == -1) {
     extern volatile ProcessControlBlock *running;
 
     if (running->children.count == 0) {
-      for (;;)
-        kprintf("NO children...\n ");
+      // for (;;)
+      //   kprintf("NO children...\n ");
       regs->rdx = ECHILD;
       regs->rax = -1;
       return;
     }
 
-    if (!running->childDied) {
-      regs->rax = -1;
-      regs->rdx = EINTR;
-      return;
-      ;
-    }
+    // if (!running->childDied) {
+    //   regs->rax = -1;
+    //   regs->rdx = EINTR;
+    //   return;
+    // }
 
     for (PQNode *pnode = running->children.first; pnode; pnode = pnode->next) {
       ProcessControlBlock *proc = pnode->pcb;
       if (proc->state == ZOMBIE) {
         // TODO: clean up the process (need a proper malloc)
+
         *status = proc->exit_code;
         regs->rax = proc->pid;
         kprintf("Got dead child %s (pid: %d; status %d)\n", proc->name,
                 proc->pid, *status);
         pqueue_remove(&running->children, proc->pid);
-        /* for(;;); */
+
+        // for (;;)
+        //   ;
         return;
       }
     }
 
-    regs->rdx = ECHILD;
+    regs->rdx = EINTR;
     regs->rax = -1;
     return;
 
@@ -134,73 +142,70 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
   return;
 }
 
-void sys_open(const char *name, int flags, Registers *regs) {
+int sys_open(const char *name, int flags, Registers *regs) {
+
+  // if (strcmp(name, "/dev/fb0") == 0) {
+  //   kprintf("opening /dev/fb0");
+  //   for (;;)
+  //     ;
+  // }
+
   File *file = vfs_open(name, flags);
 
+  static int count = 0;
   if (!file) {
     regs->rdx = ENOENT;
-    regs->rax = -1;
-    return;
+    return -1;
   }
-
-  kprintf("Got file %s with size %d bytes\n", file->name, file->size);
 
   int fd = map_file_to_proc(running, file);
 
   // error on overflow
   if (fd > MAX_PROC_FDS) {
     regs->rdx = ENOMEM;
-    regs->rax = -1;
-    return;
+    return -1;
   }
 
-  regs->rax = fd;
-  return;
+  return fd;
 }
 
-int sys_close(int fd) {
-  vmm_switch_page_directory(kernel_cr3);
-  unmap_fd_from_proc(running, fd);
-  kprintf("Closed fd %d\n", fd);
-  return 0;
-}
+// int sys_close(int fd) {
+//   vmm_switch_page_directory(kernel_cr3);
+//   unmap_fd_from_proc(running, fd);
+//   kprintf("Closed fd %d\n", fd);
+//   return 0;
+// }
 
-void sys_read(int file, char *ptr, size_t len, Registers *regs) {
+ssize_t sys_read(int fd, char *ptr, size_t len, Registers *regs) {
 
-  if (file > MAX_PROC_FDS) {
+  if (!valid_fd(fd)) {
     regs->rdx = EBADF;
-    regs->rax = -1;
-    return;
+    return -1;
   }
 
-  struct file *f = running->fd_table[file];
-  kprintf("File ptr %x. Name %s. Device %x\n", f, f->name, f->device);
-  int bytes_read = vfs_read(f, (u8 *)ptr, len);
+  struct file *file = running->fd_table[fd];
 
-  regs->rax = bytes_read;
-  return;
+  return vfs_read(file, (u8 *)ptr, len);
 }
 
-int sys_write(int fd, char *ptr, int len) {
+ssize_t sys_write(int fd, char *ptr, int len) {
   kprintf("sys_write(): FD is %d\n", fd);
 
-  if (!valid_fd(fd))
-    return -1;
+  if (!valid_fd(fd)) {
+    kprintf("Invalid fd");
+    for (;;)
+      ;
+  }
 
   File *file = running->fd_table[fd];
   if (file) {
-    vfs_write(file, (uint8_t *)ptr, len);
+    return vfs_write(file, (uint8_t *)ptr, len);
   } else {
     kprintf("File not open!\n");
     return -1;
   }
 
-#ifdef SYSCALL_DEBUG
-  kprintf("sys_write(): %s; Buffer addr: 0x%x Length: %d\n", file->name, ptr,
-          len);
-#endif
-
-  return len;
+  return 0;
 }
 
 void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
@@ -217,8 +222,24 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
     return NULL;
   }
 
-  int pages = (size / PAGE_SIZE) + 1;
-  void *phys_base = pmm_alloc_blocks(pages);
+  int pages = DIV_ROUND_UP(size, PAGE_SIZE);
+  void *phys_base;
+
+  if (flags & MAP_SHARED) {
+    if (!valid_fd(fd)) {
+      for (;;)
+        kprintf("Called mmap on invalid fd...");
+    }
+
+    VFSNode *vnode = proc->fd_table[fd]->vn;
+    TmpNode *tnode = vnode->private_data;
+
+    // FIXME: only being used for /dev/fb0
+    phys_base = tnode->dev.cdev.private_data - PAGING_VIRTUAL_OFFSET;
+    kprintf("Called mmap on %s\n", tnode->name);
+  } else {
+    phys_base = pmm_alloc_blocks(pages);
+  }
 
   if (phys_base == NULL) {
     // out of memory
@@ -258,47 +279,29 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
 
   kprintf("[MMAP] Returning 0x%x\n", virt_base);
 
-  if (flags & MAP_SHARED) {
-    if (!proc->fd_table[fd]) {
-      for (;;)
-        kprintf("Called mmap on invalid fd...");
-    }
-
-    if (strcmp(proc->fd_table[fd]->name, "/dev/fb0") == 0) {
-      extern struct fb_file g_framebuffer;
-      g_framebuffer.data = phys_base;
-    }
-  }
-
   return virt_base;
 }
 
 off_t sys_seek(int fd, off_t offset, int whence) {
-
-  File *file = running->fd_table[fd];
-
-  if (!file) {
-    kprintf("File dne: %d\n", fd);
+  if (!valid_fd(fd)) {
+    kprintf("Invalid fd ...");
     return -1;
   }
 
-  kprintf("[SYS_SEEK] Name %s\n", file->name);
-  kprintf("[SYS_SEEK] FD addr: %llx\n", file);
-  kprintf("[SYS_SEEK] FD is %d. Offset is %d. Whence is %d\n", fd, offset,
-          whence);
+  File *file = running->fd_table[fd];
 
   switch (whence) {
   case SEEK_CUR:
     kprintf("[SYS_SEEK] whence is SEEK_CUR\n");
-    running->fd_table[fd]->position += offset;
+    running->fd_table[fd]->pos += offset;
     break;
   case SEEK_SET:
     kprintf("[SYS_SEEK] whence is SEEK_SET\n");
-    running->fd_table[fd]->position = offset;
+    running->fd_table[fd]->pos = offset;
     break;
   case SEEK_END:
     kprintf("[SYS_SEEK] whence is SEEK_END\n");
-    running->fd_table[fd]->position = running->fd_table[fd]->size + offset;
+    running->fd_table[fd]->pos = running->fd_table[fd]->vn->size + offset;
     break;
   default:
     kprintf("[SYS_SEEK] Whence is none\n");
@@ -306,10 +309,10 @@ off_t sys_seek(int fd, off_t offset, int whence) {
   }
 
   kprintf("\n");
-  return running->fd_table[fd]->position;
+  return running->fd_table[fd]->pos;
 }
 
-void sys_fstat(int fd, VfsNodeStat *vns, Registers *regs) {
+void sys_fstat(int fd, VFSNodeStat *vns, Registers *regs) {
   if (fd > MAX_PROC_FDS || fd < 0)
     kprintf("[SYS_STAT] Invalid FD");
 
@@ -321,26 +324,21 @@ void sys_fstat(int fd, VfsNodeStat *vns, Registers *regs) {
     return;
   }
 
-  kprintf("getting stat for %s\n", file->name);
-
-  vns->filesize = file->size;
-  vns->type = file->type;
-  vns->inode = file->inode;
+  vns->filesize = file->vn->size;
+  vns->type = file->vn->type;
+  vns->inode = (ino_t)file->vn->private_data;
 
   regs->rax = 0;
 
   return;
 }
 
-void sys_stat(const char *path, VfsNodeStat *statbuf, Registers *regs) {
-  int ret = vfs_stat(path, statbuf);
-  if (ret) {
+int sys_stat(const char *path, VFSNodeStat *statbuf, Registers *regs) {
+  if (vfs_stat(path, statbuf)) {
     regs->rdx = ENOENT;
-    regs->rax = -1;
-    return;
+    return -1;
   }
-
-  regs->rax = ret;
+  return 0;
 }
 
 int sys_tcb_set(void *ptr) {
@@ -407,7 +405,7 @@ void sys_execve(char *name, char **argvp, char **envp) {
 
   if (running->parent) {
     new->parent = running->parent;
-    // pqueue_remove(&running->parent->children, running->pid);
+    pqueue_remove(&running->parent->children, running->pid);
     pqueue_push(&running->parent->children, new);
     dump_pqueue(&running->parent->children);
   }
@@ -415,19 +413,20 @@ void sys_execve(char *name, char **argvp, char **envp) {
   pqueue_push(&ready_queue, new);
 
   for (int i = 0; i < MAX_PROC_FDS; i++) {
-    if (running->fd_table[i]->mode & FD_CLOEXEC)
-      continue;
-
+    // TODO: check CLOEXEC
     new->fd_table[i] = running->fd_table[i];
   }
 
+  new->cwd = strdup(running->cwd);
+
   kprintf("[exec] scheduling \n");
-  // asm volatile("sti; int $41; cli");
-  schedule(&running->trapframe);
+  asm volatile("sti; int $41; cli");
+  // schedule(&running->trapframe);
 
   // running = new;
 
-  // kprintf("process (%s pid: %d) cr3 at %x\n", running->name, running->pid,
+  // kprintf("process (%s pid: %d) cr3 at %x\n", running->name,
+  // running->pid,
   //         running->cr3);
   // kprintf("Entrypoint 0x%x\n", running->trapframe.rip);
 
@@ -460,10 +459,9 @@ int sys_ioctl(int fd, uint32_t req, void *arg) {
   }
 
   File *file = running->fd_table[fd];
-  kprintf("File is at %x name: %s\n", file, file->name);
 
-  if (file->fs->ioctl)
-    return file->fs->ioctl(file, req, arg);
+  if (file->vn->ops->ioctl)
+    return file->vn->ops->ioctl(file->vn, req, arg, 0);
 
   // kprintf("Name is %s\n", file->name);
   return -1;
@@ -503,7 +501,7 @@ int sys_dup2(int fd, int flags, int new_fd) {
 
   // refer to the same file
   running->fd_table[new_fd] = file;
-  kprintf("New fd %d name: %s\n", new_fd, running->fd_table[new_fd]->name);
+  // kprintf("New fd %d name: %s\n", new_fd, running->fd_table[new_fd]->name);
 
   return new_fd;
 }
@@ -514,75 +512,15 @@ int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
   if (max_size < sizeof(DirectoryEntry))
     return -1;
 
+  if (!valid_fd(handle)) {
+    kprintf("Invalid handle for readdir\n");
+    return -1;
+  }
+
   File *file = running->fd_table[handle];
-  if (!file) {
-    kprintf("Invalid open stream\n");
-    return -1;
-  }
 
-  kprintf("Reading entries from %s\n", file->name);
-  DirectoryEntry *entry = vfs_readdir(file);
-  if (entry) {
-    *buffer = *entry;
-    return 0;
-  }
-
-  return 0;
-}
-
-int sys_fcntl(int fd, int request, va_list args) {
-
-  switch (request) {
-  case F_SETFD: {
-    kprintf("F_SETFD\n");
-    if (valid_fd(fd)) {
-      File *fp = running->fd_table[fd];
-      if (fp) {
-        int flags = va_arg(args, int);
-        fp->mode |= flags;
-        return 0;
-      }
-    }
+  if (vfs_readdir(file, buffer))
     return -1;
-  }
-  case F_GETFD: {
-    kprintf("F_GETFD\n");
-    if (valid_fd(fd)) {
-      File *fp = running->fd_table[fd];
-      if (fp) {
-        return fp->mode;
-      }
-    }
-    break;
-  }
-  case F_GETFL: {
-    if (valid_fd(fd)) {
-      File *fp = running->fd_table[fd];
-      if (fp) {
-        return fp->status;
-      }
-    }
-    return -1;
-    break;
-  }
-  case F_SETFL: {
-    kprintf("F_SETFL\n");
-    if (valid_fd(fd)) {
-      File *fp = running->fd_table[fd];
-      if (fp) {
-        int status = va_arg(args, int);
-        fp->status = status;
-        return 0;
-      }
-    }
-    return -1;
-    break;
-  }
-  default: {
-    kprintf("unknown request\n");
-    return -1;
-  }
-  }
 
   return 0;
 }
@@ -596,17 +534,43 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
     int fd = fds[i].fd;
     if (valid_fd(fd)) {
       struct file *file = running->fd_table[fd];
-      if (!file->fs->poll)
-        kprintf("Poll is not implemented for %s :(\n", file->name);
-      else {
-        events += file->fs->poll(file, &fds[i], timeout);
+      if (!file->vn->ops->poll) {
+
+        TmpNode *tnode = file->vn->private_data;
+        kprintf("Poll is not implemented for %s \n", tnode->name);
+      } else {
+        int revents = file->vn->ops->poll(file->vn, fds[i].events);
+
+        if (revents) {
+          fds[i].revents = revents;
+          events++;
+        }
       }
+
     } else {
       kprintf("[POLL]   Invalid fd %d\n", fd);
     }
   }
 
   return events;
+}
+
+int sys_chdir(const char *path) {
+  char *name = kmalloc(strlen(path));
+  running->cwd = strdup(path);
+  kprintf("Changing directory to %s\n", name);
+  return 0;
+}
+
+int sys_getcwd(char *buffer, size_t size) {
+  if (size < strlen(running->cwd)) {
+    kprintf("[get_cwd] name too small\n");
+    for (;;)
+      ;
+  }
+
+  strcpy(buffer, running->cwd);
+  return 0;
 }
 
 void syscall_dispatcher(Registers *regs) {
@@ -622,21 +586,20 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_OPEN: {
     kprintf("[SYS]  OPEN CALLED by %s (%d)\n", running->name, running->pid);
-    sys_open((char *)regs->rdi, (int)regs->rsi, regs);
+    regs->rax = sys_open((char *)regs->rdi, (int)regs->rsi, regs);
     break;
   }
   case SYS_CLOSE: {
     kprintf("[SYS]  CLOSE CALLED\n");
-    regs->rax = sys_close(regs->rdi);
+    for (;;)
+      ;
     break;
   }
   case SYS_READ: {
-    // kprintf("[SYS]  READ CALLED\n");
-    sys_read(regs->rdi, (char *)regs->rsi, regs->rdx, regs);
+    regs->rax = sys_read(regs->rdi, (char *)regs->rsi, regs->rdx, regs);
     break;
   }
   case SYS_WRITE: {
-    // kprintf("[SYS]  WRITE CALLED\n");
     regs->rax = sys_write(regs->rdi, (char *)regs->rsi, regs->rdx);
     break;
   }
@@ -654,12 +617,7 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_SEEK: {
     kprintf("[SYS]  SEEK CALLED\n");
-    int fd = regs->rdi;
-    off_t off = regs->rsi;
-    int whence = regs->rdx;
-    regs->rax = sys_seek(fd, off, whence);
-    kprintf("Returning offset %d\n", regs->rax);
-
+    regs->rax = sys_seek(regs->rdi, regs->rsi, regs->rdx);
     break;
   }
   case SYS_TCB_SET: {
@@ -669,34 +627,25 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_IOCTL: {
     kprintf("[SYS]  IOCTL CALLED\n");
-    int fd = regs->rdi;
-    unsigned long req = regs->rsi;
-    void *arg = (void *)regs->rdx;
-
-    regs->rax = sys_ioctl(fd, req, arg);
+    regs->rax = sys_ioctl(regs->rdi, regs->rsi, (void *)regs->rdx);
     break;
   }
   case SYS_STAT: {
     kprintf("[SYS]  STAT CALLED\n");
-    sys_stat((const char *)regs->rdi, (VfsNodeStat *)regs->rsi, regs);
+    regs->rax =
+        sys_stat((const char *)regs->rdi, (VFSNodeStat *)regs->rsi, regs);
     break;
   }
   case SYS_FSTAT: {
     kprintf("[SYS]  FSTAT CALLED\n");
-    sys_fstat(regs->rdi, (VfsNodeStat *)regs->rsi, regs);
+    sys_fstat(regs->rdi, (VFSNodeStat *)regs->rsi, regs);
     break;
   }
   case SYS_GETPID: {
     regs->rax = sys_getpid();
     break;
   }
-
-  case SYS_FCNTL: {
-    regs->rax = sys_fcntl(regs->rdi, regs->rsi, (void *)regs->rdx);
-    break;
-  }
   case SYS_POLL: {
-    kprintf("[SYS]  POLL CALLED\n");
     regs->rax = sys_poll((struct pollfd *)regs->rdi, regs->rsi, regs->rdx);
     break;
   }
@@ -709,6 +658,7 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_READDIR: {
+    kprintf("SYS_READDIR called\n");
     regs->rax = sys_readdir(regs->rdi, (DirectoryEntry *)regs->rsi, regs->rdx);
     break;
   }
@@ -724,23 +674,22 @@ void syscall_dispatcher(Registers *regs) {
     sys_waitpid((pid_t)regs->rdi, (int *)regs->rsi, (int)regs->rdx, regs);
     break;
   }
-  case SYS_DBG_PUTC: {
-    /* TODO */
-    kprintf("Called DBG_PUTC\n");
+  case SYS_CHDIR: {
+    regs->rax = sys_chdir((const char *)regs->rdi);
     break;
   }
-  case SYS_DBG_GETC: {
-    /* TODO */
-    kprintf("Called DBG_GETC\n");
+  case SYS_GETCWD: {
+    kprintf("Get cwd called\n");
+    for (;;)
+      ;
+    regs->rax = sys_getcwd((char *)regs->rdi, regs->rsi);
     break;
   }
-  case SYS_DBG_EXCH: {
-    /* TODO */
-    kprintf("Called DBG_EXCH\n");
-    break;
-  }
+
   default: {
     kprintf("Invalid syscall %d\n", syscall);
+    for (;;)
+      ;
     break;
   }
   }
