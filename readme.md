@@ -29,14 +29,18 @@ To run this OS:
 ## Current functionality
 
 * Basic round robin scheduler
+* Virtual Filesystem (in progress)
 * Physical memory manager
 * Paging
+* Keyboard and video driver
+* PTY/TTY drivers
 * Pre-emptive multitasking
 * Loading elf binaries
+* Running userspace programs
 
 ## Ports
 * bash
-* gcon
+* [gcon](https://github.com/streaksu/gcon)
 * coreutils (in progress)
 * figlet
 
