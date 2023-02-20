@@ -1,0 +1,337 @@
+From c49546f1f7b3b0c3088a8d37934742692bf98858 Mon Sep 17 00:00:00 2001
+From: stoozy <stoozy@proton.me>
+Date: Sun, 19 Feb 2023 19:39:38 -0500
+Subject: [PATCH] Atlas changes
+
+---
+ source/main.c | 304 ++++++++++++++++++++++++--------------------------
+ 1 file changed, 145 insertions(+), 159 deletions(-)
+
+diff --git a/source/main.c b/source/main.c
+index 0252298..bba523a 100644
+--- a/source/main.c
++++ b/source/main.c
+@@ -16,175 +16,161 @@
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
+-#include <stdio.h>
+-#include <unistd.h>
++#include <backends/framebuffer.h>
+ #include <fcntl.h>
++#include <font.h>
+ #include <linux/fb.h>
+-#include <term.h>
+-#include <backends/framebuffer.h>
++#include <stdio.h>
+ #include <stdlib.h>
++#include <sys/ioctl.h>
+ #include <sys/mman.h>
++#include <sys/poll.h>
+ #include <sys/wait.h>
+-#include <sys/ioctl.h>
++#include <term.h>
+ #include <termios.h>
+-#include <font.h>
+-
+-char *const start_path = "/sbin/epoch";
+-char *const args[] = {start_path, "--init", NULL};
+-
+-int main(void) {
+-    // Initialize the tty.
+-    struct fb_var_screeninfo var_info;
+-    struct fb_fix_screeninfo fix_info;
+-    int fb = open("/dev/fb0", O_RDWR);
+-    if (fb == -1) {
+-        perror("Could not open framebuffer");
+-        return 1;
+-    }
+-
+-    if (ioctl(fb, FBIOGET_VSCREENINFO, &var_info) == -1) {
+-        perror("Could not fetch framebuffer properties");
+-        return 1;
+-    }
+-    if (ioctl(fb, FBIOGET_FSCREENINFO, &fix_info) == -1) {
+-        perror("Could not fetch framebuffer properties");
+-        return 1;
+-    }
+-
+-    size_t pixel_size  = fix_info.smem_len / sizeof(uint32_t);
+-    size_t linear_size = pixel_size * sizeof(uint32_t);
+-    size_t aligned_size = (linear_size + 0x1000 - 1) & ~(0x1000 - 1);
+-    uint32_t *mem_window = mmap(
+-        NULL,
+-        aligned_size,
+-        PROT_READ | PROT_WRITE,
+-        MAP_SHARED,
+-        fb,
+-        0
+-    );
+-    if (mem_window == NULL) {
+-        perror("Could not mmap framebuffer");
+-        return 1;
+-    }
+-
+-    // Initialize the terminal.
+-    uint32_t background = 0x1E1E1E;
+-    uint32_t foreground = 0xD8D8D8;
+-    uint32_t dark_palette[] = {
+-        0x241F31,
+-        0xC01C28,
+-        0x2EC27E,
+-        0xF5C211,
+-        0x1E78E4,
+-        0x9841BB,
+-        0x0AB9D0,
+-        0xC0BFBC
+-    };
+-    uint32_t bright_palette[] = {
+-        0x5E5C64,
+-        0xED333B,
+-        0x57E389,
+-        0xF8E45C,
+-        0x51A1FF,
+-        0xC061CB,
+-        0x4FD2FD,
+-        0xF6F5F4
+-    };
+-    struct term_context *term = fbterm_init(
+-        malloc,
+-        mem_window,
+-        var_info.xres,
+-        var_info.yres,
+-        fix_info.smem_len / var_info.yres,
+-        NULL,
+-        dark_palette,
+-        bright_palette,
+-        &background,
+-        &foreground,
+-        &background,
+-        &foreground,
+-        unifont_arr,
+-        FONT_WIDTH,
+-        FONT_HEIGHT,
+-        0,
+-        1,
+-        1,
+-        0
+-    );
+-    term->full_refresh(term);
+-
+-    // Open the ps2 keyboard for use as new stdin.
+-    int kb = open("/dev/ps2keyboard", O_RDONLY);
+-    if (kb == -1) {
+-        perror("Could not open keyboard");
+-        return 1;
+-    }
+-
+-    // Create a pipe for stdout/stderr.
+-    int master_pty;
+-    int pty_spawner = open("/dev/ptmx", O_RDWR);
+-    if (pty_spawner == -1) {
+-      perror("Could not open ptmx");
+-      return 1;
+-    }
+-
+-    if (ioctl(pty_spawner, 0, &master_pty) != 0) {
+-        perror("Could not create pty");
+-        return 1;
+-    }
++#include <unistd.h>
+ 
+-    struct winsize win_size = {
+-        .ws_row = var_info.yres / FONT_HEIGHT,
+-        .ws_col = var_info.xres / FONT_WIDTH,
+-        .ws_xpixel = var_info.xres,
+-        .ws_ypixel = var_info.yres
+-    };
+-    if (ioctl(master_pty, TIOCSWINSZ, &win_size) == -1) {
+-        perror("Could not set pty size");
+-        return 1;
+-    }
++char *const start_path = "/usr/bin/bash";
++char *const args[] = {start_path, "--login", NULL};
++
++static int _openpty(int *master, int *slave) {
++  int unlock = 0;
++  int ptyno = 0;
++  char name[20];
++  if ((*master = open("/dev/ptmx", O_RDWR)) == -1)
++    return -1;
++  if (ioctl(*master, TIOCSPTLCK, &unlock) == -1)
++    return -1;
++  if (ioctl(*master, TIOCGPTN, &ptyno) == -1)
++    return -1;
++  sprintf(name, "/dev/pts/%d", ptyno);
++  *slave = open(name, O_RDWR | O_NOCTTY);
++  if (*slave == -1) {
++    printf("Couldn't open pty slave\n");
++    return -1;
++  }
++  return 0;
++}
+ 
+-    // Export some variables related to the TTY.
+-    putenv("TERM=linux");
+-
+-    // Boot the child.
+-    int child = fork();
+-    if (child == 0) {
+-        // Replace std streams.
+-        int slave_pty;
+-        if (ioctl(master_pty, 0, &slave_pty) != 0) {
+-            perror("Could not create pty");
+-            return 1;
+-        }
+-
+-        dup2(slave_pty, 0);
+-        dup2(slave_pty, 1);
+-        dup2(slave_pty, 2);
+-        execvp(start_path, args);
+-        perror("Could not start");
+-        return 1;
+-    }
++#define BUFSIZE 4096
++char buffer[BUFSIZE];
+ 
+-    // Boot an input process.
+-    int input_child = fork();
+-    if (input_child == 0) {
+-        for (;;) {
+-            char input;
+-            read(kb, &input, 1);
+-            write(master_pty, &input, 1);
+-        }
++int main(void) {
++  // Initialize the tty.
++  struct fb_var_screeninfo var_info;
++  struct fb_fix_screeninfo fix_info;
++  int fb = open("/dev/fb0", O_RDWR);
++  if (fb == -1) {
++    printf("Could not open framebuffer");
++    return 1;
++  }
++
++  if (ioctl(fb, FBIOGET_VSCREENINFO, &var_info) == -1) {
++    printf("Could not fetch framebuffer properties");
++    return 1;
++  }
++  if (ioctl(fb, FBIOGET_FSCREENINFO, &fix_info) == -1) {
++    printf("Could not fetch framebuffer properties");
++    return 1;
++  }
++
++  size_t pixel_size = fix_info.smem_len / sizeof(uint32_t);
++  size_t linear_size = pixel_size * sizeof(uint32_t);
++  size_t aligned_size = (linear_size + 0x1000 - 1) & ~(0x1000 - 1);
++  uint32_t *mem_window =
++      mmap(NULL, aligned_size, PROT_READ | PROT_WRITE, MAP_SHARED, fb, 0);
++  if (mem_window == NULL) {
++    printf("Could not mmap framebuffer");
++    return 1;
++  }
++
++  // Initialize the terminal.
++  uint32_t background = 0x1E1E1E;
++  uint32_t foreground = 0xD8D8D8;
++  uint32_t dark_palette[] = {0x241F31, 0xC01C28, 0x2EC27E, 0xF5C211,
++                             0x1E78E4, 0x9841BB, 0x0AB9D0, 0xC0BFBC};
++  uint32_t bright_palette[] = {0x5E5C64, 0xED333B, 0x57E389, 0xF8E45C,
++                               0x51A1FF, 0xC061CB, 0x4FD2FD, 0xF6F5F4};
++  struct term_context *term = fbterm_init(
++      malloc, mem_window, var_info.xres, var_info.yres,
++      fix_info.smem_len / var_info.yres, NULL, dark_palette, bright_palette,
++      &background, &foreground, &background, &foreground, unifont_arr,
++      FONT_WIDTH, FONT_HEIGHT, 0, 1, 1, 0);
++  term->full_refresh(term);
++
++  // Open the ps2 keyboard for use as new stdin.
++  int kb = open("/dev/ps2keyboard", O_RDONLY);
++  if (kb == -1) {
++    printf("Could not open keyboard");
++    return 1;
++  }
++
++  // Create a pipe for stdout/stderr.
++  int master_pty, slave_pty;
++  _openpty(&master_pty, &slave_pty);
++
++  struct winsize win_size = {.ws_row = var_info.yres / FONT_HEIGHT,
++                             .ws_col = var_info.xres / FONT_WIDTH,
++                             .ws_xpixel = var_info.xres,
++                             .ws_ypixel = var_info.yres};
++  if (ioctl(master_pty, TIOCSWINSZ, &win_size) == -1) {
++    printf("Could not set pty size");
++    return 1;
++  }
++
++  // Export some variables related to the TTY.
++  putenv("TERM=linux");
++
++  int pid = fork();
++
++  if (pid == -1)
++    return -1;
++
++  if (!pid) {
++    close(master_pty);
++    // child tty setup
++    ioctl(slave_pty, TIOCSCTTY, NULL);
++    dup2(slave_pty, 0);
++    dup2(slave_pty, 1);
++    dup2(slave_pty, 2);
++
++    close(slave_pty);
++    char *args[3] = {"/usr/bin/bash", "--login", NULL};
++    char *envp[3] = {"PATH=/usr/bin", "TERM=linux", NULL};
++    execve("/usr/bin/bash", args, envp);
++    return -1;
++  }
++
++  char line_buffer[BUFSIZE];
++  int line_buffer_idx = 0;
++  for (;;) {
++    struct pollfd pfd[2];
++    pfd[0] = (struct pollfd){.fd = master_pty, .events = POLLIN, .revents = 0};
++    pfd[1] = (struct pollfd){.fd = kb, .events = POLLIN, .revents = 0};
++
++    poll(&pfd[0], 2, 0);
++
++    // polling master (for writes done by shell)
++    if (pfd[0].revents & POLLIN) {
++      ssize_t bytes = read(pfd[0].fd, &buffer, BUFSIZE);
++      term_write(term, buffer, bytes);
+     }
+ 
+-    // Catch what the child says.
+-    for (;;) {
+-        char output[512];
+-        ssize_t count = read(master_pty, &output, 512);
+-        for (ssize_t i = 0; i < count; i++) {
+-            if (output[i] == '\b') {
+-                term_write(term, "\b \b", 3);
+-            } else {
+-                term_write(term, &output[i], 1);
+-            }
+-        }
++    // polling keyboard
++    if (pfd[1].revents & POLLIN) {
++      ssize_t bytes = read(pfd[1].fd, &buffer[0], 1);
++      if (buffer[0] == '\b') {
++        term_write(term, "\b \b", 3);
++        line_buffer_idx--;
++      } else
++        term_write(term, &buffer[0], 1);
++
++      if (buffer[0] != '\b')
++        line_buffer[line_buffer_idx++] = buffer[0];
++      if (line_buffer[line_buffer_idx - 1] == '\n') {
++        write(master_pty, &line_buffer[0], line_buffer_idx);
++        line_buffer_idx = 0;
++      }
+     }
++  }
+ }
+-- 
+2.34.1
+
