@@ -1,12 +1,25 @@
-From c49546f1f7b3b0c3088a8d37934742692bf98858 Mon Sep 17 00:00:00 2001
+From 46ba3f2af74f9d35d19395fd1dcf05088f388ccc Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Sun, 19 Feb 2023 19:39:38 -0500
-Subject: [PATCH] Atlas changes
+Date: Mon, 20 Feb 2023 14:16:34 -0500
+Subject: [PATCH] atlas changes
 
 ---
+ configure.ac  |   2 +-
  source/main.c | 304 ++++++++++++++++++++++++--------------------------
- 1 file changed, 145 insertions(+), 159 deletions(-)
+ 2 files changed, 146 insertions(+), 160 deletions(-)
 
+diff --git a/configure.ac b/configure.ac
+index 4310c2b..dfdb3d9 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -61,6 +61,6 @@ if ! test "x$NATIVE_STRIP_FOUND" = "xyes"; then
+ fi
+ AC_SUBST(NATIVE_STRIP)
+ 
+-AC_PREFIX_DEFAULT([/usr/local])
++AC_PREFIX_DEFAULT([/usr/])
+ AC_CONFIG_FILES(GNUmakefile)
+ AC_OUTPUT
 diff --git a/source/main.c b/source/main.c
 index 0252298..bba523a 100644
 --- a/source/main.c

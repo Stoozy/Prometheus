@@ -14,7 +14,10 @@ limine
 initrd.tar
 3rdparty/
 build/
-sysroot/
+sysroot/usr/*
+sysroot/bin/*
+sysroot/etc/localtime
+sysroot/etc/xbstrap
 mlibc/
 TODO
 .clang-format

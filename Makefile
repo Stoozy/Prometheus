@@ -1,8 +1,10 @@
 ISO_IMAGE=disk.iso
 SYSROOT=$(shell pwd)/sysroot
-QEMU_RUN_FLAGS = -smp cores=2 -serial stdio -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G
-QEMU_MONITOR_FLAGS =  -smp cores=2 -monitor stdio  -vga std -machine q35 -no-reboot -d int -M smm=off -no-shutdown -m 8G 
-QEMU_RUN_INT_FRAME_FLAGS= -smp cores=2 -serial stdio  -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G -d int 
+
+QEMU_RUN_FLAGS =  -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G
+QEMU_RUN_SERIAL_FLAGS = -serial stdio -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G
+QEMU_MONITOR_FLAGS =   -monitor stdio  -vga std -machine q35 -no-reboot -d int -M smm=off -no-shutdown -m 8G 
+QEMU_RUN_INT_FRAME_FLAGS= -serial stdio  -vga std -machine q35 -no-reboot  -M smm=off -no-shutdown -m 8G -d int 
 
 .PHONY: clean all run libc
 
@@ -13,6 +15,10 @@ monitor: $(ISO_IMAGE)
 
 run: $(ISO_IMAGE)
 	qemu-system-x86_64 $(QEMU_RUN_FLAGS) -cdrom $(ISO_IMAGE)
+
+run-serial: $(ISO_IMAGE)
+	qemu-system-x86_64 $(QEMU_RUN_SERIAL_FLAGS) -cdrom $(ISO_IMAGE)
+
 
 run-int: $(ISO_IMAGE)
 	qemu-system-x86_64 $(QEMU_RUN_INT_FRAME_FLAGS) -cdrom $(ISO_IMAGE)
@@ -31,8 +37,11 @@ libc:
 	cd mlibc && mkdir build && meson . build --cross-file ../cross_file.txt && ninja -C build
 	yes | cp mlibc/build/*.so $(SYSROOT)/usr/lib/ && yes | cp mlibc/build/sysdeps/atlas/crt0.o $(SYSROOT)/usr/lib
 
+rootdir:
+	mkdir -p $(SYSROOT)/usr && cp -r build/system-root/usr/bin build/system-root/usr/share  build/system-root/usr/lib $(SYSROOT)/usr/ 
+
 initrd: 
-	tar -C  $(SYSROOT)  -cvf initrd.tar ./etc ./usr
+	tar -C  $(SYSROOT)  -cvf initrd.tar ./etc ./usr  
 	
 
 

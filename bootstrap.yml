@@ -349,12 +349,14 @@ packages:
     pkgs_required:
       - mlibc
     configure:
+      - args: ["cp", "-r", "@THIS_SOURCE_DIR@/.", "@THIS_BUILD_DIR@"]
       - args: ["@THIS_SOURCE_DIR@/bootstrap"]
       - args: ["@THIS_SOURCE_DIR@/configure", "--host=x86_64-atlas"]
     build:
       - args: ["make"]
-    install:
-      - args: ["cp", "@THIS_BUILD_DIR@/gcon", "@PREFIX@/usr/bin/"]
+      - args: ["make", "install"]
+        environ:
+          DESTDIR: "@THIS_COLLECT_DIR@"
 
   - name: figlet
     from_source: figlet

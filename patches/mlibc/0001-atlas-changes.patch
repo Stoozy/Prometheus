@@ -1,16 +1,17 @@
-From f10565f7829d5f59b7721373c269a9b02e166f0d Mon Sep 17 00:00:00 2001
+From 4415da160a6452170b494947912d81948e5e59d9 Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Sat, 18 Feb 2023 01:39:34 -0500
+Date: Mon, 20 Feb 2023 14:25:24 -0500
 Subject: [PATCH] atlas changes
 
 ---
  meson.build                                  |   8 +-
  options/internal/gcc/stack_protector.cpp     |   4 +-
+ options/posix/generic/sys-stat-stubs.cpp     | 197 +++---
  options/posix/generic/sys-wait-stubs.cpp     |   3 +-
  options/rtdl/generic/main.cpp                |   2 +
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 +
- sysdeps/atlas/generic/generic.cpp            | 690 +++++++++++++++++++
+ sysdeps/atlas/generic/generic.cpp            | 699 +++++++++++++++++++
  sysdeps/atlas/generic/thread.cpp             |  44 ++
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/access.h      |   9 +
@@ -58,9 +59,9 @@ Subject: [PATCH] atlas changes
  sysdeps/atlas/include/abi-bits/xattr.h       |  21 +
  sysdeps/atlas/include/fs.h                   |  41 ++
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
- sysdeps/atlas/include/syscall.h              |  88 +++
+ sysdeps/atlas/include/syscall.h              |  89 +++
  sysdeps/atlas/meson.build                    |  68 ++
- 56 files changed, 2771 insertions(+), 3 deletions(-)
+ 57 files changed, 2882 insertions(+), 99 deletions(-)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -154,6 +155,267 @@ index e6e7c5f4..a1d28e5c 100644
 +    mlibc::panicLogger() << "Stack smashing detected " << frg::endlog;
  }
 +
+diff --git a/options/posix/generic/sys-stat-stubs.cpp b/options/posix/generic/sys-stat-stubs.cpp
+index 2eca4456..32dfffd1 100644
+--- a/options/posix/generic/sys-stat-stubs.cpp
++++ b/options/posix/generic/sys-stat-stubs.cpp
+@@ -1,155 +1,160 @@
+ 
+-#include <errno.h>
+ #include <bits/ensure.h>
++#include <errno.h>
+ #include <sys/stat.h>
+ 
+ #include <mlibc/debug.hpp>
+ #include <mlibc/posix-sysdeps.hpp>
+ 
+ int chmod(const char *pathname, mode_t mode) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_chmod, -1);
+-	if(int e = mlibc::sys_chmod(pathname, mode); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_chmod, -1);
++  if (int e = mlibc::sys_chmod(pathname, mode); e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int fchmod(int fd, mode_t mode) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_fchmod, -1);
+-	if(int e = mlibc::sys_fchmod(fd, mode); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_fchmod, -1);
++  if (int e = mlibc::sys_fchmod(fd, mode); e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int fchmodat(int dirfd, const char *pathname, mode_t mode, int flags) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_fchmodat, -1);
+-	if(int e = mlibc::sys_fchmodat(dirfd, pathname, mode, flags); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_fchmodat, -1);
++  if (int e = mlibc::sys_fchmodat(dirfd, pathname, mode, flags); e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int fstatat(int dirfd, const char *path, struct stat *result, int flags) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
+-	if(int e = mlibc::sys_stat(mlibc::fsfd_target::fd_path, dirfd, path, flags, result); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
++  if (int e = mlibc::sys_stat(mlibc::fsfd_target::fd_path, dirfd, path, flags,
++                              result);
++      e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int futimens(int fd, const struct timespec times[2]) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_utimensat, -1);
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_utimensat, -1);
+ 
+-	if (int e = mlibc::sys_utimensat(fd, nullptr, times, 0); e) {
+-		errno = e;
+-		return -1;
+-	}
++  if (int e = mlibc::sys_utimensat(fd, nullptr, times, 0); e) {
++    errno = e;
++    return -1;
++  }
+ 
+-	return 0;
++  return 0;
+ }
+ 
+ int mkdir(const char *path, mode_t mode) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mkdir, -1);
+-	if(int e = mlibc::sys_mkdir(path, mode); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mkdir, -1);
++  if (int e = mlibc::sys_mkdir(path, mode); e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int mkdirat(int dirfd, const char *path, mode_t mode) {
+-	mlibc::infoLogger() << "\e[31mmlibc: mkdirat() ignores its mode\e[39m" << frg::endlog;
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mkdirat, -1);
+-	if(int e = mlibc::sys_mkdirat(dirfd, path, mode); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  mlibc::infoLogger() << "\e[31mmlibc: mkdirat() ignores its mode\e[39m"
++                      << frg::endlog;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mkdirat, -1);
++  if (int e = mlibc::sys_mkdirat(dirfd, path, mode); e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int mkfifo(const char *path, mode_t mode) {
+-	return mkfifoat(AT_FDCWD, path, mode);
++  return mkfifoat(AT_FDCWD, path, mode);
+ }
+ 
+ int mkfifoat(int dirfd, const char *path, mode_t mode) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mkfifoat, -1);
+-	if (int e = mlibc::sys_mkfifoat(dirfd, path, mode); e) {
+-		errno = e;
+-		return -1;
+-	}
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mkfifoat, -1);
++  if (int e = mlibc::sys_mkfifoat(dirfd, path, mode); e) {
++    errno = e;
++    return -1;
++  }
+ 
+-	return 0;
++  return 0;
+ }
+ 
+ int mknod(const char *path, mode_t mode, dev_t dev) {
+-	return mknodat(AT_FDCWD, path, mode, dev);
++  return mknodat(AT_FDCWD, path, mode, dev);
+ }
+ 
+ int mknodat(int dirfd, const char *path, mode_t mode, dev_t dev) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mknodat, -1);
+-	if (int e = mlibc::sys_mknodat(dirfd, path, mode, dev); e) {
+-		errno = e;
+-		return -1;
+-	}
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_mknodat, -1);
++  if (int e = mlibc::sys_mknodat(dirfd, path, mode, dev); e) {
++    errno = e;
++    return -1;
++  }
+ 
+-	return 0;
++  return 0;
+ }
+ 
+ mode_t umask(mode_t mode) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_umask, -1);
+-	mode_t old;
+-	if (int e = mlibc::sys_umask(mode, &old); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return old;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_umask, -1);
++  mode_t old;
++  if (int e = mlibc::sys_umask(mode, &old); e) {
++    errno = e;
++    return -1;
++  }
++  return old;
+ }
+ 
+-int utimensat(int dirfd, const char *pathname, const struct timespec times[2], int flags) {
+-	if(pathname == nullptr) {
+-		errno = EINVAL;
+-		return -1;
+-	}
++int utimensat(int dirfd, const char *pathname, const struct timespec times[2],
++              int flags) {
++  if (pathname == nullptr) {
++    errno = EINVAL;
++    return -1;
++  }
+ 
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_utimensat, -1);
+-	if (int e = mlibc::sys_utimensat(dirfd, pathname, times, flags); e) {
+-		errno = e;
+-		return -1;
+-	}
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_utimensat, -1);
++  if (int e = mlibc::sys_utimensat(dirfd, pathname, times, flags); e) {
++    errno = e;
++    return -1;
++  }
+ 
+-	return 0;
++  return 0;
+ }
+ 
+ int stat(const char *path, struct stat *result) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
+-	if(int e = mlibc::sys_stat(mlibc::fsfd_target::path, -1, path, 0, result); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
++  if (int e = mlibc::sys_stat(mlibc::fsfd_target::path, -1, path, 0, result);
++      e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int lstat(const char *path, struct stat *result) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
+-	if(int e = mlibc::sys_stat(mlibc::fsfd_target::path,
+-			-1, path, AT_SYMLINK_NOFOLLOW, result); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
++  if (int e = mlibc::sys_stat(mlibc::fsfd_target::path, -1, path,
++                              AT_SYMLINK_NOFOLLOW, result);
++      e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+ 
+ int fstat(int fd, struct stat *result) {
+-	MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
+-	if(int e = mlibc::sys_stat(mlibc::fsfd_target::fd, fd, "", 0, result); e) {
+-		errno = e;
+-		return -1;
+-	}
+-	return 0;
++  MLIBC_CHECK_OR_ENOSYS(mlibc::sys_stat, -1);
++  if (int e = mlibc::sys_stat(mlibc::fsfd_target::fd, fd, "", 0, result); e) {
++    errno = e;
++    return -1;
++  }
++  return 0;
+ }
+-
 diff --git a/options/posix/generic/sys-wait-stubs.cpp b/options/posix/generic/sys-wait-stubs.cpp
 index 0095c7b9..4114b6db 100644
 --- a/options/posix/generic/sys-wait-stubs.cpp
@@ -236,10 +498,10 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..caf1a34d
+index 00000000..5a5e8b85
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,690 @@
+@@ -0,0 +1,699 @@
 +#include "mlibc/lock.hpp"
 +#include <abi-bits/vt.h>
 +#include <bits/ensure.h>
@@ -910,6 +1172,15 @@ index 00000000..caf1a34d
 +}
 +
 +#endif // MLIBC_BUILDING_RTDL
++
++int sys_mkdir(const char *path, mode_t mode) {
++  int ret;
++  int errno;
++  SYSCALL_NA2(SYS_MKDIR, path, mode);
++  if (ret == -1)
++    return errno;
++  return 0;
++}
 +
 +int sys_poll(struct pollfd *fds, nfds_t cnt, int timeout, int *events) {
 +  if (!fds || !events)
@@ -3084,10 +3355,10 @@ index 00000000..2dd88a64
 +}
 diff --git a/sysdeps/atlas/include/syscall.h b/sysdeps/atlas/include/syscall.h
 new file mode 100644
-index 00000000..e69cfcde
+index 00000000..50ef67e0
 --- /dev/null
 +++ b/sysdeps/atlas/include/syscall.h
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,89 @@
 +
 +#define SYS_EXIT 0
 +#define SYS_OPEN 1
@@ -3112,6 +3383,7 @@ index 00000000..e69cfcde
 +#define SYS_EXEC 20
 +#define SYS_CHDIR 21
 +#define SYS_GETCWD 22
++#define SYS_MKDIR 23
 +
 +#define SYSCALL_NA0(call)                                                      \
 +  ({                                                                           \

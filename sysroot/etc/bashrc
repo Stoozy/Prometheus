@@ -1,0 +1,2 @@
+alias ls="ls --color=auto"
+alias clear='printf "\e[2J\e[H"'

@@ -1,16 +1,17 @@
-# Osdev
+# Prometheus
 
-A hobby operating system for the x86\_64 arch aiming to use a hybrid kernel.
+A hobby operating system for the x86\_64 arch using the atlas kernel.
+
+![screenshot](screenshot.png)
 
 ## Getting Started
 
 ### Tools
 
-* gcc and friends (build-essential on ubuntu based distros)
-* qemu
 * xorriso
 * git
-* xbstrap
+* [xbstrap](https://github.com/managarm/xbstrap)
+* qemu
 * meson
 
 
@@ -21,18 +22,35 @@ To run this OS:
 * make sure you have the tools listed above
 * Clone the repo
 * make a `build` dir and cd `build`
-* run `xbstrap install bash` (this will also install all prerequisite packages)
-* inside project rootdir, run `yes | cp -r build/system-root/* sysroot/`
-* then run `mkdir sysroot/lib && cp -r sysroot/usr/lib/* sysroot/lib/`
+* run `xbstrap install bash gcon coreutils figlet` 
+* inside project rootdir, run `make rootdir`
 * `make run` will start up the os in qemu
 
 ## Current functionality
 
-* Mapping pages
 * Basic round robin scheduler
+* Physical memory manager
+* Paging
 * Pre-emptive multitasking
-* Userspace Programs
 * Loading elf binaries
+
+## Ports
+* bash
+* gcon
+* coreutils (in progress)
+* figlet
+
+
+## Third party code
+- C library: [mlibc](https://github.com/managarm/mlibc)
+- In kernel printf:  [printf](https://github.com/mpaland/printf)
+
+## References
+
+- [SysV ABI](https://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf)
+- [NetBSD VFS](https://man.netbsd.org/vfs.9)
+- [ELF Specification](https://refspecs.linuxfoundation.org/elf/elf.pdf)
+- [AMD Manual](https://www.amd.com/system/files/TechDocs/24593.pdf)
 
 ## License
 
