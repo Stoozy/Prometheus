@@ -115,6 +115,7 @@ extern VFS vfs_root;
 extern VFSNode *root_vnode;
 
 File *vfs_open(const char *name, int flags);
+int vfs_mkdir(const char *path, mode_t mode);
 ssize_t vfs_read(File *file, void *buffer, size_t size);
 ssize_t vfs_write(File *file, void *buffer, size_t size);
 ssize_t vfs_write(File *file, void *buffer, size_t size);

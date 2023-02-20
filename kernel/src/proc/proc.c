@@ -245,12 +245,12 @@ void multitasking_init() {
   memset(&ready_queue, 0, sizeof(ProcessQueue));
   memset(&wait_queue, 0, sizeof(ProcessQueue));
 
-  char *argv[2] = {"/usr/bin/nomterm", NULL};
+  char *argv[2] = {"/usr/bin/gcon", NULL};
   char *envp[2] = {"PATH=/usr/bin", NULL};
 
   extern void fb_proc();
   register_process(create_kernel_process(fb_proc, "Screen"));
-  register_process(create_elf_process("/usr/bin/nomterm", argv, envp));
+  register_process(create_elf_process("/usr/bin/gcon", argv, envp));
 
   dump_pqueue(&ready_queue);
 

@@ -235,10 +235,9 @@ int tty_default_ioctl(struct tty *tty, uint64_t request, void *arg) {
   case VT_SETMODE:
     return 0;
   default: {
-    if (tty->driver.ioctl && tty->driver.ioctl != tty_default_ioctl) {
-      return tty->driver.ioctl(tty, request, arg);
-    }
-    return -1;
+    kprintf("Unknown ioctl req %d\n", request);
+    for (;;)
+      ;
   }
   }
 

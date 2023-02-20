@@ -214,6 +214,9 @@ static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag) {
   }
   case VT_RELDISP:
   case VT_SETMODE:
+    kprintf("Unhandled VT_RELDISP and VT_SETMODE\n");
+    for (;;)
+      ;
     break;
   default: {
     kprintf("ioctl unimplemented 0x%x\n", request);

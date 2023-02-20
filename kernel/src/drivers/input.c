@@ -52,19 +52,19 @@ int input_poll(VFSNode *vp, int events) {
 }
 
 int input_init() {
-  VFSNode *input_dir;
-  VAttr attr = {.type = VFS_DIRECTORY};
-  if (dev_root->ops->mkdir(dev_root, &input_dir, "/dev/input/", &attr))
-    return -1; // couldn't create input directory
+  // VFSNode *input_dir;
+  // VAttr attr = {.type = VFS_DIRECTORY};
+  // if (dev_root->ops->mkdir(dev_root, &input_dir, "/dev/input/", &attr))
+  //   return -1; // couldn't create input directory
 
   // initialize kbd for keyboard
 
-  VFSNode *event0;
-  attr = (VAttr){.type = VFS_CHARDEVICE};
-  if (dev_root->ops->create(input_dir, &event0, "/dev/input/event0", &attr))
+  VFSNode *ps2keyboard;
+  VAttr attr = (VAttr){.type = VFS_CHARDEVICE};
+  if (dev_root->ops->create(dev_root, &ps2keyboard, "/dev/ps2keyboard", &attr))
     return -1;
 
-  TmpNode *tnode = event0->private_data;
+  TmpNode *tnode = ps2keyboard->private_data;
   RingBuffer *input_rb = kmalloc(sizeof(RingBuffer));
   rb_init(input_rb, INPUT_BUFSIZE, sizeof(char));
   tnode->dev.cdev.private_data = input_rb;

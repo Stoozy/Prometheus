@@ -70,7 +70,7 @@ VFSOps tmpfs_vfsops = {
 
 static int tmpfs_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
 
-  kprintf("Looking up %s\n", name);
+  // kprintf("Looking up %s\n", name);
   TmpNode *tnode = dvn->private_data;
 
   if (strcmp(name, "/") == 0) {
@@ -114,9 +114,9 @@ loop:
       return 0;
     }
 
-    kprintf("Checking if %s starts with %s\n", next_tnode->name, name);
+    // kprintf("Checking if %s starts with %s\n", next_tnode->name, name);
     if (strncmp(next_tnode->name, name, strlen(next_tnode->name)) == 0) {
-      kprintf("Found matching dir %s\n", next_tnode->name);
+      // kprintf("Found matching dir %s\n", next_tnode->name);
       tnode = dirent->inode;
       // TODO: follow mountpoints
       goto loop;

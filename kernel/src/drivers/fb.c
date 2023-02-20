@@ -43,7 +43,8 @@ static void fb_init_fsi(struct stivale2_struct_tag_framebuffer *fb_info,
                         struct fb_fix_screeninfo *fb0_fsi) {
 
   fb0_fsi->line_length = fb_info->framebuffer_pitch;
-  fb0_fsi->mmio_len = fb_info->framebuffer_height * fb_info->framebuffer_pitch;
+  fb0_fsi->smem_len = fb0_fsi->mmio_len =
+      fb_info->framebuffer_height * fb_info->framebuffer_pitch;
   fb0_fsi->mmio_start = fb_info->framebuffer_addr;
   fb0_fsi->visual = FB_VISUAL_TRUECOLOR;
 
@@ -119,8 +120,9 @@ int fbops_ioctl(VFSNode *vn, uint64_t request, void *arg, int fflag) {
     break;
   }
   default:
+    kprintf("Unknown fb_ioctl request %lu\n", request);
     for (;;)
-      kprintf("Unknown fb_ioctl request %lu\n", request);
+      ;
     break;
   }
 
@@ -139,7 +141,9 @@ void fb_proc() {
   for (;;) {
     // seek
     fb_file->pos = 0;
+    asm("cli");
     vfs_read(fb_file, (void *)gp_backbuffer, fb_fsi.mmio_len);
+    asm("sti");
     memcpy((uint8_t *)fb_fsi.mmio_start, (void *)gp_backbuffer,
            fb_fsi.mmio_len);
   }

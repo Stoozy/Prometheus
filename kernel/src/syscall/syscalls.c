@@ -225,6 +225,7 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   int pages = DIV_ROUND_UP(size, PAGE_SIZE);
   void *phys_base;
 
+  static int count = 0;
   if (flags & MAP_SHARED) {
     if (!valid_fd(fd)) {
       for (;;)
@@ -236,9 +237,11 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
 
     // FIXME: only being used for /dev/fb0
     phys_base = tnode->dev.cdev.private_data - PAGING_VIRTUAL_OFFSET;
+    kprintf("Framebuffer phys-base @ 0x%x\n", phys_base);
     kprintf("Called mmap on %s\n", tnode->name);
   } else {
     phys_base = pmm_alloc_blocks(pages);
+    memset(PAGING_VIRTUAL_OFFSET + phys_base, 0, pages * PAGE_SIZE);
   }
 
   if (phys_base == NULL) {
@@ -247,8 +250,6 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
       kprintf("Out of memory\n");
     return NULL;
   }
-
-  memset(PAGING_VIRTUAL_OFFSET + phys_base, 0, pages * PAGE_SIZE);
 
   void *virt_base = NULL;
   if (flags & MAP_FIXED && addr != NULL) {
@@ -278,7 +279,6 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   proc_add_vas_range(proc, range);
 
   kprintf("[MMAP] Returning 0x%x\n", virt_base);
-
   return virt_base;
 }
 
@@ -463,7 +463,6 @@ int sys_ioctl(int fd, uint32_t req, void *arg) {
   if (file->vn->ops->ioctl)
     return file->vn->ops->ioctl(file->vn, req, arg, 0);
 
-  // kprintf("Name is %s\n", file->name);
   return -1;
 }
 
@@ -572,6 +571,8 @@ int sys_getcwd(char *buffer, size_t size) {
   strcpy(buffer, running->cwd);
   return 0;
 }
+
+int sys_mkdir(const char *path, mode_t mode) { return vfs_mkdir(path, mode); }
 
 void syscall_dispatcher(Registers *regs) {
 
@@ -685,7 +686,10 @@ void syscall_dispatcher(Registers *regs) {
     regs->rax = sys_getcwd((char *)regs->rdi, regs->rsi);
     break;
   }
-
+  case SYS_MKDIR: {
+    regs->rax = sys_mkdir((const char *)regs->rdi, regs->rsi);
+    break;
+  }
   default: {
     kprintf("Invalid syscall %d\n", syscall);
     for (;;)
