@@ -30,13 +30,14 @@ To run this OS:
 
 * Basic round robin scheduler
 * Virtual Filesystem (in progress)
+* Tmpfs implementation
 * Physical memory manager
 * Paging
-* Keyboard and video driver
-* PTY/TTY drivers
 * Pre-emptive multitasking
 * Loading elf binaries
 * Running userspace programs
+* Keyboard and video driver
+* PTY/TTY drivers
 
 ## Ports
 * bash
