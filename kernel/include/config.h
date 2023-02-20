@@ -7,4 +7,4 @@
 #undef VMM_DEBUG
 
 #define RR_QUANTUM 10
-#define MAX_PROC_FDS 255
+#define MAX_PROC_FDS 256
