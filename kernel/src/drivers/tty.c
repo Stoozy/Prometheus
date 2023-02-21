@@ -244,26 +244,6 @@ int tty_default_ioctl(struct tty *tty, uint64_t request, void *arg) {
   return 0;
 }
 
-// int tty_register(dev_t dev, struct tty *tty, char *filename) {
-//
-//   //   CharacterDevice *cdev = kmalloc(sizeof(CharacterDevice));
-//
-//   //   cdev->private_data = tty;
-//   //   cdev->dev = dev;
-//   //   cdev->name = filename;
-//
-//   /*     struct cdev *cdev = alloc(sizeof(struct cdev)); */
-//   /* cdev->fops = &tty_cdev_ops; */
-//   /* cdev->private_data = tty; */
-//   /* cdev->rdev = dev; */
-//   /* if (cdev_register(cdev) == -1) { */
-//   /*   free(cdev); */
-//   /*   return -1; */
-//   /* } */
-//
-//   return 0;
-// }
-
 VNodeOps tty_vnops = {.open = tty_open,
                       .read = tty_read,
                       .write = tty_write,
