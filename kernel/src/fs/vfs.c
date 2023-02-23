@@ -109,15 +109,12 @@ ssize_t vfs_read(File *file, void *buffer, size_t size) {
   // kprintf("vnode is @ 0x%llx\n", file->vn);
   // TmpNode *tnode = file->vn->private_data;
   // kprintf("Calling read on %s for %lu bytes\n", tnode->name, size);
-  ssize_t s = file->vn->ops->read(file->vn, buffer, size, file->pos);
-  if (s > 0)
-    file->pos += s;
 
-  return s;
+  return file->vn->ops->read(file, file->vn, buffer, size, file->pos);
 }
 
 ssize_t vfs_write(File *file, void *buffer, size_t size) {
-  return file->vn->ops->write(file->vn, buffer, size, file->pos);
+  return file->vn->ops->write(file, file->vn, buffer, size, file->pos);
 }
 
 int vfs_close(File *file) {

@@ -80,7 +80,7 @@ int tty_open(File *file, VFSNode *vn, int mode) {
   return 0;
 }
 
-ssize_t tty_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+ssize_t tty_read(File *file, VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   TmpNode *tmpnode = vn->private_data;
   struct tty *tty = tmpnode->dev.cdev.private_data;
   if (tty->driver.read)
@@ -89,7 +89,7 @@ ssize_t tty_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   return tty_default_read(tty, nbyte, buf);
 }
 
-ssize_t tty_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+ssize_t tty_write(File *file, VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   TmpNode *tmpnode = vn->private_data;
   struct tty *tty = tmpnode->dev.cdev.private_data;
   if (tty->driver.write)

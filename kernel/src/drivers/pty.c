@@ -46,8 +46,10 @@ int ptmx_slave_ctr = 0;
 static int ptmx_open(File *file, VFSNode *vn, int flags);
 static int ptm_open(File *file, VFSNode *vn, int flags);
 
-static ssize_t ptm_read(VFSNode *vn, void *buf, size_t nbyte, off_t off);
-static ssize_t ptm_write(VFSNode *vn, void *buf, size_t nbyte, off_t off);
+static ssize_t ptm_read(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                        off_t off);
+static ssize_t ptm_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                         off_t off);
 static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag);
 static int ptm_poll(VFSNode *vp, int events);
 
@@ -117,7 +119,8 @@ static int ptmx_open(File *file, VFSNode *vn, int flags) {
   return 0;
 }
 
-static ssize_t ptm_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+static ssize_t ptm_read(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                        off_t off) {
   kprintf("ptm_read()");
   struct ptm_data *ptm = vn->private_data;
 
@@ -141,7 +144,8 @@ read:
   // should be in line disc
   return s;
 }
-static ssize_t ptm_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+static ssize_t ptm_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                         off_t off) {
   kprintf("ptm_write()");
   struct ptm_data *ptm = vn->private_data;
   struct pts_data *pts = ptm->slave;

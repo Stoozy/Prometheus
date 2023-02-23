@@ -8,19 +8,21 @@
 
 #define INPUT_BUFSIZE 4096
 
-int input_open(File *file, VFSNode *vn, int mode);
-ssize_t input_read(VFSNode *vn, void *buf, size_t nbyte, off_t off);
-int input_poll(VFSNode *vp, int events);
+static int input_open(File *file, VFSNode *vn, int mode);
+static ssize_t input_read(File *, VFSNode *vn, void *buf, size_t nbyte,
+                          off_t off);
+static int input_poll(VFSNode *vp, int events);
 
 VNodeOps input_ops = {
     .open = input_open, .read = input_read, .poll = input_poll};
 
-int input_open(File *file, VFSNode *vn, int mode) {
+static int input_open(File *file, VFSNode *vn, int mode) {
   vn->refcnt++;
   return 0;
 }
 
-ssize_t input_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+static ssize_t input_read(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                          off_t off) {
   TmpNode *input_tnode = vn->private_data;
   RingBuffer *rb = input_tnode->dev.cdev.private_data;
 
@@ -33,7 +35,7 @@ ssize_t input_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   return ret;
 }
 
-int input_poll(VFSNode *vp, int events) {
+static int input_poll(VFSNode *vp, int events) {
   TmpNode *input_tnode = vp->private_data;
   RingBuffer *rb = input_tnode->dev.cdev.private_data;
 

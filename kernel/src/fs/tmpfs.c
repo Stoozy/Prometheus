@@ -237,12 +237,17 @@ int tmpfs_mkdir(VFSNode *dvp, VFSNode **out, const char *name,
   return dvp->vfs->ops->vget(dvp->vfs, out, (ino_t) new);
 }
 
-static ssize_t tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+static ssize_t tmpfs_read(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                          off_t off) {
   TmpNode *tnode = vn->private_data;
   if (tnode->attr.type == VFS_CHARDEVICE) {
-    return tnode->dev.cdev.fs->read(vn, buf, nbyte, off);
+    return tnode->dev.cdev.fs->read(file, vn, buf, nbyte, off);
   }
   kprintf("Reading %lu bytes from %s\n", nbyte, tnode->name);
+
+  if (file->pos > tnode->attr.size)
+    return 0;
+
   if (nbyte + off > tnode->attr.size) {
     kprintf("Reading outside of file ... ");
     // do a partial read
@@ -250,17 +255,20 @@ static ssize_t tmpfs_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
       // read entire file
       void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
       memcpy(buf, start, tnode->attr.size);
+      file->pos += tnode->attr.size;
       return tnode->attr.size;
     }
   }
 
   void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
   memcpy(buf, start, nbyte);
+  file->pos += nbyte;
 
   return nbyte;
 }
 
-static ssize_t tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+static ssize_t tmpfs_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                           off_t off) {
 
   TmpNode *tnode = vn->private_data;
 
@@ -282,6 +290,7 @@ static ssize_t tmpfs_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   memcpy(start, buf, nbyte);
   return nbyte;
 }
+
 int tmpfs_ioctl(VFSNode *vp, uint64_t req, void *data, int fflag) {
   if (vp->type != VFS_CHARDEVICE) {
     kprintf("[TMPFS] ioctl only supports chardevs for now\n");
