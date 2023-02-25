@@ -1,6 +1,6 @@
-From 4415da160a6452170b494947912d81948e5e59d9 Mon Sep 17 00:00:00 2001
+From 2ef83d10a8c5e6c3b12a36b2c1a967656b7dde0e Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Mon, 20 Feb 2023 14:25:24 -0500
+Date: Sat, 25 Feb 2023 01:15:48 -0500
 Subject: [PATCH] atlas changes
 
 ---
@@ -11,7 +11,7 @@ Subject: [PATCH] atlas changes
  options/rtdl/generic/main.cpp                |   2 +
  sysdeps/atlas/crt-x86_64/crt0.S              |   7 +
  sysdeps/atlas/generic/entry.cpp              |  34 +
- sysdeps/atlas/generic/generic.cpp            | 699 +++++++++++++++++++
+ sysdeps/atlas/generic/generic.cpp            | 709 +++++++++++++++++++
  sysdeps/atlas/generic/thread.cpp             |  44 ++
  sysdeps/atlas/generic/thread_entry.S         |   9 +
  sysdeps/atlas/include/abi-bits/access.h      |   9 +
@@ -42,14 +42,14 @@ Subject: [PATCH] atlas changes
  sysdeps/atlas/include/abi-bits/resource.h    |  25 +
  sysdeps/atlas/include/abi-bits/seek-whence.h |   8 +
  sysdeps/atlas/include/abi-bits/shm.h         |  21 +
- sysdeps/atlas/include/abi-bits/signal.h      | 350 ++++++++++
+ sysdeps/atlas/include/abi-bits/signal.h      | 350 +++++++++
  sysdeps/atlas/include/abi-bits/socket.h      | 291 ++++++++
  sysdeps/atlas/include/abi-bits/socklen_t.h   |   6 +
  sysdeps/atlas/include/abi-bits/stat.h        |  94 +++
  sysdeps/atlas/include/abi-bits/statfs.h      |  28 +
  sysdeps/atlas/include/abi-bits/statvfs.h     |  28 +
  sysdeps/atlas/include/abi-bits/suseconds_t.h |   8 +
- sysdeps/atlas/include/abi-bits/termios.h     | 117 ++++
+ sysdeps/atlas/include/abi-bits/termios.h     | 117 +++
  sysdeps/atlas/include/abi-bits/time.h        |  15 +
  sysdeps/atlas/include/abi-bits/uid_t.h       |   8 +
  sysdeps/atlas/include/abi-bits/utsname.h     |  12 +
@@ -59,9 +59,9 @@ Subject: [PATCH] atlas changes
  sysdeps/atlas/include/abi-bits/xattr.h       |  21 +
  sysdeps/atlas/include/fs.h                   |  41 ++
  sysdeps/atlas/include/mlibc/thread-entry.hpp |  10 +
- sysdeps/atlas/include/syscall.h              |  89 +++
+ sysdeps/atlas/include/syscall.h              |  91 +++
  sysdeps/atlas/meson.build                    |  68 ++
- 57 files changed, 2882 insertions(+), 99 deletions(-)
+ 57 files changed, 2894 insertions(+), 99 deletions(-)
  create mode 100644 sysdeps/atlas/crt-x86_64/crt0.S
  create mode 100644 sysdeps/atlas/generic/entry.cpp
  create mode 100644 sysdeps/atlas/generic/generic.cpp
@@ -498,10 +498,10 @@ index 00000000..ee7a794b
 +
 diff --git a/sysdeps/atlas/generic/generic.cpp b/sysdeps/atlas/generic/generic.cpp
 new file mode 100644
-index 00000000..5a5e8b85
+index 00000000..97efb157
 --- /dev/null
 +++ b/sysdeps/atlas/generic/generic.cpp
-@@ -0,0 +1,699 @@
+@@ -0,0 +1,709 @@
 +#include "mlibc/lock.hpp"
 +#include <abi-bits/vt.h>
 +#include <bits/ensure.h>
@@ -569,10 +569,16 @@ index 00000000..5a5e8b85
 +
 +#ifndef MLIBC_BUILDING_RTDL
 +int sys_clock_get(int clock, time_t *secs, long *nanos) {
-+
 +  mlibc::infoLogger() << "[mlibc] Calling sys_clock_get() STUB\n"
 +                      << frg::endlog;
-+  return ENOSYS;
++
++  uint64_t ret;
++  int errno;
++  SYSCALL_NA0(SYS_CLOCK);
++  *secs = ret / 1000;
++  *nanos = (ret % 1000) * 1000000;
++
++  return 0;
 +}
 +#endif
 +
@@ -832,9 +838,16 @@ index 00000000..5a5e8b85
 +
 +int sys_access(const char *filename, int mode) {
 +  mlibc::infoLogger() << "[mlibc] Calling sys_access() STUB\n" << frg::endlog;
-+  for (;;)
-+    ;
-+  return ENOSYS;
++
++  int ret;
++  int errno;
++
++  SYSCALL_NA2(SYS_ACCESS, filename, mode);
++
++  if (ret == -1)
++    return errno;
++
++  return ret;
 +}
 +
 +int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd,
@@ -1111,6 +1124,7 @@ index 00000000..5a5e8b85
 +  mlibc::infoLogger() << "[mlibc] Calling sys_fcntl() on " << fd << "\n"
 +                      << frg::endlog;
 +  return ENOSYS;
++
 +  switch (request) {
 +  case F_DUPFD:
 +    mlibc::infoLogger() << "[mlibc] REQ: F_DUPFD "
@@ -1188,14 +1202,10 @@ index 00000000..5a5e8b85
 +
 +  int ret;
 +  int errno;
-+  SYSCALL_NA3(SYS_POLL, fds, cnt, timeout);
++  SYSCALL_NA4(SYS_POLL, fds, cnt, timeout, events);
 +
 +  if (ret == -1)
 +    return errno;
-+
-+  mlibc::infoLogger() << "events is at " << events << "\n" << frg::endlog;
-+
-+  *events = ret;
 +
 +  return 0;
 +}
@@ -3355,10 +3365,10 @@ index 00000000..2dd88a64
 +}
 diff --git a/sysdeps/atlas/include/syscall.h b/sysdeps/atlas/include/syscall.h
 new file mode 100644
-index 00000000..50ef67e0
+index 00000000..f25bbca3
 --- /dev/null
 +++ b/sysdeps/atlas/include/syscall.h
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,91 @@
 +
 +#define SYS_EXIT 0
 +#define SYS_OPEN 1
@@ -3384,6 +3394,8 @@ index 00000000..50ef67e0
 +#define SYS_CHDIR 21
 +#define SYS_GETCWD 22
 +#define SYS_MKDIR 23
++#define SYS_ACCESS 24
++#define SYS_CLOCK 25
 +
 +#define SYSCALL_NA0(call)                                                      \
 +  ({                                                                           \
