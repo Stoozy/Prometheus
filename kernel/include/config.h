@@ -1,5 +1,5 @@
 #define SMP_DEBUG
-#define SCHEDULER_DEBUG
+#undef SCHEDULER_DEBUG
 #define TMPFS_DEBUG
 #undef PIT_DEBUG
 #undef ALLOCATOR_DEBUG

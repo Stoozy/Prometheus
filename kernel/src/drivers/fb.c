@@ -77,8 +77,9 @@ int fbops_open(File *file, VFSNode *vn, int mode) {
   return 0;
 }
 
-ssize_t fbops_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
-  kprintf("fbops_read()\n");
+ssize_t fbops_read(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                   off_t off) {
+  // kprintf("fbops_read()\n");
   TmpNode *tnode = vn->private_data;
   void *framebuffer = tnode->dev.cdev.private_data + off;
   if (nbyte + off > tnode->dev.cdev.size) {
@@ -90,7 +91,8 @@ ssize_t fbops_read(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
   return nbyte;
 }
 
-ssize_t fbops_write(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+ssize_t fbops_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
+                    off_t off) {
   TmpNode *fbnode = vn->private_data;
   void *framebuffer = fbnode->dev.cdev.private_data;
   if (nbyte + off > fbnode->dev.cdev.size) {

@@ -232,7 +232,7 @@ static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag) {
 }
 
 static int ptm_poll(VFSNode *vp, int events) {
-  kprintf("ptm_poll()");
+  // kprintf("ptm_poll()");
   int revents = 0;
 
   struct ptm_data *ptm = vp->private_data;
@@ -304,13 +304,8 @@ static int pts_ioctl(struct tty *tty, uint64_t req, void *arg) {
   case TIOCGPGRP: {
     pid_t *grp = arg;
     // FIXME: hardcoded value
-    *grp = 200;
+    *grp = 1000;
     return 0;
-  }
-  case TIOCGPTN: {
-    kprintf("get ptn from pts :(\n");
-    for (;;)
-      ;
   }
   default: {
     kprintf("Unimplemented\n");

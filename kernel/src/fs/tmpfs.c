@@ -248,15 +248,17 @@ static ssize_t tmpfs_read(File *file, VFSNode *vn, void *buf, size_t nbyte,
   if (file->pos > tnode->attr.size)
     return 0;
 
-  if (nbyte + off > tnode->attr.size) {
+  if (nbyte + off > tnode->attr.size && tnode->attr.size) {
     kprintf("Reading outside of file ... ");
     // do a partial read
+    size_t bytes_to_read = tnode->attr.size - off;
+
     if (tnode->attr.size != 0) {
       // read entire file
       void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
-      memcpy(buf, start, tnode->attr.size);
-      file->pos += tnode->attr.size;
-      return tnode->attr.size;
+      memcpy(buf, start, bytes_to_read);
+      file->pos += bytes_to_read;
+      return bytes_to_read;
     }
   }
 
