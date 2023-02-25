@@ -83,11 +83,11 @@ void sys_exit(int status) {
 }
 
 void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
-  kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
-          flags, running->name, running->pid);
+  // kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
+  // flags, running->name, running->pid);
 
   extern void dump_pqueue(ProcessQueue *);
-  dump_pqueue(&running->children);
+  // dump_pqueue(&running->children);
   if (pid < -1) {
     kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
   } else if (pid == -1) {
@@ -215,6 +215,9 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   kprintf("[MMAP] Hint : 0x%llx\n", addr);
   kprintf("[MMAP] Size : 0x%llx\n", size);
   kprintf("Current process at 0x%x\n", proc);
+
+  if (flags & MAP_SHARED)
+    kprintf("MAP_SHARED");
 
   // size isn't page aligned
   if (size % PAGE_SIZE != 0) {
@@ -574,6 +577,12 @@ int sys_getcwd(char *buffer, size_t size) {
 
 int sys_mkdir(const char *path, mode_t mode) { return vfs_mkdir(path, mode); }
 
+// stub
+int sys_access(const char *filename, mode_t mode) {
+  kprintf("called access on %s\n", filename);
+  return F_OK;
+}
+
 void syscall_dispatcher(Registers *regs) {
 
   u64 syscall = regs->rax;
@@ -681,13 +690,23 @@ void syscall_dispatcher(Registers *regs) {
   }
   case SYS_GETCWD: {
     kprintf("Get cwd called\n");
-    for (;;)
-      ;
+    // for (;;)
+    //;
     regs->rax = sys_getcwd((char *)regs->rdi, regs->rsi);
     break;
   }
   case SYS_MKDIR: {
     regs->rax = sys_mkdir((const char *)regs->rdi, regs->rsi);
+    break;
+  }
+  case SYS_ACCESS: {
+    regs->rax = sys_access((const char *)regs->rdi, regs->rsi);
+    break;
+  }
+  case SYS_CLOCK: {
+    extern uint64_t g_ticks;
+    kprintf("[SYS_CLOCK] called\n");
+    regs->rax = g_ticks;
     break;
   }
   default: {

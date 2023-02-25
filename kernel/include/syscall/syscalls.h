@@ -31,5 +31,7 @@ typedef unsigned long long caddr_t;
 #define SYS_CHDIR 21
 #define SYS_GETCWD 22
 #define SYS_MKDIR 23
+#define SYS_ACCESS 24
+#define SYS_CLOCK 25
 
 void sys_init();
