@@ -8,7 +8,7 @@
 #include <memory/vmm.h>
 #include <proc/proc.h>
 
-#define STACK_BLOCKS 8
+#define STACK_BLOCKS 32
 #define STACK_SIZE STACK_BLOCKS *PAGE_SIZE
 #define MMAP_BASE 0xC000000000
 
