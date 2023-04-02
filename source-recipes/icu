@@ -1,0 +1,10 @@
+name=icu
+version=72.1
+tarball_url="https://github.com/unicode-org/icu/releases/download/release-72-1/icu4c-72_1-src.tgz"
+tarball_blake2b="0eeaf6cf61c98ab93f2c7715607209b7741dcb806a98749a7172d004210b98c3528f84ca3c53400f7ed06ed90c6f6f3f55df3fead033c66c7e948697907343f9"
+hostdeps="automake autoconf autoconf-archive libtool pkg-config"
+
+regenerate() {
+    ( cd source && libtoolize -cfvi && autoreconf -fvi )
+    cp source/config/{mh-linux,mh-unknown}
+}

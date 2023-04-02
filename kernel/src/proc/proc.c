@@ -246,7 +246,7 @@ void multitasking_init() {
   memset(&wait_queue, 0, sizeof(ProcessQueue));
 
   char *argv[2] = {"/usr/bin/gcon", NULL};
-  char *envp[2] = {"PATH=/usr/bin", NULL};
+  char *envp[3] = {"PATH=/usr/bin", NULL};
 
   extern void fb_proc();
   register_process(create_kernel_process(fb_proc, "Screen"));

@@ -338,10 +338,10 @@ index 0252298..bba523a 100644
 +
 +      if (buffer[0] != '\b')
 +        line_buffer[line_buffer_idx++] = buffer[0];
-+      if (line_buffer[line_buffer_idx - 1] == '\n') {
-+        write(master_pty, &line_buffer[0], line_buffer_idx);
-+        line_buffer_idx = 0;
-+      }
++      //if (line_buffer[line_buffer_idx - 1] == '\n') {
++      //  write(master_pty, &line_buffer[0], line_buffer_idx);
++      //  line_buffer_idx = 0;
++      //}
      }
 +  }
  }

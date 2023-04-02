@@ -1,0 +1,31 @@
+name=zstd
+from_source=zstd
+revision=1
+hostdeps="gcc pkg-config"
+deps="core-libs zlib xz-utils"
+
+configure() {
+    cp -rp "${source_dir}"/. ./
+}
+
+build() {
+        CC=x86_64-atlas-gcc \
+        CXX=x86_64-atlas-g++ \
+        AR=x86_64-atlas-ar \
+        PREFIX="${prefix}" \
+    make -j${parallelism}
+}
+
+install() {
+        CC=x86_64-atlas-gcc \
+        DESTDIR="${dest_dir}" \
+        PREFIX="${prefix}" \
+    make install
+
+    # Remove static libraries.
+    rm -rf "${dest_dir}${prefix}"/lib/*.a
+
+    # Strip executables.
+    x86_64-atlas-strip "${dest_dir}${prefix}"/lib/libzstd.so.1.5.2
+    x86_64-atlas-strip "${dest_dir}${prefix}"/bin/zstd
+}

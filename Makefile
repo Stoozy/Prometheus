@@ -34,8 +34,14 @@ kernel/kernel.elf:
 	$(MAKE) -C kernel
 
 libc:
-	cd mlibc && mkdir build && meson . build --cross-file ../cross_file.txt && ninja -C build
-	yes | cp mlibc/build/*.so $(SYSROOT)/usr/lib/ && yes | cp mlibc/build/sysdeps/atlas/crt0.o $(SYSROOT)/usr/lib
+	mkdir -p mlibc/build  \
+	&& cd mlibc \
+	&& wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.1.8.tar.xz \
+	&& tar xvf linux-6.1.8.tar.xz \
+	&& make -C linux-6.1.8 O=kernel-headers ARCH=x86_64 headers_install \
+	&& meson setup build --cross-file ../build-support/cross_file.txt -Dlinux_kernel_headers=linux-6.1.8/kernel-headers/usr/include -Dbuild_tests=true \
+	&& ninja -C build \
+	&& yes | cp build/*.so build/sysdeps/atlas/crt0.o $(SYSROOT)/usr/lib
 
 rootdir:
 	mkdir -p $(SYSROOT)/usr && cp -r build/system-root/usr/bin build/system-root/usr/share  build/system-root/usr/lib $(SYSROOT)/usr/ 
@@ -63,3 +69,4 @@ clean:
 	rm -rf initrd.tar
 	$(MAKE) -C kernel clean
 	rm -rf mlibc/build
+	rm -rf mlibc/linux*

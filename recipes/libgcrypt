@@ -1,0 +1,28 @@
+name=libgcrypt
+from_source=libgcrypt
+revision=1
+imagedeps="gcc"
+hostdeps="gcc automake autoconf libtool pkg-config"
+deps="core-libs libgpg-error"
+
+configure() {
+    ${source_dir}/configure \
+        --host=x86_64-atlas \
+        --prefix=${prefix} \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --enable-shared \
+        --disable-static \
+        --disable-doc \
+        --disable-dev-random \
+        --disable-asm \
+        --with-libgpg-error-prefix=${sysroot_dir}/${prefix}
+}
+
+build() {
+    make -j${parallelism}
+}
+
+install() {
+    DESTDIR="${dest_dir}" make install-strip
+}

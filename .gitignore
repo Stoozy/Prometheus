@@ -21,3 +21,6 @@ sysroot/etc/xbstrap
 mlibc/
 TODO
 .clang-format
+.jinx-cache/
+builds/
+sources/

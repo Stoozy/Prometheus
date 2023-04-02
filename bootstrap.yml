@@ -173,6 +173,7 @@ tools:
       regenerate:
         - args: ["rm", "-rf", "gnulib"]
         - args: ["cp", "-r", "@SOURCE_ROOT@/3rdparty/gnulib", "./"]
+        - args: ['git', 'submodule', 'update', '--init']
         - args: ["./bootstrap"]
     tools_required:
       - host-autoconf-v2.69

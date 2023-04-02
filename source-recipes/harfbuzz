@@ -1,0 +1,8 @@
+name=harfbuzz
+version=3.1.2
+tarball_url="https://github.com/harfbuzz/harfbuzz/releases/download/${version}/harfbuzz-${version}.tar.xz"
+tarball_blake2b="dc5ac64d8a90bffeb38673c97a96b0edb8dae915d71f8cc7d74966f42556ef6c982dbd6ef8c5b920f228ac35e335830172f515b4a18a17d6debd36011c5b0503"
+
+regenerate() {
+    true
+}

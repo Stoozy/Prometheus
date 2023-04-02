@@ -94,9 +94,11 @@ typedef struct vnops {
   int (*open)(File *file, VFSNode *vn, int mode);
   int (*readdir)(VFSNode *dvn, void *buf, size_t nbyte, size_t *bytesRead,
                  off_t seqno);
+  int (*symlink)(struct vnode *dvp, struct vnode **vpp, char *source,
+                 struct vattr *vap, char *target);
 
-  ssize_t (*read)(File *file,VFSNode *vn, void *buf, size_t nbyte, off_t off);
-  ssize_t (*write)(File * file,VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  ssize_t (*read)(File *file, VFSNode *vn, void *buf, size_t nbyte, off_t off);
+  ssize_t (*write)(File *file, VFSNode *vn, void *buf, size_t nbyte, off_t off);
   int (*ioctl)(VFSNode *vp, uint64_t, void *data, int fflag);
   int (*poll)(VFSNode *vp, int events);
 

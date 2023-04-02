@@ -1,0 +1,8 @@
+name=gdk-pixbuf
+version=2.42.9
+tarball_url="https://download.gnome.org/sources/gdk-pixbuf/2.42/gdk-pixbuf-${version}.tar.xz"
+tarball_blake2b="f464a6b326aee185b30b24f66267ad7eacd12e8b3bd07e7cebfb42a496791561cdd71cd937282d72f1fc55ee1e86b531f7e737a2dd00f2187d705865be177919"
+
+regenerate() {
+    true
+}

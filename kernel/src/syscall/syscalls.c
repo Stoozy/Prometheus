@@ -531,7 +531,7 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
   int events = 0;
   // kprintf("[POLL] pollfd ptr %x; count %u; Timeout %d;\n", fds, count,
   // timeout);
-  //  forget timeout, just loop forever
+
   for (uint32_t i = 0; i < count; i++) {
     int fd = fds[i].fd;
     if (valid_fd(fd)) {

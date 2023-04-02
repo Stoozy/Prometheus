@@ -1,4 +1,5 @@
 #include "cpu/idt.h"
+#include "drivers/keyboard.h"
 #include "fs/tmpfs.h"
 #include "fs/vfs.h"
 #include "memory/vmm.h"
@@ -29,7 +30,7 @@ size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer);
 size_t tty_default_write_room(struct tty *tty);
 int tty_default_set_termios(struct tty *tty, struct termios tios);
 int tty_default_set_ldisc(struct tty *tty, struct tty_ldisc ldisc);
-int tty_default_poll(struct tty *tty, struct pollfd *fd, int timeout);
+int tty_default_poll(struct tty *tty, int events);
 void tty_default_flush_chars(struct tty *tty);
 int tty_default_ioctl(struct tty *tty, uint64_t request, void *arg);
 
@@ -110,9 +111,13 @@ int tty_ioctl(struct vnode *vp, uint64_t req, void *data, int fflag) {
 
 int tty_poll(struct vnode *vp, int events) {
   kprintf("tty_poll()");
-  for (;;)
-    ;
-  return -1;
+  TmpNode *tty_tnode = vp->private_data;
+  struct tty *tty = tty_tnode->dev.cdev.private_data;
+  if (tty->driver.poll) {
+    return tty->driver.poll(tty, events);
+  }
+
+  return tty_default_poll(tty, events);
 }
 
 static void echo(struct tty *tty, uint8_t val) {
@@ -196,26 +201,17 @@ int tty_default_set_ldisc(struct tty *tty, struct tty_ldisc ldisc) {
   return 0;
 }
 
-int tty_default_poll(struct tty *tty, struct pollfd *fd, int timeout) {
+int tty_default_poll(struct tty *tty, int events) {
 
-  int evt = 0;
-  if (fd->events & POLLIN) {
-
-    enable_irq();
-    if (tty->ibuf) {
-      while (!tty->ibuf->len) {
-      }
-    }
-    disable_irq();
-
-    fd->revents |= POLLIN;
-    evt++;
-  } else if (fd->events & POLLOUT) {
-    fd->revents |= POLLOUT;
-    evt++;
+  int revents = 0;
+  if (events & POLLIN) {
+    if (tty->ibuf->len)
+      revents |= POLLIN;
+  } else if (events & POLLOUT) {
+    revents |= POLLOUT;
   }
 
-  return evt;
+  return revents;
 }
 
 int tty_default_ioctl(struct tty *tty, uint64_t request, void *arg) {
@@ -271,6 +267,7 @@ int tty_init_node(VFSNode *tty_node) {
   g_tty_table[minor] =
       (struct tty){.driver = default_tty_driver, .ibuf = in, .obuf = out};
 
+  kbd_register_buffer(in);
   return 0;
 }
 

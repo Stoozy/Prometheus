@@ -12,7 +12,7 @@
 
 extern ProcessQueue ready_queue;
 
-#define MAX_BUFS 8
+#define MAX_BUFS 12
 RingBuffer *buffers[MAX_BUFS];
 
 static bool shift_down = false;
@@ -134,18 +134,6 @@ void kbd_write_to_buffer(uint8_t c) {
       rb_push(buffers[i], &c);
     }
   }
-  // rb_push(&kbd_rb, &c);
-  // extern struct tty *gp_active_tty;
-
-  // if (gp_active_tty) {
-  //   rb_push(gp_active_tty->ibuf, &c);
-  // }
-
-  // if (kbd_wait_queue.last) {
-  //   unblock_process(kbd_wait_queue.last->pcb);
-  //   ProcessControlBlock *pcb = pqueue_pop(&kbd_wait_queue);
-  //   pqueue_push(&ready_queue, pcb);
-  // }
 }
 
 u8 kbd_read_from_buffer() {

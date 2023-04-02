@@ -1,0 +1,8 @@
+name=glib
+version=2.74.5
+tarball_url="https://download.gnome.org/sources/glib/2.74/glib-${version}.tar.xz"
+tarball_blake2b="5bf0069cbf949a946357127682e4f687c7e7b8565037024a232b3e905e65bebb86d016832b6274f743005ec8fe5fcd31eaf99ccece82d9d7c3f924d17502c409"
+
+regenerate() {
+    true
+}

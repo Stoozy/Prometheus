@@ -94,8 +94,6 @@ static int copy_file(UstarFile *file) {
   // skip .  (./etc/ becomes /etc/ )
   char *filename = file->name + 1;
 
-  // kprintf("%s \n", filename);
-
   char *parent_dir = get_parent_dir(filename);
   // kprintf("Got parent dir %s\n", parent_dir);
 
@@ -110,7 +108,8 @@ static int copy_file(UstarFile *file) {
   TmpNode *tmp_root = vfs_root.private_data;
   VFSNode *root_vn = tmp_root->vnode;
 
-  if (ustar_type_to_vfs_type(file->type) & VFS_DIRECTORY) {
+  uint8_t filetype = ustar_type_to_vfs_type(file->type);
+  if (filetype == VFS_DIRECTORY) {
     VFSNode *parent;
     const char *parent_dir = get_parent_dir(filename);
     if (root_vn->ops->lookup(root_vn, &parent, parent_dir)) {
@@ -125,7 +124,7 @@ static int copy_file(UstarFile *file) {
       return -1;
     }
 
-  } else if (ustar_type_to_vfs_type(file->type) & VFS_FILE) {
+  } else if (filetype == VFS_FILE) {
     // kprintf("Regular file\n");
     VFSNode *parent;
     const char *path = get_parent_dir(filename);
@@ -147,7 +146,33 @@ static int copy_file(UstarFile *file) {
       return -1;
     }
   }
+
   return 0;
+}
+
+int create_link(UstarFile *file) {
+  TmpNode *tmp_root = vfs_root.private_data;
+  VFSNode *root_vn = tmp_root->vnode;
+
+  // skip .  (./etc/ becomes /etc/ )
+  char *filename = file->name + 1;
+
+  VFSNode *parent;
+  const char *parent_dir = get_parent_dir(filename);
+  if (root_vn->ops->lookup(root_vn, &parent, parent_dir)) {
+    kprintf("Couldn't find parent %s\n", parent_dir);
+    return -1;
+  }
+
+  char *abs_linkpath =
+      kmalloc(strlen(parent_dir) + strlen((char *)file->linked_file_name) + 1);
+
+  sprintf(abs_linkpath, "%s%s\0", parent_dir, file->linked_file_name);
+
+  kprintf("Absolute link path is %s\n", abs_linkpath);
+  VFSNode *new;
+  VAttr vattr = {.type = VFS_SYMLINK};
+  return root_vn->ops->symlink(parent, &new, filename, &vattr, abs_linkpath);
 }
 
 int load_initrd(struct stivale2_struct_tag_modules *modules_tag) {
@@ -162,8 +187,20 @@ int load_initrd(struct stivale2_struct_tag_modules *modules_tag) {
     UstarFile *file = (UstarFile *)ptr;
     int filesize = oct2bin(file->size, 11);
 
-    if (copy_file(file))
-      return -1;
+    int type = ustar_type_to_vfs_type(file->type);
+    if (type == VFS_SYMLINK) {
+      kprintf("Encountered symlink : %s -> %s\n", file->name,
+              file->linked_file_name);
+      if (create_link(file)) {
+        kprintf("Couldn't create link for %s\n", file->name);
+        for (;;)
+          ;
+      }
+
+    } else {
+      if (copy_file(file))
+        return -1;
+    }
 
     ptr += (((filesize + 511) / 512) + 1) * 512;
   }

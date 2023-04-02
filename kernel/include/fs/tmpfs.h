@@ -40,6 +40,7 @@ typedef struct tmpnode {
     TmpDir dir;
     TmpFile file;
     Device dev;
+    const char *link;
   };
 
   VAttr attr;

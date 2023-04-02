@@ -12,8 +12,6 @@
 
 #include <sys/queue.h>
 
-#define TMPFS_VIRT_BASE 0xD000000000
-
 static int tmpfs_mount(VFS *vfs, const char *path, void *data) {
   TmpNode *tmp_root_node = kmalloc(sizeof(TmpNode));
   VFSNode *tmp_root_vnode;
@@ -101,6 +99,7 @@ static int tmpfs_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
 loop:
   TAILQ_FOREACH(dirent, &tnode->dir.dirents, entries) {
     TmpNode *next_tnode = dirent->inode;
+
     if (strcmp(next_tnode->name, name) == 0) {
       *out = next_tnode->vnode;
       return 0;
@@ -115,7 +114,9 @@ loop:
     }
 
     // kprintf("Checking if %s starts with %s\n", next_tnode->name, name);
-    if (strncmp(next_tnode->name, name, strlen(next_tnode->name)) == 0) {
+    if (strncmp(next_tnode->name, name, strlen(next_tnode->name)) == 0 &&
+        next_tnode->name[strlen(next_tnode->name) - 1] ==
+            '/' /* make sure it's actually a directory*/) {
       // kprintf("Found matching dir %s\n", next_tnode->name);
       tnode = dirent->inode;
       // TODO: follow mountpoints
@@ -145,6 +146,7 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
 
   tnode->attr.size = 0;
   tnode->vnode = NULL;
+
   switch (vap->type) {
   case VFS_DIRECTORY: {
     TAILQ_INIT(&tnode->dir.dirents);
@@ -164,6 +166,9 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   case VFS_FILE: {
     TAILQ_INIT(&tnode->file.anonmap);
     break;
+  }
+  case VFS_SYMLINK: {
+    break; // do nothing for now, `tmpfs_symlink` handles the rest
   }
   default:
     kprintf("tmpfs::mknod() unhandled type %d\n", vap->type);
@@ -188,11 +193,32 @@ static int tmpfs_create(VFSNode *dvn, VFSNode **out, const char *name,
 }
 
 static int tmpfs_getattr(VFSNode *dvn, VAttr *out) { return -1; }
+
 static int tmpfs_open(File *file, VFSNode *vn, int mode) {
+
   kprintf("tmpfs_open()\n");
+
   if (!vn)
     for (;;)
       kprintf("Called open on NULL vfs node!!\n");
+
+  if (vn->type == VFS_SYMLINK) {
+    TmpNode *src_tnode = vn->private_data;
+    VFSNode *tgt_vnode;
+
+    kprintf("Looking up %s for symlink %s\n", src_tnode->link, src_tnode->name);
+    if (tmpfs_lookup(root_vnode, &tgt_vnode, src_tnode->link)) {
+      kprintf("Couldn't find %s\n", src_tnode->link);
+      return -1;
+    }
+
+    tgt_vnode->refcnt++;
+    file->vn = tgt_vnode;
+    file->pos = 0;
+    file->refcnt = 1;
+
+    return 0;
+  }
 
   vn->refcnt++;
 
@@ -338,11 +364,30 @@ void tmpfs_dump(TmpNode *root) {
   }
 }
 
+static int tmpfs_symlink(struct vnode *dvp, struct vnode **vpp, char *source,
+                         struct vattr *vap, char *target) {
+
+  kprintf("Creating symlink from %s to %s\n", source, target);
+
+  vap->type = VFS_SYMLINK;
+  TmpNode *new = tmakenode(dvp->private_data, strdup(source), vap);
+
+  // set link
+  new->link = target;
+
+  return dvp->vfs->ops->vget(dvp->vfs, vpp, (ino_t) new);
+}
+
+static ssize_t tmpfs_readlink(VFSNode *vn, void *buf, size_t nbyte, off_t off) {
+  return -1;
+}
+
 VNodeOps tmpfs_vnops = {.create = tmpfs_create,
                         .open = tmpfs_open,
                         .read = tmpfs_read,
                         .write = tmpfs_write,
                         .mkdir = tmpfs_mkdir,
+                        .symlink = tmpfs_symlink,
                         .readdir = tmpfs_readdir,
                         .lookup = tmpfs_lookup,
                         .ioctl = tmpfs_ioctl,

@@ -55,7 +55,7 @@ struct tty_driver {
   int (*set_ldisc)(struct tty *, struct tty_ldisc);
 
   int (*ioctl)(struct tty *, uint64_t request, void *arg);
-  int (*poll)(struct tty *, struct pollfd *fd, int timeout);
+  int (*poll)(struct tty *, int events);
 };
 
 struct file_node {

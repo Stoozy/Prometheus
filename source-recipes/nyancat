@@ -1,0 +1,9 @@
+name=nyancat
+version=5ffb6c5c03d0e9156db8f360599d4f0449bb16b9
+source_method=tarball
+tarball_url="https://github.com/klange/nyancat/archive/${version}.tar.gz"
+tarball_blake2b="d0e48e3f0bdc9685fdd95aa5f22f4d033b7aa92a0d7265fac8a6049058d3efbc42ebe0135ab7e70fc8effa41892f9fa50269bf60b997d0027b81c1ead2d5ce51"
+
+regenerate(){
+    true
+}

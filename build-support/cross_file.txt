@@ -1,0 +1,14 @@
+[binaries]
+c = 'x86_64-atlas-gcc'
+cpp = 'x86_64-atlas-g++'
+ar = 'x86_64-atlas-ar'
+strip = 'x86_64-atlas-strip'
+pkgconfig='x86_64-atlas-pkg-config'
+
+[host_machine]
+system = 'atlas'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+

@@ -1,0 +1,8 @@
+name=at-spi2-core
+version=2.47.1
+tarball_url="https://download.gnome.org/sources/at-spi2-core/2.47/at-spi2-core-${version}.tar.xz"
+tarball_blake2b="d950549a6e2a2a946f7b7536fc220941f077816d1869be2f8a1ba1445a263a7d9dd2d4d337e71f82965d828296ab97f0adaf8db51bacf1db8e03e3e7c702ec16"
+
+regenerate() {
+    true
+}

@@ -57,6 +57,7 @@ char *strcat(char *destination, const char *source) {
 }
 
 int strcmp(const char *a, const char *b) {
+
   while (*a) {
     if (*a != *b)
       break;
@@ -112,6 +113,8 @@ char *strncpy(char *dest, const char *src, size_t n) {
 char *strdup(const char *src) {
   size_t size = strlen(src) + 1;
   char *str = kmalloc(size);
+
+  memset(str, 0, size);
   memcpy(str, src, size);
   return str;
 }

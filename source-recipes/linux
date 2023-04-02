@@ -1,0 +1,8 @@
+name=linux
+version=6.1.9
+tarball_url="https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${version}.tar.xz"
+tarball_blake2b="6e511381b4e189bad3722ef8ac3a178e24f60c78e1614b1131f2ba000c452ad447d9c9ab028fa1d150188084aed36572188d8cb9d416409c4391c3be583952fa"
+
+regenerate() {
+    true
+}

@@ -127,7 +127,6 @@ extern void enable_sce();
 
 void panic(const char *msg) {
   kprintf("Kernel panic. Reason: %s \n", msg);
-
   for (;;)
     ;
 }
@@ -176,6 +175,7 @@ void _start(struct stivale2_struct *boot_info) {
     panic("Failed to initialize ttys;");
 
   kbd_init();
+
   if (input_init())
     panic("Failed to initialize keyboard input;");
 

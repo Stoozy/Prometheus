@@ -237,22 +237,18 @@ static int ptm_poll(VFSNode *vp, int events) {
 
   struct ptm_data *ptm = vp->private_data;
   struct pts_data *pts = ptm->slave;
-  //   /* struct tty *tty = pts->tty; */
 
-  int evt = 0;
   if (events & POLLIN) {
     if (ptm->ibuf.len) {
       revents |= POLLIN;
-      evt++;
     }
   }
 
   if (events & POLLOUT) {
     revents |= POLLOUT;
-    evt++;
   }
 
-  return evt;
+  return revents;
 }
 
 static void pts_flush_output(struct tty *tty) {

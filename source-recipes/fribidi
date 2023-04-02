@@ -1,0 +1,9 @@
+name=fribidi
+version=1.0.12
+tarball_url="https://github.com/fribidi/fribidi/releases/download/v${version}/fribidi-${version}.tar.xz"
+tarball_blake2b="f76f9d28f738f0cc9790ccdf0fe419cb0e7d70b24aa825844d23c4b31ad51c33f09c88ad4876fa6a52523f2a52d5eb7a4b50deeb70f9db750c69ac236ecfa8f5"
+hostdeps="automake autoconf libtool pkg-config"
+
+regenerate() {
+    libtoolize -cfvi && autoreconf -fvi
+}
