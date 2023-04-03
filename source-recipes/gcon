@@ -5,6 +5,7 @@ tarball_url="https://github.com/streaksu/gcon/archive/${version}.tar.gz"
 tarball_blake2b="8de70df11fec10771f135e287e2efd2116640f6306cf0ee01a161dc275b005999f3cb339f6beeeb228cd870b1c99af1402fec83e47655be17f1a9bd1f1a68914"
 imagedeps="git"
 hostdeps="automake autoconf libtool pkg-config"
+allow_network="yes"
 
 regenerate(){
     libtoolize -cfvi && autoreconf -fvi

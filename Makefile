@@ -44,12 +44,18 @@ libc:
 	&& yes | cp build/*.so build/sysdeps/atlas/crt0.o $(SYSROOT)/usr/lib
 
 rootdir:
-	mkdir -p $(SYSROOT)/usr && cp -r build/system-root/usr/bin build/system-root/usr/share  build/system-root/usr/lib $(SYSROOT)/usr/ 
+	./jinx sysroot
 
 initrd: 
 	tar -C  $(SYSROOT)  -cvf initrd.tar ./etc ./usr  
 	
+jinx:
+	curl -o jinx https://raw.githubusercontent.com/mintsuki/jinx/trunk/jinx
+	chmod +x jinx
 
+.PHONY: distro-base
+distro-base: jinx
+	./jinx build base-files gcon bash coreutils nano binutils gcc
 
 $(ISO_IMAGE): limine kernel/kernel.elf initrd
 	rm -rf iso_root

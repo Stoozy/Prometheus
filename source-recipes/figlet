@@ -1,0 +1,11 @@
+name=figlet
+version=202a0a8110650a943f1125f536b3bb455cf72ee1
+source_method=tarball
+tarball_url="https://github.com/cmatsuoka/figlet/archive/${version}.tar.gz"
+tarball_blake2b="b85cc8713b52f831ebebfc74d52ae610707151a55f6ef63d8d64528a35e3491d5431e12c6a55848ddafe24c0083e604ad4cbcd7430b12ce0b82823900689e258"
+imagedeps="git"
+hostdeps="automake autoconf libtool pkg-config"
+
+regenerate(){
+    true
+}

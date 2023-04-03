@@ -1,0 +1,17 @@
+name=figlet
+from_source=figlet
+revision=1                 
+hostdeps="gcc pkg-config libtool autoconf"
+deps="core-libs"
+
+configure() {
+    true
+}
+
+build() {
+    make -C ${source_dir}  -j${parallelism}  CC=x86_64-atlas-gcc
+}
+
+install() {
+    DESTDIR=${dest_dir} make install
+}

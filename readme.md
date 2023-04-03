@@ -10,7 +10,6 @@ A hobby operating system for the x86\_64 arch using the atlas kernel.
 
 * xorriso
 * git
-* [xbstrap](https://github.com/managarm/xbstrap)
 * qemu
 * meson
 
@@ -22,8 +21,7 @@ To run this OS:
 * make sure you have the tools listed above
 * Clone the repo
 * make a `build` dir and cd `build`
-* run `xbstrap install bash gcon coreutils figlet` 
-* inside project rootdir, run `make rootdir`
+* run `make distro-base` 
 * `make run` will start up the os in qemu
 
 ## Current functionality

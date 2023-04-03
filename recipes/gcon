@@ -4,6 +4,7 @@ revision=1
 imagedeps="git"
 hostdeps="gcc pkg-config libtool autoconf"
 deps="core-libs"
+allow_network="yes"
 
 configure() {
     ${source_dir}/configure \
