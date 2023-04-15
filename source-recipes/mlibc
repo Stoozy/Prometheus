@@ -1,7 +1,7 @@
 name=mlibc
-version=a9216074c7ea55b2bf820114b2fc8a405c254ae9 
+version=d8d278d82015395113fb99fc098492b7b391bf4b
 tarball_url="https://github.com/Stoozy/mlibc/archive/${version}.tar.gz"
-tarball_blake2b="0370fe5c76b4869e76a3826319fd3e735c8ce07ed896249e71eaf467b928961fa0738c18ed7d33a664fd593f6edd90e1f435162691f2b634e47d8dc74639a72d"
+tarball_blake2b=cf7a3b9b443286e426249bfd3bd10c90c6c7d8243ca413d1e18801d076f38225db6eaa15cfe194fd59240a0b2facd8aa671e3eea8107c1b65501d6b76610d91e
 
 regenerate() {
     true

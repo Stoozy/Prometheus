@@ -1,30 +1,17 @@
-From 46ba3f2af74f9d35d19395fd1dcf05088f388ccc Mon Sep 17 00:00:00 2001
+From 4f80f2e902e52aac9dc20b572cfee9bb1b82670b Mon Sep 17 00:00:00 2001
 From: stoozy <stoozy@proton.me>
-Date: Mon, 20 Feb 2023 14:16:34 -0500
-Subject: [PATCH] atlas changes
+Date: Fri, 14 Apr 2023 23:22:57 -0400
+Subject: [PATCH] Atlas changes
 
 ---
- configure.ac  |   2 +-
- source/main.c | 304 ++++++++++++++++++++++++--------------------------
- 2 files changed, 146 insertions(+), 160 deletions(-)
+ source/main.c | 300 ++++++++++++++++++++++++--------------------------
+ 1 file changed, 141 insertions(+), 159 deletions(-)
 
-diff --git a/configure.ac b/configure.ac
-index 4310c2b..dfdb3d9 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -61,6 +61,6 @@ if ! test "x$NATIVE_STRIP_FOUND" = "xyes"; then
- fi
- AC_SUBST(NATIVE_STRIP)
- 
--AC_PREFIX_DEFAULT([/usr/local])
-+AC_PREFIX_DEFAULT([/usr/])
- AC_CONFIG_FILES(GNUmakefile)
- AC_OUTPUT
 diff --git a/source/main.c b/source/main.c
-index 0252298..bba523a 100644
+index 0252298..221c3a7 100644
 --- a/source/main.c
 +++ b/source/main.c
-@@ -16,175 +16,161 @@
+@@ -16,175 +16,157 @@
      along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
@@ -310,6 +297,9 @@ index 0252298..bba523a 100644
 +
 +    poll(&pfd[0], 2, 0);
 +
++    struct termios termios;
++    tcgetattr(master_pty, &termios);
++
 +    // polling master (for writes done by shell)
 +    if (pfd[0].revents & POLLIN) {
 +      ssize_t bytes = read(pfd[0].fd, &buffer, BUFSIZE);
@@ -332,16 +322,9 @@ index 0252298..bba523a 100644
 +      ssize_t bytes = read(pfd[1].fd, &buffer[0], 1);
 +      if (buffer[0] == '\b') {
 +        term_write(term, "\b \b", 3);
-+        line_buffer_idx--;
-+      } else
++      } else {
 +        term_write(term, &buffer[0], 1);
-+
-+      if (buffer[0] != '\b')
-+        line_buffer[line_buffer_idx++] = buffer[0];
-+      //if (line_buffer[line_buffer_idx - 1] == '\n') {
-+      //  write(master_pty, &line_buffer[0], line_buffer_idx);
-+      //  line_buffer_idx = 0;
-+      //}
++      }
      }
 +  }
  }
