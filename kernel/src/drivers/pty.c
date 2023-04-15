@@ -151,10 +151,12 @@ static ssize_t ptm_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
   struct pts_data *pts = ptm->slave;
 
   size_t w = 0;
+
   for (; w < nbyte; w++) {
     if (!rb_push(pts->tty->ibuf, &buf[w]))
       break;
   }
+
   return w;
 }
 static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag) {
@@ -287,11 +289,7 @@ static int pts_ioctl(struct tty *tty, uint64_t req, void *arg) {
     *tios = tty->tios;
     return 0;
   }
-  case TCSETS: {
-    struct termios *tios = arg;
-    tty->tios = *tios;
-    return 0;
-  }
+
   case TIOCSPGRP: {
     pid_t *grp = arg;
     // FIXME:
@@ -301,6 +299,23 @@ static int pts_ioctl(struct tty *tty, uint64_t req, void *arg) {
     pid_t *grp = arg;
     // FIXME: hardcoded value
     *grp = 1000;
+    return 0;
+  }
+  case TCSETS: {
+    struct termios *tios = arg;
+    tty->tios = *tios;
+    return 0;
+  }
+  case TCSETSW: {
+    struct termios *tios = arg;
+    tty->tios = *tios;
+  }
+  case TCSETSF: {
+    struct termios *attr = arg;
+    tty->tios = *attr;
+    char ch;
+    while (rb_pop(tty->ibuf, &ch))
+      ;
     return 0;
   }
   default: {

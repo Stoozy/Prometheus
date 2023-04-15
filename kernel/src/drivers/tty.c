@@ -1,3 +1,4 @@
+#include "abi-bits/termios.h"
 #include "cpu/idt.h"
 #include "drivers/keyboard.h"
 #include "fs/tmpfs.h"
@@ -135,9 +136,10 @@ size_t tty_default_read(struct tty *tty, size_t size, uint8_t *buffer) {
 read:
   disable_irq();
 
-  for (; s < size; s++)
+  for (; s < size; s++) {
     if (!rb_pop(tty->ibuf, &buffer[s]))
       break;
+  }
   enable_irq();
   /* extern ProcessControlBlock * running; */
   if (s == 0) {
@@ -163,6 +165,7 @@ size_t tty_default_write(struct tty *tty, size_t size, uint8_t *buffer) {
 
     kprintf("%c", ((char *)tty->obuf->buffer)[i]);
   }
+
   kprintf("\n");
   kprintf("[TTY] New length is %d\n", tty->obuf->len);
 

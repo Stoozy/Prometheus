@@ -709,6 +709,9 @@ void syscall_dispatcher(Registers *regs) {
     regs->rax = g_ticks;
     break;
   }
+  case SYS_SPAWN_THREAD: {
+    break;
+  }
   default: {
     kprintf("Invalid syscall %d\n", syscall);
     for (;;)
