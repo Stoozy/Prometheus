@@ -265,5 +265,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   proc->cwd = kmalloc(2);
   sprintf(proc->cwd, "/");
 
+  TAILQ_INIT(&proc->children);
+
   return proc;
 }

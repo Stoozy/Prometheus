@@ -13,25 +13,17 @@ extern u64 g_ticks;
 
 extern PageTable *kernel_cr3;
 
-extern ProcessQueue ready_queue;
-extern ProcessQueue wait_queue;
 extern volatile ProcessControlBlock *running;
 
 ProcessControlBlock *get_next_ready_process() {
-  extern void dump_pqueue(ProcessQueue *);
-  for (PQNode *cnode = ready_queue.first; cnode; cnode = cnode->next) {
-    if (cnode->pcb->pid == running->pid) {
-      return cnode->next == NULL ? ready_queue.first->pcb : cnode->next->pcb;
-    }
-  }
-
-  return ready_queue.first->pcb;
+  ProcessControlBlock *next = TAILQ_NEXT(running, entries);
+  return next == NULL ? TAILQ_FIRST(&readyq) : next;
 }
 
 void schedule(Registers *regs) {
   asm("cli");
   // not enough procs
-  if (ready_queue.count == 0)
+  if (TAILQ_EMPTY(&readyq))
     return;
 
   // save registers

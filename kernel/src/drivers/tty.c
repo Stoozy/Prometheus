@@ -19,7 +19,6 @@
 
 #include <abi-bits/asm/ioctls.h>
 struct tty *gp_active_tty;
-static ProcessQueue tty_wait_queue;
 
 struct tty g_tty_table[MAX_TTYS];
 static uint8_t g_tty_counter;

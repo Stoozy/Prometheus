@@ -11,8 +11,6 @@
 
 #define KBD_BUFSIZE 1024
 
-extern ProcessQueue ready_queue;
-
 #define MAX_BUFS 12
 RingBuffer *buffers[MAX_BUFS];
 
@@ -49,8 +47,6 @@ static const char convtab_nomod[] = {
     'j',  'k',  'l',  ';',  '\'', '`',  '\0', '\\', 'z',  'x', 'c', 'v',
     'b',  'n',  'm',  ',',  '.',  '/',  '\0', '\0', '\0', ' '};
 
-ProcessQueue kbd_wait_queue = {0, NULL, NULL};
-
 void kbd_write_to_buffer(uint8_t c) {
 
   for (int i = 0; i < MAX_BUFS; i++) {
@@ -58,31 +54,6 @@ void kbd_write_to_buffer(uint8_t c) {
       rb_push(buffers[i], &c);
     }
   }
-}
-
-u8 kbd_read_from_buffer() {
-  u8 uc;
-  if (!rb_pop(buffers[0], &uc)) {
-
-    // buffer is empty
-    // block the current running process
-    kprintf("No data available. Blocking current task\n");
-    extern ProcessControlBlock *running;
-    pqueue_push(&kbd_wait_queue, running);
-    block_process(running, WAITING);
-
-    // note: this loop is done  a few times
-    // until it's time to switch tasks and once
-    // more after the process wakes up at which
-    // point the keyboard_buffer should be readable
-    for (;;)
-      if (rb_pop(buffers[0], &uc)) {
-        goto done_waiting;
-      }
-  }
-
-done_waiting:
-  return uc;
 }
 
 void handle_scan(u8 scan_code) {

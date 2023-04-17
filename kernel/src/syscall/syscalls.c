@@ -14,6 +14,7 @@
 #include <proc/proc.h>
 #include <stdint.h>
 #include <string/string.h>
+#include <sys/queue.h>
 #include <sys/wait.h>
 #include <syscall/syscalls.h>
 
@@ -32,7 +33,7 @@
 
 typedef long int off_t;
 
-extern volatile ProcessControlBlock *running;
+extern ProcessControlBlock *running;
 
 extern PageTable *kernel_cr3;
 
@@ -72,28 +73,18 @@ void sys_exit(int status) {
           running->name, running->pid);
   extern void kill_cur_proc(int ec);
   kill_cur_proc(status);
-  // enable_irq();
-
-  // ProcessControlBlock * next_proc = get_next_ready_process();
-  // next_proc->state = RUNNING;
-  // pqueue_remove(&ready_queue, running);
-  // running = next_proc;
-
-  // switch_to_process(&running->trapframe, running->cr3);
 }
 
 void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
   // kprintf("sys_waitpid(): pid %d; flags %d; caller: %s (pid: %d);\n", pid,
   // flags, running->name, running->pid);
 
-  extern void dump_pqueue(ProcessQueue *);
   // dump_pqueue(&running->children);
   if (pid < -1) {
     kprintf("Waiting on any child process with gid %d ... \n", abs(pid));
   } else if (pid == -1) {
-    extern volatile ProcessControlBlock *running;
 
-    if (running->children.count == 0) {
+    if (TAILQ_EMPTY(&running->children)) {
       // for (;;)
       //   kprintf("NO children...\n ");
       regs->rdx = ECHILD;
@@ -107,8 +98,8 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
     //   return;
     // }
 
-    for (PQNode *pnode = running->children.first; pnode; pnode = pnode->next) {
-      ProcessControlBlock *proc = pnode->pcb;
+    ProcessControlBlock *proc;
+    TAILQ_FOREACH(proc, &running->children, child_entries) {
       if (proc->state == ZOMBIE) {
         // TODO: clean up the process (need a proper malloc)
 
@@ -116,13 +107,30 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
         regs->rax = proc->pid;
         kprintf("Got dead child %s (pid: %d; status %d)\n", proc->name,
                 proc->pid, *status);
-        pqueue_remove(&running->children, proc->pid);
 
-        // for (;;)
-        //   ;
+        TAILQ_REMOVE(&running->children, proc, child_entries);
+
         return;
       }
     }
+
+    // for (PQNode *pnode = running->children.first; pnode; pnode = pnode->next)
+    // {
+    //   ProcessControlBlock *proc = pnode->pcb;
+    //   if (proc->state == ZOMBIE) {
+    //     // TODO: clean up the process (need a proper malloc)
+
+    //     *status = proc->exit_code;
+    //     regs->rax = proc->pid;
+    //     kprintf("Got dead child %s (pid: %d; status %d)\n", proc->name,
+    //             proc->pid, *status);
+    //     pqueue_remove(&running->children, proc->pid);
+
+    //     // for (;;)
+    //     //   ;
+    //     return;
+    //   }
+    // }
 
     regs->rdx = EINTR;
     regs->rax = -1;
@@ -361,11 +369,13 @@ int count_args(char **args) {
 void sys_execve(char *name, char **argvp, char **envp) {
   kprintf("sys_exec: %s\n", name);
 
-  extern volatile ProcessQueue ready_queue;
-  extern void dump_pqueue(ProcessQueue *);
   kprintf("Before removing\n");
-  dump_pqueue(&ready_queue);
-  pqueue_remove(&ready_queue, running->pid);
+
+  dump_readyq();
+
+  TAILQ_REMOVE(&readyq, running, entries);
+
+  // pqueue_remove(&ready_queue, running->pid);
 
   char *name_cp = kmalloc(strlen(name) + 1);
   strcpy(name_cp, name);
@@ -408,12 +418,17 @@ void sys_execve(char *name, char **argvp, char **envp) {
 
   if (running->parent) {
     new->parent = running->parent;
-    pqueue_remove(&running->parent->children, running->pid);
-    pqueue_push(&running->parent->children, new);
-    dump_pqueue(&running->parent->children);
+    TAILQ_REMOVE(&running->parent->children, running, child_entries);
+    // pqueue_remove(&running->parent->children, running->pid);
+    // pqueue_push(&running->parent->children, new);
+    //  dump_pqueue(&running->parent->children);
+
+    TAILQ_INSERT_TAIL(&running->parent->children, new, child_entries);
   }
 
-  pqueue_push(&ready_queue, new);
+  TAILQ_INSERT_TAIL(&readyq, new, entries);
+
+  // pqueue_push(&ready_queue, new);
 
   for (int i = 0; i < MAX_PROC_FDS; i++) {
     // TODO: check CLOEXEC

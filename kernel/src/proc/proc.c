@@ -12,61 +12,24 @@
 #include <proc/proc.h>
 #include <stdint.h>
 #include <string/string.h>
+#include <sys/queue.h>
 
 extern u64 g_ticks;
 extern void switch_to_process(Registers *new_stack, PageTable *cr3);
 extern void load_pagedir();
 
-ProcessQueue ready_queue = {0, NULL, NULL};
-ProcessQueue wait_queue = {0, NULL, NULL};
 ProcessControlBlock *running = NULL;
 
 uint64_t pid_counter = 200;
 
-void dump_pqueue(ProcessQueue *q) {
-  PQNode *cnode = q->first;
-  for (; cnode; cnode = cnode->next) {
-    kprintf("%s [%d] -> ", cnode->pcb->name, cnode->pcb->pid);
+struct procq readyq;
+
+void dump_readyq() {
+  ProcessControlBlock *cur;
+  TAILQ_FOREACH(cur, &readyq, entries) {
+    kprintf("%s (%d) -> ", cur->name, cur->pid);
   }
-  kprintf("NULL \n");
-}
-
-void pqueue_push(ProcessQueue *queue, ProcessControlBlock *proc) {
-  PQNode *new_node = kmalloc(sizeof(PQNode));
-  new_node->pcb = proc;
-  new_node->next = NULL;
-
-  if (!queue->first) {
-    queue->count = 1;
-    queue->first = queue->last = new_node;
-    return;
-  }
-
-  queue->last->next = new_node;
-  queue->last = queue->last->next;
-  queue->count++;
-  return;
-}
-
-PQNode *pqueue_pop(ProcessQueue *queue) {
-  if (!queue->first)
-    return NULL;
-
-  // clean this up
-  PQNode *tmp = queue->first;
-
-  queue->first = queue->first->next;
-  queue->count--;
-
-  return tmp;
-}
-
-void pqueue_remove(ProcessQueue *queue, int pid) {
-  PQNode *v = pqueue_pop(queue);
-  while (v && v->pcb->pid != pid) {
-    pqueue_push(queue, v->pcb);
-    v = pqueue_pop(queue);
-  }
+  kprintf(" None");
 }
 
 void unmap_fd_from_proc(ProcessControlBlock *proc, int fd) {
@@ -95,8 +58,9 @@ void kill_proc(ProcessControlBlock *proc, int exit_code) {
 
   disable_irq();
   kprintf("Before removing\n");
-  dump_pqueue(&ready_queue);
-  pqueue_remove(&ready_queue, proc->pid);
+  dump_readyq();
+
+  TAILQ_REMOVE(&readyq, proc, entries);
 
   proc->exit_code = exit_code;
   proc->state = ZOMBIE;
@@ -108,7 +72,7 @@ void kill_proc(ProcessControlBlock *proc, int exit_code) {
   }
 
   kprintf("After removing\n");
-  dump_pqueue(&ready_queue);
+  dump_readyq();
 
   enable_irq();
   for (;;)
@@ -205,45 +169,23 @@ ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
   kprintf("Registers are at stack %x\n", regs);
   kprintf("Fork'd process has cr3: %x\n", clone->cr3);
 
-  pqueue_push(&proc->children, clone);
+  TAILQ_INIT(&clone->children);
+
+  TAILQ_INSERT_TAIL(&proc->children, clone, child_entries);
 
   clone->parent = proc;
-
-  // clone->cwd = strdup(proc->cwd);
 
   return clone;
 }
 
-void register_process(ProcessControlBlock *new_pcb) {
-  pqueue_push(&ready_queue, new_pcb);
-  return;
-}
-
-void block_process(ProcessControlBlock *proc, int reason) {
-  // scheduler will handle the rest
-  // note: the rest isn't done here
-  // because the registers have to
-  // be saved once the interrupt fires
-  proc->state = reason;
-  kprintf("Blocking process at %x\n", proc);
-
-  pqueue_remove(&ready_queue, proc->pid);
-
-  asm("sti; int $41; cli");
-}
-
-void unblock_process(ProcessControlBlock *proc) {
-  proc->state = READY;
-  pqueue_push(&ready_queue, proc);
-  kprintf("\n unblocked %s (%d)\n\n", proc->name, proc->pid);
+void register_process(ProcessControlBlock *new) {
+  TAILQ_INSERT_TAIL(&readyq, new, entries);
   return;
 }
 
 void multitasking_init() {
-  // save kernel page tables
 
-  memset(&ready_queue, 0, sizeof(ProcessQueue));
-  memset(&wait_queue, 0, sizeof(ProcessQueue));
+  TAILQ_INIT(&readyq);
 
   char *argv[2] = {"/usr/bin/gcon", NULL};
   char *envp[3] = {"PATH=/usr/bin", NULL};
@@ -252,10 +194,9 @@ void multitasking_init() {
   register_process(create_kernel_process(fb_proc, "Screen"));
   register_process(create_elf_process("/usr/bin/gcon", argv, envp));
 
-  dump_pqueue(&ready_queue);
+  dump_readyq();
 
-  running = ready_queue.first->pcb;
+  running = TAILQ_FIRST(&readyq);
   switch_to_process(&running->trapframe, (void *)running->cr3);
-
   return;
 }
