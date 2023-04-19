@@ -8,3 +8,4 @@
 
 #define RR_QUANTUM 10
 #define MAX_PROC_FDS 256
+#define MAX_KMEM_CACHES 20

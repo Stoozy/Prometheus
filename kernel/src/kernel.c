@@ -1,4 +1,6 @@
+#include "memory/slab.h"
 #include "misc/initrd.h"
+#include <linux/types.h>
 #define NULL (void *)0
 
 #include "fs/vfs.h"
@@ -125,12 +127,6 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 
 extern void enable_sce();
 
-void panic(const char *msg) {
-  kprintf("Kernel panic. Reason: %s \n", msg);
-  for (;;)
-    ;
-}
-
 void _start(struct stivale2_struct *boot_info) {
   disable_irq();
 
@@ -146,6 +142,7 @@ void _start(struct stivale2_struct *boot_info) {
   pmm_init(meminfo);
   vmm_init();
   kmalloc_init(0xff0000);
+  kmem_init();
 
   gdt_init();
   idt_init();
@@ -159,11 +156,10 @@ void _start(struct stivale2_struct *boot_info) {
 
   if (load_initrd(modules_tag))
     panic("Failed to read ramdisk... ");
+  kprintf("Loaded initrd");
 
   if (devfs_init())
     panic("Failed to mount devfs");
-
-  kprintf("Loaded initrd");
 
   if (!framebuffer_tag)
     panic("No available framebuffer");
