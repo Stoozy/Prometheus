@@ -29,7 +29,13 @@ static char *get_parent_dir(const char *path) {
   return parent;
 }
 
+int namei(struct nameidata *ndp) {
+  // TODO
+  return -1;
+}
+
 File *vfs_open(const char *name, int flags) {
+
   File *file = kmalloc(sizeof(File));
 
   if (name[0] == '.' && name[1] == '/') {
@@ -41,9 +47,11 @@ File *vfs_open(const char *name, int flags) {
   kprintf("opening %s\n", name);
 
   char *lookup_path = (char *)name;
+
   VFSNode *vnode;
   if (strcmp(name, ".") == 0) {
     lookup_path = strdup(running->cwd);
+
     kprintf("lookup path is %s\n", lookup_path);
     goto got_path;
   }
@@ -56,10 +64,12 @@ File *vfs_open(const char *name, int flags) {
 
   if (name[0] != '/') {
     lookup_path = kmalloc(strlen(running->cwd) + strlen(name) + 1);
+
     if (strcmp(running->cwd, "/") == 0)
       sprintf(lookup_path, "/%s", name);
     else
       sprintf(lookup_path, "%s/%s", running->cwd, name);
+
     kprintf("Looking up %s \n", lookup_path);
     goto got_path;
   }
@@ -68,6 +78,7 @@ got_path:
   if (root_vnode->ops->lookup(root_vnode, &vnode, lookup_path)) {
     if (!(flags & O_CREAT)) {
       kprintf("can't create file %s\n", lookup_path);
+
       kprintf("lookup is @ 0x%lx\n", root_vnode->ops);
       return NULL;
     }
@@ -75,9 +86,11 @@ got_path:
     // attempt to create file...
 
     kprintf("Creating %s\n", lookup_path);
+
     VFSNode *parent;
     char *parent_name = get_parent_dir(lookup_path);
     kprintf("Looking up %s\n", parent_name);
+
     if (root_vnode->ops->lookup(root_vnode, &parent, parent_name)) {
       kprintf("Couldn't find parent %s\n", parent_name);
       return NULL; // give up (missing parent dir)
@@ -97,31 +110,6 @@ got_path:
     return NULL;
 
   return file;
-}
-
-int vfs_readdir(File *file, DirectoryEntry *buf) {
-  VFSNode *vn = file->vn;
-  return vn->ops->readdir(vn, buf, sizeof(DirectoryEntry), NULL, file->pos++);
-}
-
-ssize_t vfs_read(File *file, void *buffer, size_t size) {
-  // kprintf("file is @ 0x%llx\n", file);
-  // kprintf("vnode is @ 0x%llx\n", file->vn);
-  // TmpNode *tnode = file->vn->private_data;
-  // kprintf("Calling read on %s for %lu bytes\n", tnode->name, size);
-
-  return file->vn->ops->read(file, file->vn, buffer, size, file->pos);
-}
-
-ssize_t vfs_write(File *file, void *buffer, size_t size) {
-  return file->vn->ops->write(file, file->vn, buffer, size, file->pos);
-}
-
-int vfs_close(File *file) {
-  if (--file->refcnt == 0) {
-    kfree(file);
-  }
-  return 0;
 }
 
 int vfs_stat(const char *path, VFSNodeStat *vns) {
@@ -163,10 +151,11 @@ got_path:
   } else
     lookup = root_vnode;
 
-  vns->filesize = lookup->size;
+  vns->filesize = lookup->stat.filesize;
   vns->inode = (ino_t)lookup->private_data;
-  vns->type = lookup->type;
-  if (lookup->type == VFS_CHARDEVICE || lookup->type == VFS_BLOCKDEVICE) {
+  vns->type = lookup->stat.type;
+  if (lookup->stat.type == VFS_CHARDEVICE ||
+      lookup->stat.type == VFS_BLOCKDEVICE) {
     TmpNode *tnode = lookup->private_data;
     vns->rdev = tnode->dev.cdev.rdev;
   }

@@ -89,7 +89,7 @@ static int ptmx_open(File *file, VFSNode *vn, int flags) {
 
   /* Initialize ptm node (entirely virtual)*/
   VFSNode *ptm_node = kmalloc(sizeof(VFSNode));
-  ptm_node->type = VFS_CHARDEVICE;
+  ptm_node->stat.type = VFS_CHARDEVICE;
   ptm_node->ops = &ptm_ops;
   ptm_node->private_data = ptm_data;
   rb_init(&ptm_data->ibuf, MAX_LINE, sizeof(char));

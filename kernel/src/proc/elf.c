@@ -54,10 +54,12 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
 
       kprintf("[ELF]  Got interpreter file path: %s\n", ld_path);
       File *ld_file = vfs_open(ld_path, 0);
-      u8 *ld_data = kmalloc(ld_file->vn->size);
-      int br = vfs_read(ld_file, ld_data, ld_file->vn->size);
+      u8 *ld_data = kmalloc(ld_file->vn->stat.filesize);
 
-      if (!(br != 0 && validate_elf(ld_data)))
+      ssize_t bytes_read = ld_file->vn->ops->read(
+          ld_file, ld_file->vn, ld_data, ld_file->vn->stat.filesize, 0);
+
+      if (!(bytes_read != 0 && validate_elf(ld_data)))
         continue;
 
       Elf64_Ehdr *ld_hdr = (Elf64_Ehdr *)ld_data;
@@ -135,9 +137,10 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
       ;
   }
 
-  uint8_t *elf_data = kmalloc(elf_file->vn->size);
+  uint8_t *elf_data = kmalloc(elf_file->vn->stat.filesize);
 
-  int br = vfs_read(elf_file, elf_data, elf_file->vn->size);
+  ssize_t bytes_read = elf_file->vn->ops->read(elf_file, elf_file->vn, elf_data,
+                                               elf_file->vn->stat.filesize, 0);
 
   kprintf("Read data %s\n", elf_data);
   if (!validate_elf(elf_data))
@@ -169,7 +172,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
 
   proc_add_vas_range(proc, range);
 
-  kprintf("Elf file size is %llu bytes\n", elf_file->vn->size);
+  kprintf("Elf file size is %llu bytes\n", elf_file->vn->stat.filesize);
 
   Auxval aux = load_elf_segments(proc, elf_data);
 

@@ -38,6 +38,13 @@ typedef struct vattr {
   dev_t rdev; /*! device represented by file */
 } VAttr;
 
+typedef struct vfs_node_stat {
+  enum vtype type;
+  ino_t inode;
+  size_t filesize;
+  dev_t rdev;
+} __attribute__((packed)) VFSNodeStat;
+
 typedef struct vnode {
   bool isroot;
   uint64_t refcnt;
@@ -47,18 +54,10 @@ typedef struct vnode {
 
   struct vnops *ops;
 
-  size_t size;
-  enum vtype type; /* vnode type */
+  VFSNodeStat stat;
   void *private_data;
 
 } VFSNode;
-
-typedef struct vfs_node_stat {
-  enum vtype type;
-  ino_t inode;
-  size_t filesize;
-  dev_t rdev;
-} __attribute__((packed)) VFSNodeStat;
 
 typedef struct file {
   void *magic;
@@ -81,6 +80,16 @@ typedef struct vfs {
 #define DELETE 3 // set up for file deletion
 #define RENAME 4 // set up for file renaming
 #define OPMASK 5 // mask for operation
+
+struct componentname {
+  uint32_t cn_nameiop; /* namei operation */
+  uint32_t cn_flags;   /* flags to namei */
+
+  const char *cn_nameptr; /* pointer to looked up name */
+
+  size_t cn_namelen; /* length of looked up component */
+  size_t cn_consume; /* chars to consume in lookup() */
+};
 
 typedef struct vnops {
   int (*create)(VFSNode *dvn, VFSNode **out, const char *name, VAttr *attr);
@@ -110,6 +119,37 @@ typedef struct vfsops {
   int (*vget)(VFS *vfs, VFSNode **out, ino_t inode);
 } VFSOps;
 
+struct nameidata {
+  /*
+   * Arguments to namei.
+   */
+  struct vnode *ni_atdir;     /* startup dir, cwd if null */
+  struct pathbuf *ni_pathbuf; /* pathname container */
+  char *ni_pnbuf;             /* extra pathname buffer ref (XXX) */
+  /*
+   * Internal starting state. (But see notes.)
+   */
+  struct vnode *ni_rootdir;  /* logical root directory */
+  struct vnode *ni_erootdir; /* emulation root directory */
+  /*
+   * Results from namei.
+   */
+  struct vnode *ni_vp;  /* vnode of result */
+  struct vnode *ni_dvp; /* vnode of intermediate directory */
+  /*
+   * Internal current state.
+   */
+  size_t ni_pathlen;       /* remaining chars in path */
+  const char *ni_next;     /* next location in pathname */
+  unsigned int ni_loopcnt; /* count of symlinks encountered */
+  /*
+   * Lookup parameters: this structure describes the subset of
+   * information from the nameidata structure that is passed
+   * through the VOP interface.
+   */
+  struct componentname ni_cnd;
+};
+
 int vfs_lookup(VFSNode *cwd, VFSNode **out, const char *path, uint32_t flags,
                VAttr *attr);
 
@@ -118,9 +158,5 @@ extern VFSNode *root_vnode;
 
 File *vfs_open(const char *name, int flags);
 int vfs_mkdir(const char *path, mode_t mode);
-ssize_t vfs_read(File *file, void *buffer, size_t size);
-ssize_t vfs_write(File *file, void *buffer, size_t size);
-ssize_t vfs_write(File *file, void *buffer, size_t size);
-int vfs_readdir(File *file, DirectoryEntry *buf);
 int vfs_stat(const char *path, VFSNodeStat *);
 int vfs_close(File *);

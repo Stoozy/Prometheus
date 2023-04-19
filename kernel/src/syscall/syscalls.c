@@ -92,12 +92,6 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
       return;
     }
 
-    // if (!running->childDied) {
-    //   regs->rax = -1;
-    //   regs->rdx = EINTR;
-    //   return;
-    // }
-
     ProcessControlBlock *proc;
     TAILQ_FOREACH(proc, &running->children, child_entries) {
       if (proc->state == ZOMBIE) {
@@ -113,24 +107,6 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
         return;
       }
     }
-
-    // for (PQNode *pnode = running->children.first; pnode; pnode = pnode->next)
-    // {
-    //   ProcessControlBlock *proc = pnode->pcb;
-    //   if (proc->state == ZOMBIE) {
-    //     // TODO: clean up the process (need a proper malloc)
-
-    //     *status = proc->exit_code;
-    //     regs->rax = proc->pid;
-    //     kprintf("Got dead child %s (pid: %d; status %d)\n", proc->name,
-    //             proc->pid, *status);
-    //     pqueue_remove(&running->children, proc->pid);
-
-    //     // for (;;)
-    //     //   ;
-    //     return;
-    //   }
-    // }
 
     regs->rdx = EINTR;
     regs->rax = -1;
@@ -152,12 +128,6 @@ void sys_waitpid(pid_t pid, int *status, int flags, Registers *regs) {
 
 int sys_open(const char *name, int flags, Registers *regs) {
 
-  // if (strcmp(name, "/dev/fb0") == 0) {
-  //   kprintf("opening /dev/fb0");
-  //   for (;;)
-  //     ;
-  // }
-
   File *file = vfs_open(name, flags);
 
   static int count = 0;
@@ -177,12 +147,11 @@ int sys_open(const char *name, int flags, Registers *regs) {
   return fd;
 }
 
-// int sys_close(int fd) {
-//   vmm_switch_page_directory(kernel_cr3);
-//   unmap_fd_from_proc(running, fd);
-//   kprintf("Closed fd %d\n", fd);
-//   return 0;
-// }
+int sys_close(int fd) {
+  unmap_fd_from_proc(running, fd);
+  kprintf("Closed fd %d\n", fd);
+  return 0;
+}
 
 ssize_t sys_read(int fd, char *ptr, size_t len, Registers *regs) {
 
@@ -192,8 +161,7 @@ ssize_t sys_read(int fd, char *ptr, size_t len, Registers *regs) {
   }
 
   struct file *file = running->fd_table[fd];
-
-  return vfs_read(file, (u8 *)ptr, len);
+  return file->vn->ops->read(file, file->vn, ptr, len, file->pos);
 }
 
 ssize_t sys_write(int fd, char *ptr, int len) {
@@ -206,14 +174,7 @@ ssize_t sys_write(int fd, char *ptr, int len) {
   }
 
   File *file = running->fd_table[fd];
-  if (file) {
-    return vfs_write(file, (uint8_t *)ptr, len);
-  } else {
-    kprintf("File not open!\n");
-    return -1;
-  }
-
-  return 0;
+  return file->vn->ops->write(file, file->vn, ptr, len, file->pos);
 }
 
 void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
@@ -312,7 +273,8 @@ off_t sys_seek(int fd, off_t offset, int whence) {
     break;
   case SEEK_END:
     kprintf("[SYS_SEEK] whence is SEEK_END\n");
-    running->fd_table[fd]->pos = running->fd_table[fd]->vn->size + offset;
+    running->fd_table[fd]->pos =
+        running->fd_table[fd]->vn->stat.filesize + offset;
     break;
   default:
     kprintf("[SYS_SEEK] Whence is none\n");
@@ -335,9 +297,9 @@ void sys_fstat(int fd, VFSNodeStat *vns, Registers *regs) {
     return;
   }
 
-  vns->filesize = file->vn->size;
-  vns->type = file->vn->type;
-  vns->inode = (ino_t)file->vn->private_data;
+  vns->filesize = file->vn->stat.filesize;
+  vns->type = file->vn->stat.type;
+  vns->inode = (ino_t)file->vn->stat.inode;
 
   regs->rax = 0;
 
@@ -536,10 +498,8 @@ int sys_readdir(int handle, DirectoryEntry *buffer, size_t max_size) {
 
   File *file = running->fd_table[handle];
 
-  if (vfs_readdir(file, buffer))
-    return -1;
-
-  return 0;
+  return file->vn->ops->readdir(file->vn, buffer, sizeof(DirectoryEntry), NULL,
+                                file->pos++);
 }
 
 int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {

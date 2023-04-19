@@ -1,3 +1,4 @@
+#include <libk/kprintf.h>
 #include <libk/util.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -160,4 +161,10 @@ int toupper(int c) {
     c -= 0x20;
   }
   return c;
+}
+
+void panic(const char *msg) {
+  kprintf("\033[91mKERNEL PANIC\033[37m Reason: %s \n", msg);
+  for (;;)
+    ;
 }

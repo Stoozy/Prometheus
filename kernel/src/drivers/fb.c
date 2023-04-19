@@ -51,12 +51,8 @@ static void fb_init_fsi(struct stivale2_struct_tag_framebuffer *fb_info,
   return;
 }
 
-struct fb_fix_screeninfo fb_getfscreeninfo() {
-  return fb0_fsi;
-}
-struct fb_var_screeninfo fb_getvscreeninfo() {
-  return fb0_vsi;
-}
+struct fb_fix_screeninfo fb_getfscreeninfo() { return fb0_fsi; }
+struct fb_var_screeninfo fb_getvscreeninfo() { return fb0_vsi; }
 
 // /* TODO: This only supports one framebuffer */
 
@@ -144,7 +140,8 @@ void fb_proc() {
     // seek
     fb_file->pos = 0;
     asm("cli");
-    vfs_read(fb_file, (void *)gp_backbuffer, fb_fsi.mmio_len);
+    fb_file->vn->ops->read(fb_file, fb_file->vn, gp_backbuffer, fb_fsi.mmio_len,
+                           0);
     asm("sti");
     memcpy((uint8_t *)fb_fsi.mmio_start, (void *)gp_backbuffer,
            fb_fsi.mmio_len);

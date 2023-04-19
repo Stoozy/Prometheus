@@ -33,22 +33,22 @@ void write_serial(char a) {
 }
 
 void turn_color_on() {
-  write_serial('\033');
-  write_serial('[');
-  write_serial('0');
-  write_serial(';');
-  write_serial('3');
-  write_serial('3');
-  write_serial('m');
+  // write_serial('\033');
+  // write_serial('[');
+  // write_serial('0');
+  // write_serial(';');
+  // write_serial('9');
+  // write_serial('7');
+  // write_serial('m');
 }
 
 void turn_color_off() {
-  write_serial('\033');
-  write_serial('[');
-  write_serial('3');
-  write_serial('3');
-  write_serial(';');
-  write_serial('3');
-  write_serial('7');
-  write_serial('m');
+  // write_serial('\033');
+  // write_serial('[');
+  // write_serial('3');
+  // write_serial('3');
+  // write_serial(';');
+  // write_serial('3');
+  // write_serial('7');
+  // write_serial('m');
 }

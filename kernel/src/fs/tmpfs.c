@@ -51,12 +51,14 @@ static int tmpfs_vget(VFS *vfs, VFSNode **out, ino_t inode) {
   node->vnode = vnode;
   vnode->refcnt = 1;
 
-  vnode->type = node->attr.type;
   vnode->ops = &tmpfs_vnops;
   vnode->vfs = vfs;
   vnode->vfs_mountedhere = NULL;
   vnode->isroot = false;
-  vnode->size = node->attr.size;
+
+  vnode->stat.type = node->attr.type;
+  vnode->stat.filesize = node->attr.size;
+  vnode->stat.inode = inode;
 
   vnode->private_data = node;
   *out = vnode;
@@ -150,8 +152,8 @@ TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
   switch (vap->type) {
   case VFS_DIRECTORY: {
     TAILQ_INIT(&tnode->dir.dirents);
-    tnode->dir.parent = dtn;
 
+    tnode->dir.parent = dtn;
     dent->filename[strlen(dent->filename) - 1] = '\0';
 
     break;
@@ -202,7 +204,7 @@ static int tmpfs_open(File *file, VFSNode *vn, int mode) {
     for (;;)
       kprintf("Called open on NULL vfs node!!\n");
 
-  if (vn->type == VFS_SYMLINK) {
+  if (vn->stat.type == VFS_SYMLINK) {
     TmpNode *src_tnode = vn->private_data;
     VFSNode *tgt_vnode;
 
@@ -311,7 +313,7 @@ static ssize_t tmpfs_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
     TAILQ_INSERT_TAIL(&tnode->file.anonmap, na, entries);
 
     tnode->attr.size = nbyte + off; // new size
-    tnode->vnode->size = tnode->attr.size;
+    tnode->vnode->stat.filesize = tnode->attr.size;
   }
 
   void *start = TAILQ_FIRST(&tnode->file.anonmap)->page + off;
@@ -320,7 +322,7 @@ static ssize_t tmpfs_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
 }
 
 int tmpfs_ioctl(VFSNode *vp, uint64_t req, void *data, int fflag) {
-  if (vp->type != VFS_CHARDEVICE) {
+  if (vp->stat.type != VFS_CHARDEVICE) {
     kprintf("[TMPFS] ioctl only supports chardevs for now\n");
     for (;;)
       ;
@@ -335,7 +337,7 @@ int tmpfs_ioctl(VFSNode *vp, uint64_t req, void *data, int fflag) {
 }
 
 int tmpfs_poll(VFSNode *vp, int events) {
-  if (vp->type != VFS_CHARDEVICE) {
+  if (vp->stat.type != VFS_CHARDEVICE) {
     kprintf("[TMPFS] poll only supports chardevs for now\n");
     for (;;)
       ;
