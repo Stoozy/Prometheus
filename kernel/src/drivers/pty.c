@@ -7,7 +7,7 @@
 #include <asm-generic/poll.h>
 #include <asm/ioctls.h>
 #include <drivers/tty.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <libk/ringbuffer.h>
 
@@ -84,11 +84,14 @@ static int ptmx_open(File *file, VFSNode *vn, int flags) {
   // return file with vnode as ptm node with ptm_ops
   // setup pts/N node with proper tty driver (pts_tty_ops)
 
-  struct ptm_data *ptm_data = kmalloc(sizeof(struct ptm_data));
-  struct pts_data *pts_data = kmalloc(sizeof(struct pts_data));
+  struct ptm_data *ptm_data = kmem_alloc(sizeof(struct ptm_data));
+  struct pts_data *pts_data = kmem_alloc(sizeof(struct pts_data));
+
+  memset(ptm_data, 0, sizeof(*ptm_data));
+  memset(pts_data, 0, sizeof(*pts_data));
 
   /* Initialize ptm node (entirely virtual)*/
-  VFSNode *ptm_node = kmalloc(sizeof(VFSNode));
+  VFSNode *ptm_node = kmem_alloc(sizeof(VFSNode));
   ptm_node->stat.type = VFS_CHARDEVICE;
   ptm_node->ops = &ptm_ops;
   ptm_node->private_data = ptm_data;
@@ -160,7 +163,7 @@ static ssize_t ptm_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
   return w;
 }
 static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag) {
-  kprintf("ptm_ioctl()\n");
+  // kprintf("ptm_ioctl()\n");
   struct ptm_data *ptm = vp->private_data;
   struct pts_data *pts = ptm->slave;
 
@@ -168,6 +171,7 @@ static int ptm_ioctl(VFSNode *vp, uint64_t request, void *arg, int fflag) {
   case TIOCGPTN: {
     int *ptn = arg;
     *ptn = pts->slave_no;
+    kprintf("slave pty is %d\n", pts->slave_no);
     return 0;
   }
   case TCGETS: {

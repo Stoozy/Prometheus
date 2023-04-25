@@ -2,8 +2,8 @@
 #include "fs/tmpfs.h"
 #include "memory/vmm.h"
 #include <fs/vfs.h>
-#include <libk/kmalloc.h>
 #include <libk/kprintf.h>
+#include <memory/slab.h>
 #include <string/string.h>
 
 #include <proc/proc.h>
@@ -12,8 +12,7 @@ VFSNode *root_vnode;
 
 extern ProcessControlBlock *running;
 static char *get_parent_dir(const char *path) {
-  char *parent = kmalloc(strlen(path));
-  strcpy(parent, path);
+  char *parent = strdup(path);
 
   size_t parent_len = strlen(parent);
   if (parent[parent_len - 1] == '/')
@@ -36,15 +35,13 @@ int namei(struct nameidata *ndp) {
 
 File *vfs_open(const char *name, int flags) {
 
-  File *file = kmalloc(sizeof(File));
+  File *file = kmem_alloc(sizeof(File));
 
+  kprintf("opening %s\n", name);
   if (name[0] == '.' && name[1] == '/') {
-
-    kprintf("opening %s\n", name);
     for (;;)
       ;
   }
-  kprintf("opening %s\n", name);
 
   char *lookup_path = (char *)name;
 
@@ -63,7 +60,7 @@ File *vfs_open(const char *name, int flags) {
   }
 
   if (name[0] != '/') {
-    lookup_path = kmalloc(strlen(running->cwd) + strlen(name) + 1);
+    lookup_path = kmem_alloc(strlen(running->cwd) + strlen(name) + 1);
 
     if (strcmp(running->cwd, "/") == 0)
       sprintf(lookup_path, "/%s", name);
@@ -129,7 +126,7 @@ int vfs_stat(const char *path, VFSNodeStat *vns) {
   }
 
   if (path[0] != '/') {
-    lookup_path = kmalloc(strlen(running->cwd) + strlen(path) + 1);
+    lookup_path = kmem_alloc(strlen(running->cwd) + strlen(path) + 1);
     if (strcmp(running->cwd, "/") == 0)
       sprintf(lookup_path, "/%s", path);
     else
@@ -175,7 +172,7 @@ int vfs_mkdir(const char *path, mode_t mode) {
   char *parent_path;
   if (path[0] == '.' && path[1] == '/') {
     path++;
-    absolute_path = kmalloc(strlen(running->cwd) + strlen(path) + 2);
+    absolute_path = kmem_alloc(strlen(running->cwd) + strlen(path) + 2);
     if (path[strlen(path) - 1] != '/')
       sprintf(absolute_path, "%s%s/", running->cwd, path);
     else

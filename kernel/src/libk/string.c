@@ -1,4 +1,4 @@
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <string/string.h>
 
 int memcmp(const void *aptr, const void *bptr, size_t size) {
@@ -112,7 +112,7 @@ char *strncpy(char *dest, const char *src, size_t n) {
 
 char *strdup(const char *src) {
   size_t size = strlen(src) + 1;
-  char *str = kmalloc(size);
+  char *str = kmem_alloc(size);
 
   memset(str, 0, size);
   memcpy(str, src, size);

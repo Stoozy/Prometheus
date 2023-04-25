@@ -10,7 +10,7 @@
 #include <asm-generic/poll.h>
 #include <drivers/tty.h>
 #include <fs/devfs.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <libk/ringbuffer.h>
 #include <libk/util.h>
@@ -260,8 +260,8 @@ int tty_init_node(VFSNode *tty_node) {
   tty_node->ops = &tty_vnops;
 
   // init tty internal structures
-  RingBuffer *in = kmalloc(sizeof(RingBuffer));
-  RingBuffer *out = kmalloc(sizeof(RingBuffer));
+  RingBuffer *in = kmem_alloc(sizeof(RingBuffer));
+  RingBuffer *out = kmem_alloc(sizeof(RingBuffer));
 
   rb_init(in, TTY_BUFSIZE, sizeof(uint8_t));
   rb_init(out, TTY_BUFSIZE, sizeof(uint8_t));

@@ -1,12 +1,12 @@
 #include "drivers/keyboard.h"
 #include "fs/tmpfs.h"
 #include "fs/vfs.h"
-#include "libk/kmalloc.h"
+#include "memory/slab.h"
 #include "libk/ringbuffer.h"
 #include <asm-generic/poll.h>
 #include <fs/devfs.h>
 
-#define INPUT_BUFSIZE 4096
+#define INPUT_BUFSIZE 1024
 
 static int input_open(File *file, VFSNode *vn, int mode);
 static ssize_t input_read(File *, VFSNode *vn, void *buf, size_t nbyte,
@@ -67,7 +67,7 @@ int input_init() {
     return -1;
 
   TmpNode *tnode = ps2keyboard->private_data;
-  RingBuffer *input_rb = kmalloc(sizeof(RingBuffer));
+  RingBuffer *input_rb = kmem_alloc(sizeof(RingBuffer));
   rb_init(input_rb, INPUT_BUFSIZE, sizeof(char));
   tnode->dev.cdev.private_data = input_rb;
 

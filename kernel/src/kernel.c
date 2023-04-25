@@ -8,7 +8,7 @@
 #include <cpu/idt.h>
 #include <cpu/io.h>
 #include <cpu/smp.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/typedefs.h>
 #include <memory/pmm.h>
 #include <memory/vmm.h>
@@ -141,7 +141,6 @@ void _start(struct stivale2_struct *boot_info) {
 
   pmm_init(meminfo);
   vmm_init();
-  kmalloc_init(0xff0000);
   kmem_init();
 
   gdt_init();

@@ -2,7 +2,7 @@
 #include "memory/vmm.h"
 #include <config.h>
 #include <cpu/idt.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <proc/proc.h>
 

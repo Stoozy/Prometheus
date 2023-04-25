@@ -1,4 +1,4 @@
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <libk/ringbuffer.h>
 #include <string/string.h>
@@ -9,7 +9,7 @@ void rb_init(RingBuffer *rb, size_t cap, size_t tsize) {
   rb->tsize = tsize;
   rb->cap = cap;
 
-  rb->buffer = kmalloc(cap * tsize);
+  rb->buffer = kmem_alloc(cap * tsize);
 }
 
 void rb_destroy(RingBuffer *rb) {

@@ -5,7 +5,7 @@
 #include <abi-bits/auxv.h>
 #include <config.h>
 #include <fs/vfs.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <libk/typedefs.h>
 #include <memory/pmm.h>
@@ -48,13 +48,13 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
     }
 
     if (p_header->p_type == PT_INTERP) {
-      char *ld_path = kmalloc(p_header->p_memsz);
+      char *ld_path = kmem_alloc(p_header->p_memsz);
       memset(ld_path, 0, p_header->p_memsz);
       memcpy(ld_path, (elf_data + p_header->p_offset), p_header->p_filesz);
 
       kprintf("[ELF]  Got interpreter file path: %s\n", ld_path);
       File *ld_file = vfs_open(ld_path, 0);
-      u8 *ld_data = kmalloc(ld_file->vn->stat.filesize);
+      u8 *ld_data = kmem_alloc(ld_file->vn->stat.filesize);
 
       ssize_t bytes_read = ld_file->vn->ops->read(
           ld_file, ld_file->vn, ld_data, ld_file->vn->stat.filesize, 0);
@@ -85,7 +85,7 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
         vmm_map_range(vas, vaddr, paddr - PAGING_VIRTUAL_OFFSET,
                       blocks * PAGE_SIZE, page_flags);
 
-        VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+        VASRangeNode *range = kmem_alloc(sizeof(VASRangeNode));
 
         range->virt_start = vaddr;
         range->phys_start = paddr - PAGING_VIRTUAL_OFFSET;
@@ -113,7 +113,7 @@ Auxval load_elf_segments(ProcessControlBlock *proc, u8 *elf_data) {
     int page_flags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
     vmm_map_range(vas, virt_addr, phys_addr, blocks * PAGE_SIZE, page_flags);
 
-    VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+    VASRangeNode *range = kmem_alloc(sizeof(VASRangeNode));
 
     range->virt_start = virt_addr;
     range->phys_start = phys_addr;
@@ -137,7 +137,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
       ;
   }
 
-  uint8_t *elf_data = kmalloc(elf_file->vn->stat.filesize);
+  uint8_t *elf_data = kmem_alloc(elf_file->vn->stat.filesize);
 
   ssize_t bytes_read = elf_file->vn->ops->read(elf_file, elf_file->vn, elf_data,
                                                elf_file->vn->stat.filesize, 0);
@@ -146,7 +146,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   if (!validate_elf(elf_data))
     return NULL;
 
-  ProcessControlBlock *proc = (kmalloc(sizeof(ProcessControlBlock)));
+  ProcessControlBlock *proc = (kmem_alloc(sizeof(ProcessControlBlock)));
   memset(((void *)proc), 0, sizeof(ProcessControlBlock));
 
   memcpy(proc->name, path, 256);
@@ -162,7 +162,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   int pflags = PAGE_USER | PAGE_WRITE | PAGE_PRESENT;
   vmm_map_range(proc->cr3, stack_base, stack_base, STACK_SIZE, pflags);
 
-  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+  VASRangeNode *range = kmem_alloc(sizeof(VASRangeNode));
 
   range->virt_start = stack_base;
   range->phys_start = stack_base;
@@ -265,7 +265,7 @@ ProcessControlBlock *create_elf_process(const char *path, char *argvp[],
   kprintf("fd 1 is at %x\n", proc->fd_table[1]);
   kprintf("fd 2 is at %x\n", proc->fd_table[2]);
 
-  proc->cwd = kmalloc(2);
+  proc->cwd = kmem_alloc(2);
   sprintf(proc->cwd, "/");
 
   TAILQ_INIT(&proc->children);

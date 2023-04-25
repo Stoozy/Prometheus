@@ -7,7 +7,7 @@
 #include <posix/termios.h>
 #include <proc/proc.h>
 
-#define TTY_BUFSIZE 0x1000
+#define TTY_BUFSIZE 1024
 #define TTY_MAJOR 5
 #define MAX_TTYS 8
 

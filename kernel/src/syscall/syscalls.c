@@ -5,7 +5,7 @@
 #include <config.h>
 #include <cpu/cpu.h>
 #include <fs/vfs.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <libk/typedefs.h>
 #include <libk/util.h>
@@ -242,7 +242,7 @@ void *sys_vm_map(ProcessControlBlock *proc, void *addr, size_t size, int prot,
   vmm_map_range((void *)proc->cr3 + PAGING_VIRTUAL_OFFSET, virt_base, phys_base,
                 size, page_flags);
 
-  VASRangeNode *range = kmalloc(sizeof(VASRangeNode));
+  VASRangeNode *range = kmem_alloc(sizeof(VASRangeNode));
   range->virt_start = virt_base;
   range->phys_start = phys_base;
   range->size = pages * PAGE_SIZE;
@@ -339,7 +339,7 @@ void sys_execve(char *name, char **argvp, char **envp) {
 
   // pqueue_remove(&ready_queue, running->pid);
 
-  char *name_cp = kmalloc(strlen(name) + 1);
+  char *name_cp = kmem_alloc(strlen(name) + 1);
   strcpy(name_cp, name);
 
   char *args_cp[count_args(argvp)];
@@ -350,7 +350,7 @@ void sys_execve(char *name, char **argvp, char **envp) {
   int n = 0;
   while (argvp[n]) {
     size_t strl = strlen(argvp[n]) + 1;
-    args_cp[n] = kmalloc(strl);
+    args_cp[n] = kmem_alloc(strl);
     strcpy(args_cp[n], argvp[n]);
 
     kprintf("%s\n", argvp[n]);
@@ -364,7 +364,7 @@ void sys_execve(char *name, char **argvp, char **envp) {
   n = 0;
   while (envp[n]) {
     size_t strl = strlen(envp[n]) + 1;
-    env_cp[n] = kmalloc(strl);
+    env_cp[n] = kmem_alloc(strl);
     strcpy(env_cp[n], envp[n]);
     kprintf("%s\n", envp[n]);
     kprintf("%s\n", env_cp[n]);
@@ -533,7 +533,7 @@ int sys_poll(struct pollfd *fds, uint32_t count, int timeout) {
 }
 
 int sys_chdir(const char *path) {
-  char *name = kmalloc(strlen(path));
+  char *name = kmem_alloc(strlen(path));
   running->cwd = strdup(path);
   kprintf("Changing directory to %s\n", name);
   return 0;
@@ -611,7 +611,6 @@ void syscall_dispatcher(Registers *regs) {
     break;
   }
   case SYS_IOCTL: {
-    kprintf("[SYS]  IOCTL CALLED\n");
     regs->rax = sys_ioctl(regs->rdi, regs->rsi, (void *)regs->rdx);
     break;
   }

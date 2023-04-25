@@ -6,7 +6,7 @@
 #include <drivers/fb.h>
 #include <fs/devfs.h>
 #include <fs/vfs.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <linux/fb.h>
 #include <string/string.h>
@@ -135,6 +135,12 @@ VNodeOps fb_vnops = {.open = fbops_open,
 void fb_proc() {
   struct fb_fix_screeninfo fb_fsi = fb_getfscreeninfo();
   File *fb_file = vfs_open("/dev/fb0", O_RDWR);
+  if (fb_file == NULL)
+    kprintf("File not found");
+  else
+    kprintf("File found");
+
+  memset(gp_backbuffer, 255, fb_fsi.mmio_len);
 
   for (;;) {
     // seek
@@ -143,6 +149,7 @@ void fb_proc() {
     fb_file->vn->ops->read(fb_file, fb_file->vn, gp_backbuffer, fb_fsi.mmio_len,
                            0);
     asm("sti");
+
     memcpy((uint8_t *)fb_fsi.mmio_start, (void *)gp_backbuffer,
            fb_fsi.mmio_len);
   }
@@ -164,25 +171,10 @@ int fb_init(struct stivale2_struct_tag_framebuffer *fb_info) {
       pmm_alloc_blocks(DIV_ROUND_UP(fb0_fsi.mmio_len, PAGE_SIZE));
 
   gp_backbuffer = tnode->dev.cdev.private_data;
+
+  kprintf("backbuffer is @ 0x%p", gp_backbuffer);
   // set current nodes fs operations to framebuffer driver ops
   fb_vnode->ops = &fb_vnops;
-
-  // struct fb_fix_screeninfo fi = fb_getfscreeninfo();
-  // kprintf("Open /dev/fb0\n");
-  // File *fb_dev = vfs_open("/dev/fb0", O_RDWR);
-
-  // discards small buffer created by devfs and assigns a new one
-  // that is of the proper size
-  /* void *file_buf = kmalloc(fb0_fsi.mmio_len); */
-  /* memset(file_buf, 0, fb0_fsi.mmio_len); */
-  /* fb_dev->device = (uintptr_t)file_buf; */
-  /* fb_dev->size = fb0_fsi.mmio_len; */
-  /* fb_dev->position = 0; */
-
-  // test write to fb file
-  // uint8_t *test_buf = kmalloc(fb0_fsi.mmio_len);
-  // memset(test_buf, 0x28, fb0_fsi.mmio_len);
-  // vfs_write(fb_dev, test_buf, fb0_fsi.mmio_len);
 
   return 0;
 }

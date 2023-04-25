@@ -5,7 +5,7 @@
 #include <config.h>
 #include <drivers/video.h>
 #include <fs/vfs.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <memory/pmm.h>
 #include <proc/elf.h>
@@ -29,7 +29,7 @@ void dump_readyq() {
   TAILQ_FOREACH(cur, &readyq, entries) {
     kprintf("%s (%d) -> ", cur->name, cur->pid);
   }
-  kprintf(" None");
+  kprintf(" None\n");
 }
 
 void unmap_fd_from_proc(ProcessControlBlock *proc, int fd) {
@@ -129,7 +129,7 @@ void proc_add_vas_range(ProcessControlBlock *proc, VASRangeNode *node) {
 
 ProcessControlBlock *create_kernel_process(void (*entry)(void), char *name) {
 
-  ProcessControlBlock *pcb = kmalloc(sizeof(ProcessControlBlock));
+  ProcessControlBlock *pcb = kmem_alloc(sizeof(ProcessControlBlock));
   memset(pcb, 0, sizeof(ProcessControlBlock));
 
   memcpy(&pcb->name, name, 256);
@@ -153,7 +153,7 @@ ProcessControlBlock *create_kernel_process(void (*entry)(void), char *name) {
 
 ProcessControlBlock *clone_process(ProcessControlBlock *proc, Registers *regs) {
 
-  ProcessControlBlock *clone = kmalloc(sizeof(ProcessControlBlock));
+  ProcessControlBlock *clone = kmem_alloc(sizeof(ProcessControlBlock));
   *clone = *proc;
 
   // reset vas so that proper phys addrs get put by vmm_copy_vas
@@ -184,15 +184,16 @@ void register_process(ProcessControlBlock *new) {
 }
 
 void multitasking_init() {
-
   TAILQ_INIT(&readyq);
 
   char *argv[2] = {"/usr/bin/gcon", NULL};
   char *envp[3] = {"PATH=/usr/bin", NULL};
 
   extern void fb_proc();
+  ProcessControlBlock *gcon = create_elf_process("/usr/bin/gcon", argv, envp);
+  kprintf("process is @ %p", gcon);
+  register_process(gcon);
   register_process(create_kernel_process(fb_proc, "Screen"));
-  register_process(create_elf_process("/usr/bin/gcon", argv, envp));
 
   dump_readyq();
 

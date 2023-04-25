@@ -6,14 +6,14 @@
 #include "proc/proc.h"
 #include <fs/tmpfs.h>
 #include <fs/vfs.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <string/string.h>
 
 #include <sys/queue.h>
 
 static int tmpfs_mount(VFS *vfs, const char *path, void *data) {
-  TmpNode *tmp_root_node = kmalloc(sizeof(TmpNode));
+  TmpNode *tmp_root_node = kmem_alloc(sizeof(TmpNode));
   VFSNode *tmp_root_vnode;
 
   TAILQ_INIT(&tmp_root_node->dir.dirents);
@@ -47,7 +47,7 @@ static int tmpfs_vget(VFS *vfs, VFSNode **out, ino_t inode) {
     return 0;
   }
 
-  VFSNode *vnode = kmalloc(sizeof(VFSNode));
+  VFSNode *vnode = kmem_alloc(sizeof(VFSNode));
   node->vnode = vnode;
   vnode->refcnt = 1;
 
@@ -76,7 +76,7 @@ static int tmpfs_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
   if (strcmp(name, "/") == 0) {
     VFSNode *ret;
     tmpfs_root(&vfs_root, &ret);
-    kprintf("Found root at 0x%x\n", ret);
+    kprintf("Found root at 0x%p\n", ret);
     *out = ret;
     return 0;
   }
@@ -94,7 +94,7 @@ static int tmpfs_lookup(VFSNode *dvn, VFSNode **out, const char *name) {
     }
   }
 
-  struct tmp_dir_q *new_dir = kmalloc(sizeof(struct tmp_dir_q));
+  struct tmp_dir_q *new_dir = kmem_alloc(sizeof(struct tmp_dir_q));
   TAILQ_INIT(new_dir);
 
   struct tmpfs_dirent *dirent;
@@ -132,8 +132,8 @@ loop:
 
 TmpNode *tmakenode(TmpNode *dtn, const char *name, struct vattr *vap) {
 
-  TmpNode *tnode = kmalloc(sizeof(TmpNode));
-  struct tmpfs_dirent *dent = kmalloc(sizeof(struct tmpfs_dirent));
+  TmpNode *tnode = kmem_alloc(sizeof(TmpNode));
+  struct tmpfs_dirent *dent = kmem_alloc(sizeof(struct tmpfs_dirent));
 
   dent->filename = strdup(name + strlen(dtn->name));
   dent->inode = tnode;
@@ -302,13 +302,13 @@ static ssize_t tmpfs_write(File *file, VFSNode *vn, void *buf, size_t nbyte,
 
   TmpNode *tnode = vn->private_data;
 
-  kprintf("writing to %s\n", tnode->name);
+  // kprintf("writing to %s\n", tnode->name);
 
   if (nbyte + off > tnode->attr.size) {
     int pages_needed =
         DIV_ROUND_UP((nbyte + off) - tnode->attr.size, PAGE_SIZE);
     void *pages = PAGING_VIRTUAL_OFFSET + pmm_alloc_blocks(pages_needed);
-    struct anon *na = kmalloc(sizeof(struct anon));
+    struct anon *na = kmem_alloc(sizeof(struct anon));
     na->page = pages;
     TAILQ_INSERT_TAIL(&tnode->file.anonmap, na, entries);
 

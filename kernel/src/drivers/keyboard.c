@@ -1,4 +1,3 @@
-#include "libk/kmalloc.h"
 #include "libk/ringbuffer.h"
 #include "memory/vmm.h"
 #include <drivers/keyboard.h>

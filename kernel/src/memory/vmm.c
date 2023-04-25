@@ -5,7 +5,7 @@
 #include <config.h>
 #include <cpu/cpu.h>
 #include <drivers/video.h>
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <libk/typedefs.h>
 #include <memory/pmm.h>
@@ -135,7 +135,7 @@ void vmm_copy_vas(ProcessControlBlock *new, ProcessControlBlock *orig) {
                   cnode->page_flags);
 
     // update cloned procs VAS
-    VASRangeNode *node = kmalloc(sizeof(VASRangeNode));
+    VASRangeNode *node = kmem_alloc(sizeof(VASRangeNode));
     node->virt_start = cnode->virt_start;
     node->phys_start = cnode->phys_start;
     node->page_flags = cnode->page_flags;

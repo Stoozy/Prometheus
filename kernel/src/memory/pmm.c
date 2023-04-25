@@ -112,7 +112,7 @@ static int pmm_get_first_free_chunk(u64 blocks) {
   return -1;
 }
 
-void *pmm_alloc_blocks(u64 size) {
+void *pmm_alloc_blocks(size_t size) {
   int sb = pmm_get_first_free_chunk(size);
 
   if (sb == -1) {
@@ -165,18 +165,17 @@ void *pmm_alloc_block() {
 }
 
 // TODO
-void pmm_free_blocks(u64 addr, u64 blocks) {
+void pmm_free_blocks(uintptr_t addr, u64 blocks) {
   int sb = addr / PMM_BLOCK_SIZE;
 
-  for (u64 b = sb; b < (sb + blocks); ++b) {
+  for (u64 b = sb; b < (sb + blocks); ++b)
     set_frame_free(b);
-  }
 
   used_blocks += blocks;
   free_blocks -= blocks;
 }
 
-void pmm_free_block(u64 addr) {
+void pmm_free_block(uintptr_t addr) {
   int block = addr / PMM_BLOCK_SIZE;
 
   set_frame_free(block);

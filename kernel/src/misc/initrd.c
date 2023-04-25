@@ -1,7 +1,7 @@
 #include "fs/tmpfs.h"
 #include "fs/vfs.h"
 #include "stivale2.h"
-#include <libk/kmalloc.h>
+#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <misc/initrd.h>
 #include <string/string.h>
@@ -72,8 +72,7 @@ int oct2bin(unsigned char *str, int size) {
 }
 
 static const char *get_parent_dir(const char *path) {
-  char *parent = kmalloc(strlen(path));
-  strcpy(parent, path);
+  char *parent = strdup(path);
 
   size_t parent_len = strlen(parent);
   if (parent[parent_len - 1] == '/')
@@ -94,7 +93,7 @@ static int copy_file(UstarFile *file) {
   // skip .  (./etc/ becomes /etc/ )
   char *filename = file->name + 1;
 
-  char *parent_dir = get_parent_dir(filename);
+  const char *parent_dir = get_parent_dir(filename);
   // kprintf("Got parent dir %s\n", parent_dir);
 
   if (strcmp(parent_dir, "") == 0) {
@@ -147,6 +146,8 @@ static int copy_file(UstarFile *file) {
     }
   }
 
+  kmem_free((void *)parent_dir);
+
   return 0;
 }
 
@@ -165,11 +166,14 @@ int create_link(UstarFile *file) {
   }
 
   char *abs_linkpath =
-      kmalloc(strlen(parent_dir) + strlen((char *)file->linked_file_name) + 1);
+      kmem_alloc(strlen(parent_dir) + strlen((char *)file->linked_file_name) + 1);
 
   sprintf(abs_linkpath, "%s%s\0", parent_dir, file->linked_file_name);
 
   kprintf("Absolute link path is %s\n", abs_linkpath);
+
+  kmem_free((void *)parent_dir);
+
   VFSNode *new;
   VAttr vattr = {.type = VFS_SYMLINK};
   return root_vn->ops->symlink(parent, &new, filename, &vattr, abs_linkpath);
