@@ -1,0 +1,20 @@
+name=nyancat
+from_source=nyancat
+revision=1                 
+imagedeps="git"
+hostdeps="gcc pkg-config libtool autoconf"
+deps="core-libs"
+allow_network="yes"
+
+configure() {
+    cp -rp "${source_dir}"/. ./
+}
+
+build() {
+    CC=x86_64-atlas-gcc make -j${parallelism} 
+}
+
+install() {
+    mkdir -p ${dest_dir}/usr/bin/
+    cp src/nyancat ${dest_dir}/usr/bin
+}

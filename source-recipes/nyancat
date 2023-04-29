@@ -1,0 +1,12 @@
+name=nyancat
+version=5ffb6c5c03d0e9156db8f360599d4f0449bb16b9
+source_method=tarball
+tarball_url="https://github.com/klange/nyancat/archive/${version}.tar.gz"
+tarball_blake2b="3efbc42ebe0135ab7e70fc8effa41892f9fa50269bf60b997d0027b81c1ead2d5ce51"
+imagedeps="git"
+hostdeps="automake autoconf libtool pkg-config"
+allow_network="yes"
+
+regenerate(){
+    true
+}

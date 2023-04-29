@@ -6,9 +6,9 @@
 #include <drivers/fb.h>
 #include <fs/devfs.h>
 #include <fs/vfs.h>
-#include <memory/slab.h>
 #include <libk/kprintf.h>
 #include <linux/fb.h>
+#include <memory/slab.h>
 #include <string/string.h>
 
 struct fb_var_screeninfo fb0_vsi;
@@ -145,11 +145,8 @@ void fb_proc() {
   for (;;) {
     // seek
     fb_file->pos = 0;
-    asm("cli");
     fb_file->vn->ops->read(fb_file, fb_file->vn, gp_backbuffer, fb_fsi.mmio_len,
                            0);
-    asm("sti");
-
     memcpy((uint8_t *)fb_fsi.mmio_start, (void *)gp_backbuffer,
            fb_fsi.mmio_len);
   }

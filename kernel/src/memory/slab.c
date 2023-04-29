@@ -29,10 +29,7 @@ static struct kmem_slab *slab_create(size_t sz) {
   struct kmem_slab *slab = (struct kmem_slab *)(addr);
   size_t offset = ALIGN_UP(sizeof(struct kmem_slab), sz);
 
-  kprintf("Calculated offset for %d byte size to be %d\n", sz, offset);
   slab->free = addr + offset;
-
-  kprintf("First free is 0x%p\n", slab->free);
 
   uintptr_t *fp = slab->free;
   while ((void *)fp + sz < end) {
@@ -131,7 +128,6 @@ static struct kmem_slab *slab_from_ptr(void *ptr) {
 }
 
 void kmem_free(void *ptr) {
-  kprintf("Freeing 0x%p", ptr);
   struct kmem_slab *slab = slab_from_ptr(ptr);
 
   if (!slab) {
